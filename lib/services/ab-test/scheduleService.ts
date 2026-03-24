@@ -141,6 +141,94 @@ export function calculateNextExecutionDate(
     }
 }
 
+const utcDayOnlyMs = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+
+/**
+ * recurring 用: 直近に時刻を迎えたスロット（slot <= now のうち最新）を返す。
+ * calculateNextExecutionDate の日次は「次の slot >= now」のため、予定を数分過ぎると翌日扱いになり
+ * findAbTestsToExecute の「実行待ち」と整合しない。
+ */
+function getLatestPassedRecurringSlot(
+    config: ScheduleConfig,
+    startDate: Date,
+    endDate: Date | null,
+    lastExecutedAt: Date | null,
+    now: Date
+): Date | null {
+    if (!config.recurringPattern) return null
+    const timeStr = config.recurringPattern.time || '09:00'
+
+    switch (config.recurringPattern.frequency) {
+        case 'daily': {
+            const endDayMs = endDate ? utcDayOnlyMs(endDate) : null
+            let day = new Date(startDate)
+            if (lastExecutedAt) {
+                day = new Date(lastExecutedAt)
+                day.setUTCDate(day.getUTCDate() + 1)
+            }
+            let latestPassed: Date | null = null
+            for (let i = 0; i < 400; i++) {
+                if (endDayMs !== null && utcDayOnlyMs(day) > endDayMs) break
+                const slot = dateAtTimeJST(day, timeStr)
+                if (endDayMs !== null && utcDayOnlyMs(new Date(slot)) > endDayMs) {
+                    day.setUTCDate(day.getUTCDate() + 1)
+                    continue
+                }
+                if (slot > now) break
+                latestPassed = slot
+                day.setUTCDate(day.getUTCDate() + 1)
+            }
+            return latestPassed
+        }
+
+        case 'weekly': {
+            const daysOfWeek = config.recurringPattern.daysOfWeek || [0]
+            const startDayMs = utcDayOnlyMs(startDate)
+            const endDayMs = endDate ? utcDayOnlyMs(endDate) : null
+            let latestPassed: Date | null = null
+            for (let back = 0; back < 7; back++) {
+                const d = new Date(now)
+                d.setUTCDate(d.getUTCDate() - back)
+                if (!daysOfWeek.includes(d.getUTCDay())) continue
+                const slot = dateAtTimeJST(d, timeStr)
+                if (slot > now) continue
+                const slotDay = utcDayOnlyMs(new Date(slot))
+                if (slotDay < startDayMs) continue
+                if (endDayMs !== null && slotDay > endDayMs) continue
+                if (!latestPassed || slot > latestPassed) latestPassed = slot
+            }
+            return latestPassed
+        }
+
+        case 'monthly': {
+            const dayOfMonth = config.recurringPattern.dayOfMonth || 1
+            const startDayMs = utcDayOnlyMs(startDate)
+            const endDayMs = endDate ? utcDayOnlyMs(endDate) : null
+
+            const slotForMonth = (base: Date) => {
+                const monthlyDate = new Date(base)
+                monthlyDate.setUTCDate(dayOfMonth)
+                return dateAtTimeJST(monthlyDate, timeStr)
+            }
+
+            let monthlyDate = new Date(now)
+            let slot = slotForMonth(monthlyDate)
+            if (slot > now) {
+                monthlyDate.setUTCMonth(monthlyDate.getUTCMonth() - 1)
+                slot = slotForMonth(monthlyDate)
+            }
+            if (slot > now) return null
+            const slotDay = utcDayOnlyMs(new Date(slot))
+            if (slotDay < startDayMs) return null
+            if (endDayMs !== null && slotDay > endDayMs) return null
+            return slot
+        }
+
+        default:
+            return null
+    }
+}
+
 /**
  * 実行すべきABテストを検索
  * スケジュール設定に基づいて、現在実行すべきABテストのIDリストを返す
@@ -162,50 +250,55 @@ export async function findAbTestsToExecute(): Promise<number[]> {
         const config = abTest.scheduleConfig as unknown as ScheduleConfig
         if (!config || !config.enabled) continue
 
-        const nextExecution = calculateNextExecutionDate(
-            config,
-            abTest.startDate,
-            abTest.endDate,
-            abTest.lastExecutedAt
-        )
+        let windowMs: number
+        if (config.executionType === 'scheduled') {
+            windowMs = 2 * 60 * 1000
+        } else if (config.executionType === 'recurring') {
+            windowMs = 15 * 60 * 1000
+        } else {
+            windowMs = 120 * 60 * 1000
+        }
 
-        // 実行時刻が現在時刻を過ぎている場合
-        if (nextExecution && nextExecution <= now) {
-            const config = abTest.scheduleConfig as unknown as ScheduleConfig
-            let existingExecution = null
-            
-            if (config.executionType === 'scheduled') {
-                const windowMs = 2 * 60 * 1000
-                const executionStart = new Date(nextExecution.getTime() - windowMs)
-                const executionEnd = new Date(nextExecution.getTime() + windowMs)
-                existingExecution = await prisma.abTestReportExecution.findFirst({
-                    where: {
-                        abTestId: abTest.id,
-                        createdAt: { gte: executionStart, lte: executionEnd },
-                        status: { in: ['completed', 'running'] },
-                    },
-                })
-            } else {
-                const executionDate = new Date(nextExecution)
-                executionDate.setHours(0, 0, 0, 0)
-                const nextDay = new Date(executionDate)
-                nextDay.setDate(nextDay.getDate() + 1)
+        let anchor: Date | null = null
 
-                existingExecution = await prisma.abTestReportExecution.findFirst({
-                    where: {
-                        abTestId: abTest.id,
-                        createdAt: {
-                            gte: executionDate,
-                            lt: nextDay,
-                        },
-                        status: { in: ['completed', 'running'] },
-                    },
-                })
+        if (config.executionType === 'recurring') {
+            if (now < abTest.startDate) continue
+            if (abTest.endDate && now > abTest.endDate) continue
+            const latestPassed = getLatestPassedRecurringSlot(
+                config,
+                abTest.startDate,
+                abTest.endDate,
+                abTest.lastExecutedAt,
+                now
+            )
+            const lagMs = latestPassed ? now.getTime() - latestPassed.getTime() : -1
+            if (latestPassed && lagMs >= 0 && lagMs <= windowMs) {
+                anchor = latestPassed
             }
+        } else {
+            const nextExecution = calculateNextExecutionDate(
+                config,
+                abTest.startDate,
+                abTest.endDate,
+                abTest.lastExecutedAt
+            )
+            if (nextExecution && nextExecution <= now) anchor = nextExecution
+        }
 
-            if (!existingExecution) {
-                abTestIds.push(abTest.id)
-            }
+        if (!anchor) continue
+
+        const executionStart = new Date(anchor.getTime() - windowMs)
+        const executionEnd = new Date(anchor.getTime() + windowMs)
+        const existingExecution = await prisma.abTestReportExecution.findFirst({
+            where: {
+                abTestId: abTest.id,
+                createdAt: { gte: executionStart, lte: executionEnd },
+                status: { in: ['completed', 'running'] },
+            },
+        })
+
+        if (!existingExecution) {
+            abTestIds.push(abTest.id)
         }
     }
 
