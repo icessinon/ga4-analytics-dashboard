@@ -82,16 +82,25 @@ export function calculateNextExecutionDate(
 
             switch (config.recurringPattern.frequency) {
                 case 'daily': {
-                    const baseDate = lastExecutedAt || startDate
-                    const nextDate = new Date(baseDate)
-                    nextDate.setUTCDate(nextDate.getUTCDate() + 1)
-                    let dailyAtJST = dateAtTimeJST(nextDate, timeStr)
-                    if (dailyAtJST < now) {
-                        const jstToday = new Date(now.getTime() + 9 * 60 * 60 * 1000)
-                        dailyAtJST = dateAtTimeJST(jstToday, timeStr)
-                        if (dailyAtJST < now) dailyAtJST = dateAtTimeJST(new Date(jstToday.getTime() + 86400000), timeStr)
+                    const utcDayOnly = (d: Date) =>
+                        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+                    const endDayMs = endDate ? utcDayOnly(endDate) : null
+                    let day = new Date(startDate)
+                    if (lastExecutedAt) {
+                        day = new Date(lastExecutedAt)
+                        day.setUTCDate(day.getUTCDate() + 1)
                     }
-                    return dailyAtJST >= now ? dailyAtJST : null
+                    for (let i = 0; i < 400; i++) {
+                        if (endDayMs !== null && utcDayOnly(day) > endDayMs) return null
+                        const slot = dateAtTimeJST(day, timeStr)
+                        if (endDayMs !== null && utcDayOnly(new Date(slot)) > endDayMs) {
+                            day.setUTCDate(day.getUTCDate() + 1)
+                            continue
+                        }
+                        if (slot >= now) return slot
+                        day.setUTCDate(day.getUTCDate() + 1)
+                    }
+                    return null
                 }
 
                 case 'weekly': {

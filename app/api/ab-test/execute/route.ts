@@ -65,8 +65,10 @@ export async function POST(request: Request) {
         for (const abTest of abTests) {
             try {
                 const scheduleConfig = abTest.scheduleConfig as { executionType?: string } | null
-                const isScheduledAtSpecificTime = scheduleConfig?.executionType === 'scheduled'
-                if (!force && abTest.lastExecutedAt && !isScheduledAtSpecificTime) {
+                const executionType = scheduleConfig?.executionType
+                const skipSameDayLastExecuted =
+                    executionType !== 'scheduled' && executionType !== 'recurring'
+                if (!force && abTest.lastExecutedAt && skipSameDayLastExecuted) {
                     const lastExecuted = new Date(abTest.lastExecutedAt)
                     const today = new Date()
                     today.setHours(0, 0, 0, 0)
