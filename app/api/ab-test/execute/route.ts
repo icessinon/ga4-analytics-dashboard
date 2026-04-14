@@ -1,14 +1,41 @@
 import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/client'
-import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
-import { calculateCVR } from '@/lib/services/analytics/cvrService'
-import { evaluateAbTestResult, type AbTestEvaluation, type AbTestVariant } from '@/lib/services/ab-test/abTestService'
+import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
+import { calculateCVR, type CvrResult, type CvrConfig } from '@/lib/services/analytics/cvrService'
+import { evaluateAbTestResult, type AbTestEvaluation, type AbTestVariant, type AbTestEvaluationConfig } from '@/lib/services/ab-test/abTestService'
 import { evaluateWithGemini } from '@/lib/api/gemini/client'
 import { parseDateString } from '@/lib/utils/date'
 import { getGeminiApiKey } from '@/lib/utils/gemini'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
+
+interface GA4CvrConfig {
+    denominatorLabels?: string[] | string
+    numeratorLabels?: string[] | string
+    [key: string]: unknown
+}
+
+interface GA4Config {
+    propertyId: string
+    dimensions?: Array<{ name: string }> | string
+    metrics?: Array<{ name: string }> | string
+    limit?: number
+    filter?: {
+        dimension?: string
+        operator?: string
+        expression?: string
+    }
+    cvrA?: GA4CvrConfig
+    cvrB?: GA4CvrConfig
+    cvrC?: GA4CvrConfig
+    cvrD?: GA4CvrConfig
+    geminiConfig?: {
+        enabled?: boolean
+        apiKey?: string
+    }
+    abTestEvaluationConfig?: Record<string, unknown>
+}
 
 /**
  * ABテスト自動実行API
@@ -20,16 +47,13 @@ export async function POST(request: Request) {
         const { abTestId, force } = body
 
         const now = new Date()
-        const where: any = {
+        const where: Prisma.AbTestWhereInput = {
             status: 'running',
             autoExecute: true,
-            ga4Config: { not: null },
-        }
-
-        if (abTestId) {
-            where.id = parseInt(abTestId, 10)
-        } else {
-            where.endDate = { lte: now }
+            ga4Config: { not: Prisma.JsonNull },
+            ...(abTestId
+                ? { id: parseInt(abTestId, 10) }
+                : { endDate: { lte: now } }),
         }
 
         const abTests = await prisma.abTest.findMany({
@@ -77,7 +101,7 @@ export async function POST(request: Request) {
                     }
                 }
 
-                const ga4Config = abTest.ga4Config as any
+                const ga4Config = abTest.ga4Config as unknown as GA4Config
                 if (!ga4Config || !ga4Config.propertyId) {
                     throw new Error('GA4設定が不完全です')
                 }
@@ -101,7 +125,7 @@ export async function POST(request: Request) {
                     ? ga4Config.metrics.split(',').map((m: string) => ({ name: m.trim() }))
                     : []
 
-                const ga4Request: any = {
+                const ga4Request: GA4ReportRequest = {
                     propertyId: ga4Config.propertyId,
                     dateRanges: [{ startDate, endDate }],
                     dimensions: dimensions,
@@ -109,33 +133,35 @@ export async function POST(request: Request) {
                     limit: ga4Config.limit || 10000,
                 }
 
-                if (ga4Config.filter?.dimension && ga4Config.filter?.operator && ga4Config.filter?.expression) {
-                    const expressions = ga4Config.filter.expression
+                const filterDimension = ga4Config.filter?.dimension
+                const filterOperator = ga4Config.filter?.operator
+                const filterExpression = ga4Config.filter?.expression
+                if (filterDimension && filterOperator && filterExpression) {
+                    const expressions = filterExpression
                         .split(',')
                         .map((s: string) => s.trim())
                         .filter(Boolean)
 
-                    if (expressions.length === 0) {
-                    } else if (expressions.length > 1) {
+                    if (expressions.length > 1) {
                         ga4Request.dimensionFilter = {
                             orGroup: {
                                 expressions: expressions.map((exp: string) => ({
                                     filter: {
-                                        fieldName: ga4Config.filter.dimension,
+                                        fieldName: filterDimension,
                                         stringFilter: {
-                                            matchType: ga4Config.filter.operator.toUpperCase(),
+                                            matchType: filterOperator.toUpperCase(),
                                             value: exp,
                                         },
                                     },
                                 })),
                             },
                         }
-                    } else {
+                    } else if (expressions.length === 1) {
                         ga4Request.dimensionFilter = {
                             filter: {
-                                fieldName: ga4Config.filter.dimension,
+                                fieldName: filterDimension,
                                 stringFilter: {
-                                    matchType: ga4Config.filter.operator.toUpperCase(),
+                                    matchType: filterOperator.toUpperCase(),
                                     value: expressions[0],
                                 },
                             },
@@ -145,12 +171,11 @@ export async function POST(request: Request) {
 
                 const report = await fetchGA4Data(ga4Request, accessToken)
 
-                const cvrResults: any = {}
+                const cvrResults: { dataA?: CvrResult; dataB?: CvrResult; dataC?: CvrResult; dataD?: CvrResult } = {}
                 const dimensionHeaders = report.dimensionHeaders || []
                 const metricHeaders = report.metricHeaders || []
 
-                const normalizeCvrConfig = (cvrConfig: any) => {
-                    if (!cvrConfig) return null
+                const normalizeCvrConfig = (cvrConfig: GA4CvrConfig): CvrConfig => {
                     return {
                         ...cvrConfig,
                         denominatorLabels: Array.isArray(cvrConfig.denominatorLabels)
@@ -163,7 +188,7 @@ export async function POST(request: Request) {
                             : typeof cvrConfig.numeratorLabels === 'string'
                             ? cvrConfig.numeratorLabels.split(',').map((l: string) => l.trim())
                             : [],
-                    }
+                    } as CvrConfig
                 }
 
                 if (ga4Config.cvrA) {
@@ -185,7 +210,7 @@ export async function POST(request: Request) {
 
                 let abTestEvaluation: AbTestEvaluation | null = null
                 const cvrResultKeys = Object.keys(cvrResults)
-                const evaluationConfig = abTest.evaluationConfig || ga4Config.abTestEvaluationConfig || {}
+                const evaluationConfig = (abTest.evaluationConfig || ga4Config.abTestEvaluationConfig || {}) as AbTestEvaluationConfig
                 const variants: AbTestVariant[] = []
                 if (cvrResults.dataA) variants.push({ name: 'A', data: cvrResults.dataA })
                 if (cvrResults.dataB) variants.push({ name: 'B', data: cvrResults.dataB })
@@ -246,7 +271,7 @@ export async function POST(request: Request) {
                             productId: abTest.productId,
                             name: 'ABテストレポート',
                             reportType: 'ab_test',
-                            config: ga4Config,
+                            config: ga4Config as unknown as Prisma.InputJsonValue,
                             isActive: true,
                         },
                     })
@@ -254,7 +279,7 @@ export async function POST(request: Request) {
                     abTestReport = await prisma.report.update({
                         where: { id: abTestReport.id },
                         data: {
-                            config: ga4Config,
+                            config: ga4Config as unknown as Prisma.InputJsonValue,
                         },
                     })
                 }
@@ -358,13 +383,32 @@ export async function POST(request: Request) {
     }
 }
 
+interface AbTestWithProduct {
+    id: number
+    name: string
+    startDate: Date
+    endDate: Date | null
+    product: { id: number; name: string; ga4PropertyId: string | null }
+}
+
+interface ReportExecutionResult {
+    id?: number
+    status: string
+    errorMessage?: string | null
+}
+
+interface NotifyResultData {
+    cvrResults: { dataA?: CvrResult; dataB?: CvrResult; dataC?: CvrResult; dataD?: CvrResult }
+    abTestEvaluation: AbTestEvaluation | null
+}
+
 /**
  * Slack通知を送信
  */
 async function notifyAbTestReportCompletion(
-    abTest: any,
-    reportExecution: any,
-    resultData: any
+    abTest: AbTestWithProduct,
+    reportExecution: ReportExecutionResult,
+    resultData: NotifyResultData | null
 ) {
     const webhookUrl = process.env.SLACK_WEBHOOK_URL
     if (!webhookUrl) {
@@ -425,7 +469,7 @@ async function notifyAbTestReportCompletion(
             },
         })
         
-        const cvrFields: any[] = []
+        const cvrFields: Array<{ type: string; text: string }> = []
         if (cvrResults.dataA) {
             cvrFields.push({
                 type: 'mrkdwn',
@@ -480,7 +524,7 @@ async function notifyAbTestReportCompletion(
         
         if (abTestEvaluation.checks) {
             const checks = abTestEvaluation.checks
-            const checkFields: any[] = []
+            const checkFields: Array<{ type: string; text: string }> = []
             
             if (checks.significance) {
                 checkFields.push({

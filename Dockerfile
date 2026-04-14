@@ -47,7 +47,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/next.config.ts ./
 
 # scheduler 用（tsx で TypeScript を直接実行するため）

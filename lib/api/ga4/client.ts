@@ -8,7 +8,7 @@ export interface GA4ReportRequest {
     dateRanges: Array<{ startDate: string; endDate: string }>;
     dimensions?: string[] | Array<{ name: string }>;
     metrics: string[] | Array<{ name: string }>;
-    dimensionFilter?: any;
+    dimensionFilter?: Record<string, unknown>;
     limit?: number;
 }
 
@@ -59,10 +59,17 @@ export async function fetchGA4Data(
         return (mets as string[]).map((met) => ({ name: met }))
     }
 
-    const body: any = {
+    const body: {
+        dateRanges: typeof request.dateRanges
+        dimensionFilter?: typeof request.dimensionFilter
+        limit: number
+        dimensions?: Array<{ name: string }>
+        metrics: Array<{ name: string }>
+    } = {
         dateRanges: request.dateRanges,
         dimensionFilter: request.dimensionFilter,
         limit: request.limit || 10000,
+        metrics: [],
     }
 
     // dimensionsが存在する場合のみ追加
