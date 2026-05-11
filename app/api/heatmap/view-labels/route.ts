@@ -1,5 +1,5 @@
 /**
- * GA4 の customEvent:data_view_label ごとのイベント数を取得
+ * GA4 の customEvent:view_label ごとのイベント数を取得
  * ヒートマップ（view ラベルベース）のデータソース
  */
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         const ga4Request: Parameters<typeof fetchGA4Data>[0] = {
             propertyId: String(propertyId),
             dateRanges: [{ startDate, endDate }],
-            dimensions: [{ name: 'customEvent:data_view_label' }],
+            dimensions: [{ name: 'customEvent:view_label' }],
             metrics: [{ name: 'eventCount' }],
             limit: 500,
         }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         const dimensionHeaders = report.dimensionHeaders || []
         const metricHeaders = report.metricHeaders || []
         const viewLabelIdx = dimensionHeaders.findIndex(
-            (h) => h.name === 'customEvent:data_view_label'
+            (h) => h.name === 'customEvent:view_label'
         )
         const countIdx = metricHeaders.findIndex((h) => h.name === 'eventCount')
 

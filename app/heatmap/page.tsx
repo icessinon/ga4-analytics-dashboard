@@ -248,7 +248,7 @@ export default function HeatmapPage() {
                             <h2 className={styles.resultTitle}>view ラベル別イベント数（上＝ページ上部に近い想定）</h2>
                             {data.length === 0 ? (
                                 <p className={styles.emptyText}>
-                                    該当期間に data_view_label のイベントがありません。サイトで view ラベルが送信されているか確認してください。
+                                    該当期間に view_label のイベントがありません。サイトで view ラベルが送信されているか確認してください。
                                 </p>
                             ) : (
                                 <div className={styles.chartWrap}>

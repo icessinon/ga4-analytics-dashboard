@@ -92,8 +92,8 @@ export type ChartMetric =
 
 export const CV_DIMENSION_OPTIONS: { value: string; label: string }[] = [
     { value: 'eventName', label: 'イベント名 (eventName)' },
-    { value: 'customEvent:data_click_label', label: 'クリックラベル (data_click_label)' },
-    { value: 'customEvent:data_view_label', label: 'ビューラベル (data_view_label)' },
+    { value: 'customEvent:click_label', label: 'クリックラベル (click_label)' },
+    { value: 'customEvent:view_label', label: 'ビューラベル (view_label)' },
 ]
 
 export interface QuickAccessItem {

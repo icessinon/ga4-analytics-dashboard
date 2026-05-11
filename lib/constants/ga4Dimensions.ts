@@ -4,8 +4,8 @@
  */
 
 export const GA4_CVR_DIMENSIONS = [
-    { value: 'customEvent:data_view_label', label: 'data_view_label' },
-    { value: 'customEvent:data_click_label', label: 'data_click_label' },
+    { value: 'customEvent:view_label', label: 'view_label' },
+    { value: 'customEvent:click_label', label: 'click_label' },
 ]
 
 export const GA4_FILTER_DIMENSIONS = [
@@ -129,7 +129,7 @@ export const GA4_FILTER_OPERATORS = [
 
 /**
  * ディメンション名を表示用に変換
- * customEvent:data_view_label → data_view_label
+ * customEvent:view_label → view_label
  */
 export function formatDimensionLabel(dimension: string): string {
     if (dimension.startsWith('customEvent:')) {
@@ -140,7 +140,7 @@ export function formatDimensionLabel(dimension: string): string {
 
 /**
  * 表示用ラベルから実際のディメンション値を取得
- * data_view_label → customEvent:data_view_label
+ * view_label → customEvent:view_label
  */
 export function getDimensionValue(label: string): string {
     // 既に customEvent: が含まれている場合はそのまま返す

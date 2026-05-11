@@ -48,7 +48,7 @@ export async function fetchEntryFormFunnelData(
 
         let clickFilter: any = {
             filter: {
-                fieldName: 'customEvent:data_click_label',
+                fieldName: 'customEvent:click_label',
                 stringFilter: {
                     matchType: 'EXACT',
                     value: step.customEventLabel,
@@ -58,7 +58,7 @@ export async function fetchEntryFormFunnelData(
 
         let viewFilter: any = {
             filter: {
-                fieldName: 'customEvent:data_view_label',
+                fieldName: 'customEvent:view_label',
                 stringFilter: {
                     matchType: 'EXACT',
                     value: step.customEventLabel,
@@ -72,7 +72,7 @@ export async function fetchEntryFormFunnelData(
                     expressions: [
                         {
                             filter: {
-                                fieldName: 'customEvent:data_click_label',
+                                fieldName: 'customEvent:click_label',
                                 stringFilter: {
                                     matchType: 'EXACT',
                                     value: step.customEventLabel,
@@ -97,7 +97,7 @@ export async function fetchEntryFormFunnelData(
                     expressions: [
                         {
                             filter: {
-                                fieldName: 'customEvent:data_view_label',
+                                fieldName: 'customEvent:view_label',
                                 stringFilter: {
                                     matchType: 'EXACT',
                                     value: step.customEventLabel,
@@ -123,7 +123,7 @@ export async function fetchEntryFormFunnelData(
                 {
                     propertyId,
                     dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
-                    dimensions: ['customEvent:data_click_label'],
+                    dimensions: ['customEvent:click_label'],
                     metrics: ['totalUsers'],
                     dimensionFilter: clickFilter,
                     limit: 100000,
@@ -135,7 +135,7 @@ export async function fetchEntryFormFunnelData(
                 {
                     propertyId,
                     dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
-                    dimensions: ['customEvent:data_view_label'],
+                    dimensions: ['customEvent:view_label'],
                     metrics: ['totalUsers'],
                     dimensionFilter: viewFilter,
                     limit: 100000,

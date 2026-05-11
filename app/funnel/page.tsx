@@ -536,7 +536,7 @@ function FunnelPageContent() {
                                                 type="text"
                                                 value={step.customEventLabel}
                                                 onChange={(e) => updateStep(index, 'customEventLabel', e.target.value)}
-                                                placeholder="EF_StepForm_Step1-現在の状況"
+                                                placeholder="EF__Line__Area__新規会員登録"
                                                 className={styles.formInput}
                                                 required
                                             />

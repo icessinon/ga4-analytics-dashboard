@@ -24,7 +24,7 @@ export { ENGAGEMENT_MILESTONES }
 async function detectTimeLabelDimension(
     propertyId: string,
     accessToken: string
-): Promise<'customEvent:data_time_label' | 'customEvent:data_view_label'> {
+): Promise<'customEvent:data_time_label' | 'customEvent:view_label'> {
     try {
         await fetchGA4Data(
             {
@@ -38,7 +38,7 @@ async function detectTimeLabelDimension(
         )
         return 'customEvent:data_time_label'
     } catch {
-        return 'customEvent:data_view_label'
+        return 'customEvent:view_label'
     }
 }
 

@@ -32,7 +32,7 @@ export default function AbTestFormModal({
     const [ga4Config, setGa4Config] = useState({
         propertyId: '',
         metrics: 'eventCount,totalUsers',
-        dimensions: 'customEvent:data_click_label,customEvent:data_view_label',
+        dimensions: 'customEvent:click_label,customEvent:view_label',
         filterDimension: '',
         filterOperator: 'CONTAINS',
         filterExpression: '',
@@ -216,7 +216,7 @@ export default function AbTestFormModal({
             setGa4Config({
                 propertyId: '',
                 metrics: 'eventCount,totalUsers',
-                dimensions: 'customEvent:data_click_label,customEvent:data_view_label',
+                dimensions: 'customEvent:click_label,customEvent:view_label',
                 filterDimension: '',
                 filterOperator: 'CONTAINS',
                 filterExpression: '',

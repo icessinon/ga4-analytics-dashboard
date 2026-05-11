@@ -48,7 +48,7 @@ export async function POST(request: Request) {
                         where: { productId_pagePath: { productId: Number(productId), pagePath } },
                     })
                     cvEventName = config?.cvEventName ?? null
-                    if (config?.cvDimension && ['eventName', 'customEvent:data_click_label', 'customEvent:data_view_label'].includes(config.cvDimension)) {
+                    if (config?.cvDimension && ['eventName', 'customEvent:click_label', 'customEvent:view_label'].includes(config.cvDimension)) {
                         cvDimension = config.cvDimension
                     }
                 }

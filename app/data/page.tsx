@@ -6,6 +6,7 @@ import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
 import Loader from '@/components/Loader'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import { GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
 import styles from './DataPage.module.css'
 
 export default function DataPage() {
@@ -21,7 +22,7 @@ export default function DataPage() {
         startDate: '',
         endDate: '',
         metrics: 'eventCount,totalUsers',
-        dimensions: 'customEvent:data_click_label,customEvent:data_view_label',
+        dimensions: 'customEvent:click_label,customEvent:view_label',
         filterDimension: 'pagePath',
         filterOperator: 'CONTAINS',
         filterExpression: '',
@@ -144,49 +145,18 @@ export default function DataPage() {
     const getFilteredData = () => {
         if (!data || !data.rows) return { rows: [], dimensionHeaders: [], metricHeaders: [] }
         
-        const viewLabelColumn = 'customEvent:data_view_label'
-        const clickLabelColumn = 'customEvent:data_click_label'
+        const viewLabelColumn = 'customEvent:view_label'
+        const clickLabelColumn = 'customEvent:click_label'
         
         let filteredRows = data.rows
         
+        const hasLabel = (value: any) =>
+            value && value !== '' && value !== '(not set)' && value !== 'null' && value !== 'undefined'
+
         if (viewMode === 'view') {
-            filteredRows = data.rows.filter((row: any) => {
-                const viewValue = row[viewLabelColumn]
-                const clickValue = row[clickLabelColumn]
-                
-                const hasView = viewValue && 
-                    viewValue !== '' && 
-                    viewValue !== '(not set)' && 
-                    viewValue !== 'null' &&
-                    viewValue !== 'undefined'
-                
-                const hasClick = clickValue && 
-                    clickValue !== '' && 
-                    clickValue !== '(not set)' && 
-                    clickValue !== 'null' &&
-                    clickValue !== 'undefined'
-                
-                return hasView && !hasClick
-            })
+            filteredRows = data.rows.filter((row: any) => hasLabel(row[viewLabelColumn]))
         } else if (viewMode === 'click') {
-            filteredRows = data.rows.filter((row: any) => {
-                const viewValue = row[viewLabelColumn]
-                const clickValue = row[clickLabelColumn]
-                
-                const hasView = viewValue && 
-                    viewValue !== '' && 
-                    viewValue !== '(not set)' && 
-                    viewValue !== 'null' &&
-                    viewValue !== 'undefined'
-                
-                const hasClick = clickValue && 
-                    clickValue !== '' && 
-                    clickValue !== '(not set)' && 
-                    clickValue !== 'null' &&
-                    clickValue !== 'undefined'
-                
-                return hasClick && !hasView
-            })
+            filteredRows = data.rows.filter((row: any) => hasLabel(row[clickLabelColumn]))
         }
         
         return {
@@ -199,8 +169,8 @@ export default function DataPage() {
     const filteredData = getFilteredData()
     
     const getDisplayColumns = () => {
-        const viewLabelColumn = 'customEvent:data_view_label'
-        const clickLabelColumn = 'customEvent:data_click_label'
+        const viewLabelColumn = 'customEvent:view_label'
+        const clickLabelColumn = 'customEvent:click_label'
         
         const allColumns = [
             ...(filteredData?.dimensionHeaders || []).map((h: any) => h.name),
@@ -276,7 +246,7 @@ export default function DataPage() {
                                 type="text"
                                 value={config.dimensions}
                                 onChange={(e) => setConfig({ ...config, dimensions: e.target.value })}
-                                placeholder="customEvent:data_click_label,customEvent:data_view_label"
+                                placeholder="customEvent:click_label,customEvent:view_label"
                                 className={styles.formInput}
                                 required
                             />
@@ -296,10 +266,7 @@ export default function DataPage() {
                             <CustomSelect
                                 value={config.filterOperator}
                                 onChange={(v) => setConfig({ ...config, filterOperator: v })}
-                                options={[
-                                    { value: 'EXACT', label: 'EXACT' },
-                                    { value: 'CONTAINS', label: 'CONTAINS' },
-                                ]}
+                                options={GA4_FILTER_OPERATORS.map((op) => ({ value: op.value, label: op.label }))}
                                 triggerClassName={styles.formSelect}
                                 aria-label="フィルタ 演算子"
                             />
@@ -310,7 +277,7 @@ export default function DataPage() {
                                 type="text"
                                 value={config.filterExpression}
                                 onChange={(e) => setConfig({ ...config, filterExpression: e.target.value })}
-                                placeholder="/instagram_asc/"
+                                placeholder="/members/signup"
                                 className={styles.formInput}
                             />
                         </div>

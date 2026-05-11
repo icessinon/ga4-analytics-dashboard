@@ -48,8 +48,8 @@ export const DIMENSION_DESCRIPTIONS: Record<string, string> = {
     'continent': '大陸',
     'platform': 'プラットフォーム',
     'screenResolution': '画面解像度',
-    'customEvent:data_view_label': 'カスタムイベント: データビューラベル',
-    'customEvent:data_click_label': 'カスタムイベント: データクリックラベル',
+    'customEvent:view_label': 'カスタムイベント: データビューラベル',
+    'customEvent:click_label': 'カスタムイベント: データクリックラベル',
     'customEvent:data_time_label': 'カスタムイベント: データタイムラベル',
 }
 

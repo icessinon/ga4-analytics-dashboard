@@ -70,7 +70,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true, cvEventName: null, cvDimension: null })
         }
 
-        const allowedDimensions = ['eventName', 'customEvent:data_click_label', 'customEvent:data_view_label']
+        const allowedDimensions = ['eventName', 'customEvent:click_label', 'customEvent:view_label']
         const dimension = dim && allowedDimensions.includes(dim) ? dim : 'eventName'
 
         await pageCvConfig.upsert({

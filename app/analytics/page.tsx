@@ -31,24 +31,24 @@ function AnalyticsPageContent() {
         startDate: '2026-01-15',
         endDate: '2026-02-03',
         metrics: 'eventCount,totalUsers',
-        dimensions: 'customEvent:data_click_label,customEvent:data_view_label',
+        dimensions: 'customEvent:click_label,customEvent:view_label',
         filterDimension: 'pagePath',
         filterOperator: 'CONTAINS',
-        filterExpression: '/instagram_asc/',
+        filterExpression: '',
         orderBy: '',
         limit: 25000,
         cvrA: {
-            denominatorDimension: 'customEvent:data_view_label',
-            denominatorLabels: 'EF_StepForm_Step1-現在の状況',
-            numeratorDimension: 'customEvent:data_click_label',
-            numeratorLabels: 'EF_StepForm_Step5-連絡先-CVボタン',
+            denominatorDimension: 'customEvent:view_label',
+            denominatorLabels: '',
+            numeratorDimension: 'customEvent:click_label',
+            numeratorLabels: '',
             metric: 'totalUsers',
         },
         cvrB: {
-            denominatorDimension: 'customEvent:data_view_label',
-            denominatorLabels: 'EF_StepForm_Step1-現在の状況_35_B',
-            numeratorDimension: 'customEvent:data_click_label',
-            numeratorLabels: 'EF_StepForm_Step5-連絡先-CVボタン_35_B',
+            denominatorDimension: 'customEvent:view_label',
+            denominatorLabels: '',
+            numeratorDimension: 'customEvent:click_label',
+            numeratorLabels: '',
             metric: 'totalUsers',
         },
         cvrC: {
@@ -448,6 +448,7 @@ function AnalyticsPageContent() {
                                 type="text"
                                 value={config.filterExpression}
                                 onChange={(e) => setConfig({ ...config, filterExpression: e.target.value })}
+                                placeholder="/members/signup"
                                 className={styles.formInput}
                             />
                         </div>
@@ -474,6 +475,7 @@ function AnalyticsPageContent() {
                                 type="text"
                                 value={config.cvrA.denominatorLabels}
                                 onChange={(e) => setConfig({ ...config, cvrA: { ...config.cvrA, denominatorLabels: e.target.value } })}
+                                placeholder="EF__Line__Area__新規会員登録"
                                 className={styles.formInput}
                             />
                         </div>
@@ -494,6 +496,7 @@ function AnalyticsPageContent() {
                                 type="text"
                                 value={config.cvrA.numeratorLabels}
                                 onChange={(e) => setConfig({ ...config, cvrA: { ...config.cvrA, numeratorLabels: e.target.value } })}
+                                placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                 className={styles.formInput}
                             />
                         </div>
@@ -538,6 +541,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrB.denominatorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrB: { ...config.cvrB, denominatorLabels: e.target.value } })}
+                                    placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
                             </div>
@@ -558,6 +562,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrB.numeratorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrB: { ...config.cvrB, numeratorLabels: e.target.value } })}
+                                    placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />
                             </div>
@@ -603,6 +608,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrC.denominatorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrC: { ...config.cvrC, denominatorLabels: e.target.value } })}
+                                    placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
                             </div>
@@ -623,6 +629,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrC.numeratorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrC: { ...config.cvrC, numeratorLabels: e.target.value } })}
+                                    placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />
                             </div>
@@ -668,6 +675,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrD.denominatorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrD: { ...config.cvrD, denominatorLabels: e.target.value } })}
+                                    placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
                             </div>
@@ -688,6 +696,7 @@ function AnalyticsPageContent() {
                                     type="text"
                                     value={config.cvrD.numeratorLabels}
                                     onChange={(e) => setConfig({ ...config, cvrD: { ...config.cvrD, numeratorLabels: e.target.value } })}
+                                    placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />
                             </div>
