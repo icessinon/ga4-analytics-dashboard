@@ -17,6 +17,7 @@ export default function DataPage() {
     const [error, setError] = useState<string | null>(null)
     const [accessToken, setAccessToken] = useState<string>('')
     const [viewMode, setViewMode] = useState<'all' | 'view' | 'click'>('all')
+    const [tableSearch, setTableSearch] = useState('')
     const [config, setConfig] = useState({
         propertyId: '',
         startDate: '',
@@ -102,6 +103,7 @@ export default function DataPage() {
             }
 
             setData(result.data)
+            setTableSearch('')
         } catch (err) {
             setError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
@@ -159,6 +161,13 @@ export default function DataPage() {
             filteredRows = data.rows.filter((row: any) => hasLabel(row[clickLabelColumn]))
         }
         
+        if (tableSearch) {
+            const q = tableSearch.toLowerCase()
+            filteredRows = filteredRows.filter((row: any) =>
+                Object.values(row).some((v) => String(v).toLowerCase().includes(q))
+            )
+        }
+
         return {
             ...data,
             rows: filteredRows,
@@ -346,6 +355,13 @@ export default function DataPage() {
                                     Clickのみ
                                 </button>
                             </div>
+                            <input
+                                type="text"
+                                value={tableSearch}
+                                onChange={(e) => setTableSearch(e.target.value)}
+                                placeholder="値で絞り込み"
+                                className={styles.searchInput}
+                            />
                             <p className={styles.dataCount}>
                                 表示: {filteredData.rowCount || 0} / 全 {data.rowCount || 0} 件
                             </p>

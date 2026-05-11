@@ -209,6 +209,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .viewModeTabs {
@@ -228,6 +229,7 @@
     cursor: pointer;
     background: transparent;
     color: #d1d5db;
+    white-space: nowrap;
 }
 
 .viewModeButton:hover {
@@ -282,3 +284,18 @@
     border-bottom: 1px solid #374151;
 }
 
+
+.searchInput {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    color: #f3f4f6;
+    outline: none;
+    width: 200px;
+}
+
+.searchInput:focus {
+    border-color: #6366f1;
+}

@@ -321,3 +321,26 @@
     border-radius: 8px;
 }
 
+
+.resultsHeaderTop {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.searchInput {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    color: #f3f4f6;
+    outline: none;
+    width: 220px;
+}
+
+.searchInput:focus {
+    border-color: #6366f1;
+}

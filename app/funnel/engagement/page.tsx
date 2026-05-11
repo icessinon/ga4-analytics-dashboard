@@ -36,6 +36,7 @@ export default function EngagementFunnelPage() {
     const [accessToken, setAccessToken] = useState('')
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
+    const [pagePathSearch, setPagePathSearch] = useState('')
     const [showAiAnalysis, setShowAiAnalysis] = useState(false)
     const [geminiApiKey, setGeminiApiKey] = useState('')
     const [aiSummary, setAiSummary] = useState<string | null>(null)
@@ -119,6 +120,7 @@ export default function EngagementFunnelPage() {
                 setData(result)
                 setDataFullRange(result)
                 setSelectedViewMonth('all')
+                setPagePathSearch('')
                 setAiSummary(null)
             }
         } catch (err) {
@@ -279,9 +281,18 @@ export default function EngagementFunnelPage() {
             {data && data.rows.length > 0 && (
                 <div className={styles.resultSection}>
                     <div className={styles.resultsHeader}>
-                        <h2 className={styles.sectionTitle}>
-                            {data.startDate} 〜 {data.endDate} の結果
-                        </h2>
+                        <div className={styles.resultsHeaderTop}>
+                            <h2 className={styles.sectionTitle}>
+                                {data.startDate} 〜 {data.endDate} の結果
+                            </h2>
+                            <input
+                                type="text"
+                                value={pagePathSearch}
+                                onChange={(e) => setPagePathSearch(e.target.value)}
+                                placeholder="ページパスで絞り込み"
+                                className={styles.searchInput}
+                            />
+                        </div>
                         {(() => {
                             const months = getMonthsInRange(dataFullRange?.startDate ?? data.startDate, dataFullRange?.endDate ?? data.endDate)
                             if (months.length <= 1) return null
@@ -319,7 +330,9 @@ export default function EngagementFunnelPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.rows.map((row, i) => (
+                                {data.rows.filter((row) =>
+                                    !pagePathSearch || row.pagePath.includes(pagePathSearch)
+                                ).map((row, i) => (
                                     <tr key={i}>
                                         <td className={styles.tdPagePath}>{row.pagePath}</td>
                                         <td className={styles.tdRight}>{row.baseUsers.toLocaleString()}</td>
