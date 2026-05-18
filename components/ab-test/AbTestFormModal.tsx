@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import AbTestScheduleConfig, { ScheduleConfig } from './AbTestScheduleConfig'
 import CustomSelect from '@/components/CustomSelect'
 import GeminiConfig from '@/components/GeminiConfig'
@@ -484,9 +485,8 @@ export default function AbTestFormModal({
                             </div>
                             <div>
                                 <label className={styles.label}>開始日 *</label>
-                                <input
-                                    type="date"
-                                    value={formData.startDate}
+                                                                    <DateInput
+                                                                    value={formData.startDate}
                                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                                     className={styles.input}
                                     required
@@ -494,9 +494,8 @@ export default function AbTestFormModal({
                             </div>
                             <div>
                                 <label className={styles.label}>終了日</label>
-                                <input
-                                    type="date"
-                                    value={formData.endDate}
+                                                                    <DateInput
+                                                                    value={formData.endDate}
                                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                                     className={styles.input}
                                 />

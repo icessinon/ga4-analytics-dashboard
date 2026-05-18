@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import DateInput from '@/components/DateInput'
 import Link from '@/components/Link'
 import CustomSelect from '@/components/CustomSelect'
 import Loader from '@/components/Loader'
@@ -531,16 +532,14 @@ export default function DashboardPage() {
                         <div className={styles.pageControlRow}>
                             <span className={styles.pageControlLabel}>期間を指定:</span>
                             <div className={styles.pageDateRangeRow}>
-                                <input
-                                    type="date"
-                                    value={customStartDate}
+                                                                    <DateInput
+                                                                    value={customStartDate}
                                     onChange={(e) => setCustomStartDate(e.target.value)}
                                     className={styles.pageDateInput}
                                 />
                                 <span className={styles.pageDateRangeSep}>〜</span>
-                                <input
-                                    type="date"
-                                    value={customEndDate}
+                                                                    <DateInput
+                                                                    value={customEndDate}
                                     onChange={(e) => setCustomEndDate(e.target.value)}
                                     className={styles.pageDateInput}
                                 />

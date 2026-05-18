@@ -95,6 +95,10 @@ export default function FunnelExecutionDetailPage() {
         }
     }
 
+    const handlePrint = () => {
+        window.print()
+    }
+
     if (loading) {
         return (
             <div className={styles.container}>
@@ -153,6 +157,9 @@ export default function FunnelExecutionDetailPage() {
                     <h1 className={styles.title}>{execution.name || 'ファネル分析'}</h1>
                     <div className={styles.headerActions}>
                         <BackLink href="/funnel/history">履歴一覧に戻る</BackLink>
+                        <button onClick={handlePrint} className={styles.pdfButton}>
+                            PDFで書き出し
+                        </button>
                         <button onClick={handleRerun} className={styles.rerunButton}>
                             この設定で再実行
                         </button>

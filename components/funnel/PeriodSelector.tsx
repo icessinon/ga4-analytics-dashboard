@@ -1,6 +1,7 @@
 'use client'
 
 import styles from './PeriodSelector.module.css'
+import DateInput from '@/components/DateInput'
 import type { Period } from '@/app/funnel/types'
 import type { PeriodSelectorProps } from './types'
 
@@ -159,9 +160,8 @@ export default function PeriodSelector({ periods, onPeriodsChange }: PeriodSelec
                             </div>
                             <div className={styles.field}>
                                 <label className={styles.fieldLabel}>開始日</label>
-                                <input
-                                    type="date"
-                                    value={period.startDate}
+                                                                    <DateInput
+                                                                    value={period.startDate}
                                     onChange={(e) => updatePeriod(index, 'startDate', e.target.value)}
                                     className={styles.fieldInput}
                                     required
@@ -169,9 +169,8 @@ export default function PeriodSelector({ periods, onPeriodsChange }: PeriodSelec
                             </div>
                             <div className={styles.field}>
                                 <label className={styles.fieldLabel}>終了日</label>
-                                <input
-                                    type="date"
-                                    value={period.endDate}
+                                                                    <DateInput
+                                                                    value={period.endDate}
                                     onChange={(e) => updatePeriod(index, 'endDate', e.target.value)}
                                     className={styles.fieldInput}
                                     required

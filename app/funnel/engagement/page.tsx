@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import Link from '@/components/Link'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
@@ -43,12 +44,11 @@ export default function EngagementFunnelPage() {
     const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
 
     useEffect(() => {
-        const end = new Date()
-        end.setDate(end.getDate() - 1)
-        const start = new Date(end)
-        start.setDate(start.getDate() - 27)
-        setEndDate(end.toISOString().slice(0, 10))
-        setStartDate(start.toISOString().slice(0, 10))
+        const today = new Date()
+        const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        setStartDate(fmt(firstOfMonth))
+        setEndDate(fmt(today))
     }, [])
 
     const propertyId = currentProduct?.ga4PropertyId ?? ''
@@ -122,6 +122,7 @@ export default function EngagementFunnelPage() {
                 setSelectedViewMonth('all')
                 setPagePathSearch('')
                 setAiSummary(null)
+                if (showAiAnalysis) runAiAnalysis(result)
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'エラーが発生しました')
@@ -140,35 +141,28 @@ export default function EngagementFunnelPage() {
         }
     }
 
-    useEffect(() => {
-        if (!showAiAnalysis || !data || data.rows.length === 0) return
-
-        let cancelled = false
+    const runAiAnalysis = async (targetData: typeof data) => {
+        if (!targetData || targetData.rows.length === 0) return
         setAiSummaryLoading(true)
-        fetch('/api/funnel/engagement/summary', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                engagementData: { startDate: data.startDate, endDate: data.endDate, rows: data.rows },
-                geminiApiKey: geminiApiKey || undefined,
-            }),
-        })
-            .then((res) => res.json())
-            .then((resData) => {
-                if (cancelled) return
-                if (resData.success && resData.summary) setAiSummary(resData.summary)
-                else setAiSummary(resData.error || 'AI分析の取得に失敗しました')
+        setAiSummary(null)
+        try {
+            const res = await fetch('/api/funnel/engagement/summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    engagementData: { startDate: targetData.startDate, endDate: targetData.endDate, rows: targetData.rows },
+                    geminiApiKey: geminiApiKey || undefined,
+                }),
             })
-            .catch(() => {
-                if (!cancelled) setAiSummary('AI分析の取得に失敗しました')
-            })
-            .finally(() => {
-                if (!cancelled) setAiSummaryLoading(false)
-            })
-        return () => {
-            cancelled = true
+            const resData = await res.json()
+            if (resData.success && resData.summary) setAiSummary(resData.summary)
+            else setAiSummary(resData.error || 'AI分析の取得に失敗しました')
+        } catch {
+            setAiSummary('AI分析の取得に失敗しました')
+        } finally {
+            setAiSummaryLoading(false)
         }
-    }, [showAiAnalysis, data, geminiApiKey])
+    }
 
     if (!currentProduct) {
         return (
@@ -210,9 +204,8 @@ export default function EngagementFunnelPage() {
                     <div className={styles.formRow}>
                         <div className={styles.formField}>
                             <label className={styles.label}>開始日</label>
-                            <input
-                                type="date"
-                                value={startDate}
+                                                            <DateInput
+                                                            value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                                 className={styles.input}
                                 required
@@ -220,9 +213,8 @@ export default function EngagementFunnelPage() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.label}>終了日</label>
-                            <input
-                                type="date"
-                                value={endDate}
+                                                            <DateInput
+                                                            value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 className={styles.input}
                                 required
@@ -310,6 +302,32 @@ export default function EngagementFunnelPage() {
                             )
                         })()}
                     </div>
+                    {showAiAnalysis && (
+                        <div className={styles.aiSummarySection}>
+                            <div className={styles.aiSummaryHeader}>
+                                <h3 className={styles.aiSummaryTitle}>AI分析</h3>
+                                {!aiSummaryLoading && (
+                                    <button
+                                        onClick={() => runAiAnalysis(data)}
+                                        className={styles.aiRerunButton}
+                                    >
+                                        {aiSummary ? '再実行' : 'AI分析を実行'}
+                                    </button>
+                                )}
+                            </div>
+                            {aiSummaryLoading ? (
+                                <div className={styles.aiSummaryLoading}>
+                                    <Loader />
+                                    <span>AI分析を取得中...</span>
+                                </div>
+                            ) : aiSummary ? (
+                                <div className={styles.aiSummaryBox}>{aiSummary}</div>
+                            ) : (
+                                <p className={styles.aiSummaryEmpty}>「AI分析を実行」ボタンを押すと分析結果が表示されます。</p>
+                            )}
+                        </div>
+                    )}
+
                     <div className={styles.tableWrap}>
                         <table className={styles.table}>
                             <thead>
@@ -355,19 +373,6 @@ export default function EngagementFunnelPage() {
                             </tbody>
                         </table>
                     </div>
-                    {showAiAnalysis && (aiSummaryLoading || aiSummary) && (
-                        <div className={styles.aiSummarySection}>
-                            <h3 className={styles.aiSummaryTitle}>AI分析</h3>
-                            {aiSummaryLoading ? (
-                                <div className={styles.aiSummaryLoading}>
-                                    <Loader />
-                                    <span>AI分析を取得中...</span>
-                                </div>
-                            ) : (
-                                <div className={styles.aiSummaryBox}>{aiSummary}</div>
-                            )}
-                        </div>
-                    )}
                 </div>
             )}
 

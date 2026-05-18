@@ -8,7 +8,10 @@ import type { Period, ComparisonData } from './types'
  * 日付をフォーマット（YYYY-MM-DD）
  */
 export function formatDateString(date: Date): string {
-    return date.toISOString().split('T')[0]
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
 }
 
 /**
@@ -16,11 +19,9 @@ export function formatDateString(date: Date): string {
  */
 export function getDefaultSinglePeriod(): { startDate: string; endDate: string } {
     const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
     return {
-        startDate: formatDateString(yesterday),
+        startDate: formatDateString(firstOfMonth),
         endDate: formatDateString(today),
     }
 }

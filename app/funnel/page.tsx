@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
@@ -14,6 +15,7 @@ import PeriodSelector from '@/components/funnel/PeriodSelector'
 import ComparisonTable from '@/components/funnel/ComparisonTable'
 import ComparisonCharts from '@/components/funnel/ComparisonCharts'
 import { GA4_FILTER_DIMENSIONS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
+import LabelInput from '@/components/LabelInput'
 import type {
     FunnelStep,
     FunnelStepData,
@@ -54,6 +56,7 @@ function FunnelPageContent() {
         filterOperator: 'CONTAINS',
         filterExpression: '',
     })
+    const [reportName, setReportName] = useState('')
     const [steps, setSteps] = useState<FunnelStep[]>([
         { stepName: 'ステップ1', customEventLabel: '' },
     ])
@@ -278,6 +281,7 @@ function FunnelPageContent() {
                     filterConfig,
                     accessToken: accessToken || undefined,
                     geminiConfig: geminiConfig.enabled ? geminiConfig : undefined,
+                    name: reportName.trim() || undefined,
                 }
 
                 const response = await fetch('/api/funnel/entry-form/compare', {
@@ -311,6 +315,7 @@ function FunnelPageContent() {
                     filterConfig,
                     accessToken: accessToken || undefined,
                     geminiConfig: geminiConfig.enabled ? geminiConfig : undefined,
+                    name: reportName.trim() || undefined,
                 }
 
                 const response = await fetch('/api/funnel/entry-form', {
@@ -429,6 +434,16 @@ function FunnelPageContent() {
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>分析設定</h2>
                 <form onSubmit={handleSubmit} className={styles.form}>
+                    <div className={styles.formField}>
+                        <label className={styles.formLabel}>レポート名</label>
+                        <input
+                            type="text"
+                            value={reportName}
+                            onChange={(e) => setReportName(e.target.value)}
+                            placeholder="未入力の場合は日時が自動設定されます"
+                            className={styles.formInput}
+                        />
+                    </div>
                     {mode === 'compare' && (
                         <PeriodSelector periods={periods} onPeriodsChange={setPeriods} />
                     )}
@@ -436,9 +451,8 @@ function FunnelPageContent() {
                         <div className={styles.formGrid}>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>開始日</label>
-                                <input
-                                    type="date"
-                                    value={config.startDate}
+                                                                    <DateInput
+                                                                    value={config.startDate}
                                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                                     className={styles.formInput}
                                     required
@@ -446,9 +460,8 @@ function FunnelPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>終了日</label>
-                                <input
-                                    type="date"
-                                    value={config.endDate}
+                                                                    <DateInput
+                                                                    value={config.endDate}
                                     onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                                     className={styles.formInput}
                                     required
@@ -496,13 +509,6 @@ function FunnelPageContent() {
                     <div className={styles.stepsSection}>
                         <div className={styles.stepsHeader}>
                             <h3 className={styles.stepsTitle}>ファネルステップ</h3>
-                            <button
-                                type="button"
-                                onClick={addStep}
-                                className={styles.addStepButton}
-                            >
-                                + ステップを追加
-                            </button>
                         </div>
                         <div className={styles.stepsList}>
                             {steps.map((step, index) => (
@@ -532,10 +538,9 @@ function FunnelPageContent() {
                                         </div>
                                         <div className={styles.formField}>
                                             <label className={styles.formLabel}>カスタムイベントラベル</label>
-                                            <input
-                                                type="text"
+                                            <LabelInput
                                                 value={step.customEventLabel}
-                                                onChange={(e) => updateStep(index, 'customEventLabel', e.target.value)}
+                                                onChange={(v) => updateStep(index, 'customEventLabel', v)}
                                                 placeholder="EF__Line__Area__新規会員登録"
                                                 className={styles.formInput}
                                                 required
@@ -545,6 +550,13 @@ function FunnelPageContent() {
                                 </div>
                             ))}
                         </div>
+                        <button
+                            type="button"
+                            onClick={addStep}
+                            className={styles.addStepButton}
+                        >
+                            + ステップを追加
+                        </button>
                     </div>
 
                     <div className={styles.formField}>

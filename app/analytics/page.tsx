@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import DateInput from '@/components/DateInput'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from '@/components/Link'
 import BackLink from '@/components/BackLink'
@@ -10,6 +11,7 @@ import GeminiConfig from '@/components/GeminiConfig'
 import Switch from '@/components/Switch'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import { GA4_CVR_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
+import LabelInput from '@/components/LabelInput'
 import type { ReportConfig } from './types'
 import styles from './AnalyticsPage.module.css'
 
@@ -26,10 +28,10 @@ function AnalyticsPageContent() {
     const [showCvrD, setShowCvrD] = useState(false)
     const [configLoaded, setConfigLoaded] = useState(false)
     const [config, setConfig] = useState<ReportConfig>({
-        reportName: 'Foods-AG-Instagram_ASC-FV変更-35',
+        reportName: '',
         propertyId: '',
-        startDate: '2026-01-15',
-        endDate: '2026-02-03',
+        startDate: '',
+        endDate: '',
         metrics: 'eventCount,totalUsers',
         dimensions: 'customEvent:click_label,customEvent:view_label',
         filterDimension: 'pagePath',
@@ -90,6 +92,16 @@ function AnalyticsPageContent() {
             }))
         }
     }, [currentProduct])
+
+    useEffect(() => {
+        setConfig((prev) => {
+            if (prev.startDate) return prev
+            const today = new Date()
+            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+            return { ...prev, startDate: fmt(firstOfMonth), endDate: fmt(today) }
+        })
+    }, [])
 
     useEffect(() => {
         const executionId = searchParams?.get('executionId')
@@ -347,6 +359,7 @@ function AnalyticsPageContent() {
                                 type="text"
                                 value={config.reportName}
                                 onChange={(e) => setConfig({ ...config, reportName: e.target.value })}
+                                placeholder="XWork_SU_01"
                                 className={styles.formInput}
                                 required
                             />
@@ -363,9 +376,8 @@ function AnalyticsPageContent() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>開始日</label>
-                            <input
-                                type="date"
-                                value={config.startDate}
+                                                            <DateInput
+                                                            value={config.startDate}
                                 onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                                 className={styles.formInput}
                                 required
@@ -373,9 +385,8 @@ function AnalyticsPageContent() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>終了日</label>
-                            <input
-                                type="date"
-                                value={config.endDate}
+                                                            <DateInput
+                                                            value={config.endDate}
                                 onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                                 className={styles.formInput}
                                 required
@@ -471,10 +482,9 @@ function AnalyticsPageContent() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>分母ラベル</label>
-                            <input
-                                type="text"
+                            <LabelInput
                                 value={config.cvrA.denominatorLabels}
-                                onChange={(e) => setConfig({ ...config, cvrA: { ...config.cvrA, denominatorLabels: e.target.value } })}
+                                onChange={(v) => setConfig({ ...config, cvrA: { ...config.cvrA, denominatorLabels: v } })}
                                 placeholder="EF__Line__Area__新規会員登録"
                                 className={styles.formInput}
                             />
@@ -492,10 +502,9 @@ function AnalyticsPageContent() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>分子ラベル</label>
-                            <input
-                                type="text"
+                            <LabelInput
                                 value={config.cvrA.numeratorLabels}
-                                onChange={(e) => setConfig({ ...config, cvrA: { ...config.cvrA, numeratorLabels: e.target.value } })}
+                                onChange={(v) => setConfig({ ...config, cvrA: { ...config.cvrA, numeratorLabels: v } })}
                                 placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                 className={styles.formInput}
                             />
@@ -537,10 +546,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分母ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrB.denominatorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrB: { ...config.cvrB, denominatorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrB: { ...config.cvrB, denominatorLabels: v } })}
                                     placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
@@ -558,10 +566,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分子ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrB.numeratorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrB: { ...config.cvrB, numeratorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrB: { ...config.cvrB, numeratorLabels: v } })}
                                     placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />
@@ -604,10 +611,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分母ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrC.denominatorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrC: { ...config.cvrC, denominatorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrC: { ...config.cvrC, denominatorLabels: v } })}
                                     placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
@@ -625,10 +631,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分子ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrC.numeratorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrC: { ...config.cvrC, numeratorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrC: { ...config.cvrC, numeratorLabels: v } })}
                                     placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />
@@ -671,10 +676,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分母ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrD.denominatorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrD: { ...config.cvrD, denominatorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrD: { ...config.cvrD, denominatorLabels: v } })}
                                     placeholder="EF__Line__Area__新規会員登録"
                                     className={styles.formInput}
                                 />
@@ -692,10 +696,9 @@ function AnalyticsPageContent() {
                             </div>
                             <div className={styles.formField}>
                                 <label className={styles.formLabel}>分子ラベル</label>
-                                <input
-                                    type="text"
+                                <LabelInput
                                     value={config.cvrD.numeratorLabels}
-                                    onChange={(e) => setConfig({ ...config, cvrD: { ...config.cvrD, numeratorLabels: e.target.value } })}
+                                    onChange={(v) => setConfig({ ...config, cvrD: { ...config.cvrD, numeratorLabels: v } })}
                                     placeholder="EF__Driver__Label__StepLast_求人を探しに行く"
                                     className={styles.formInput}
                                 />

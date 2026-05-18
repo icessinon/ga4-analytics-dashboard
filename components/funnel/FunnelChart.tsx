@@ -67,6 +67,7 @@ export default function FunnelChart({ data, periodLabel, periods, comparisonData
         const baseData: any = {
             stepName: step.stepName.length > 20 ? step.stepName.substring(0, 20) + '...' : step.stepName,
             fullStepName: step.stepName,
+            customEventLabel: step.customEventLabel,
         }
         
         if (isComparison && effectivePeriods.length > 1) {
@@ -98,6 +99,9 @@ export default function FunnelChart({ data, periodLabel, periods, comparisonData
             return (
                 <div className={styles.tooltip}>
                     <p className={styles.tooltipTitle}>{data.fullStepName || data.stepName}</p>
+                    {data.customEventLabel && (
+                        <p className={styles.tooltipEventLabel}>{data.customEventLabel}</p>
+                    )}
                     <div className={styles.tooltipContent}>
                         {isComparison && effectivePeriods.length > 1 ? (
                             <>

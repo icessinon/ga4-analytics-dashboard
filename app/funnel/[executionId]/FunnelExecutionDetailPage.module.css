@@ -290,3 +290,41 @@
 .footerLink:hover {
     background-color: #1d4ed8;
 }
+
+.pdfButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    border-radius: 10px;
+    border: 2px solid #4b5563;
+    background-color: #374151;
+    color: #e5e7eb;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: 0.2s;
+    box-sizing: border-box;
+}
+
+.pdfButton:hover {
+    background-color: #4b5563;
+    color: #fff;
+}
+
+@media print {
+    .headerActions {
+        display: none;
+    }
+    .footer {
+        display: none;
+    }
+    .container {
+        padding: 0;
+        max-width: 100%;
+    }
+    .card {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+}

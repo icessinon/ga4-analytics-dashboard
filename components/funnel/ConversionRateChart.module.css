@@ -64,9 +64,17 @@
     font-weight: 600;
     font-size: 0.875rem;
     color: #f3f4f6;
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.tooltipEventLabel {
+    font-size: 0.75rem;
+    color: #9ca3af;
     margin-bottom: 0.5rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #4b5563;
+    word-break: break-all;
 }
 
 .tooltipContent {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import { useRouter } from 'next/navigation'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
@@ -40,19 +41,14 @@ export default function DataPage() {
     }, [currentProduct])
 
     useEffect(() => {
-        const today = new Date()
-        const yesterday = new Date(today)
-        yesterday.setDate(yesterday.getDate() - 1)
-        
-        const formatDate = (date: Date) => {
-            return date.toISOString().split('T')[0]
-        }
-
         if (!config.startDate) {
+            const today = new Date()
+            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
             setConfig((prev) => ({
                 ...prev,
-                startDate: formatDate(yesterday),
-                endDate: formatDate(today),
+                startDate: fmt(firstOfMonth),
+                endDate: fmt(today),
             }))
         }
     }, [])
@@ -220,9 +216,8 @@ export default function DataPage() {
                     <div className={styles.formGrid}>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>開始日</label>
-                            <input
-                                type="date"
-                                value={config.startDate}
+                                                            <DateInput
+                                                            value={config.startDate}
                                 onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                                 className={styles.formInput}
                                 required
@@ -230,9 +225,8 @@ export default function DataPage() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>終了日</label>
-                            <input
-                                type="date"
-                                value={config.endDate}
+                                                            <DateInput
+                                                            value={config.endDate}
                                 onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                                 className={styles.formInput}
                                 required

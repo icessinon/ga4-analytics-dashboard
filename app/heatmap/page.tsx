@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
 import Loader from '@/components/Loader'
@@ -17,13 +18,16 @@ import {
 import type { ViewLabelRow } from './types'
 import styles from './HeatmapPage.module.css'
 
+function fmtLocal(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function getDefaultDates() {
-    const end = new Date()
-    const start = new Date()
-    start.setDate(start.getDate() - 28)
+    const today = new Date()
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
     return {
-        startDate: start.toISOString().slice(0, 10),
-        endDate: end.toISOString().slice(0, 10),
+        startDate: fmtLocal(firstOfMonth),
+        endDate: fmtLocal(today),
     }
 }
 
@@ -158,9 +162,8 @@ export default function HeatmapPage() {
                             <label className={styles.label} htmlFor="heatmap-start">
                                 開始日
                             </label>
-                            <input
+                            <DateInput
                                 id="heatmap-start"
-                                type="date"
                                 className={styles.input}
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
@@ -170,9 +173,8 @@ export default function HeatmapPage() {
                             <label className={styles.label} htmlFor="heatmap-end">
                                 終了日
                             </label>
-                            <input
+                            <DateInput
                                 id="heatmap-end"
-                                type="date"
                                 className={styles.input}
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}

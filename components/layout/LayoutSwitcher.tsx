@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { ProductProvider } from '@/lib/contexts/ProductContext'
+import { LabelProvider } from '@/lib/contexts/LabelContext'
 import AppShell from './AppShell'
 
 export default function LayoutSwitcher({ children }: { children: React.ReactNode }) {
@@ -14,7 +15,9 @@ export default function LayoutSwitcher({ children }: { children: React.ReactNode
 
     return (
         <ProductProvider>
-            <AppShell>{children}</AppShell>
+            <LabelProvider>
+                <AppShell>{children}</AppShell>
+            </LabelProvider>
         </ProductProvider>
     )
 }

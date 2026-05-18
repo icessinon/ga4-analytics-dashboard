@@ -197,6 +197,8 @@
 
 .stepsSection {
     margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .stepsHeader {
@@ -212,6 +214,7 @@
 }
 
 .addStepButton {
+    margin-top: 0.75rem;
     padding: 0.5rem 1rem;
     background-color: #16a34a;
     color: white;
@@ -220,6 +223,7 @@
     border: none;
     cursor: pointer;
     font-size: 0.875rem;
+    align-self: flex-end;
 }
 
 .addStepButton:hover {

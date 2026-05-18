@@ -285,32 +285,60 @@
     }
 
 .aiSummarySection {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background-color: #f0f9ff;
-    border: 1px solid #bae6fd;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background-color: #1a2744;
+    border: 1px solid #2d4a8a;
     border-radius: 8px;
+}
+
+.aiSummaryHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .aiSummaryTitle {
     font-size: 1.125rem;
     font-weight: 600;
-    margin: 0 0 1rem 0;
-    color: #0369a1;
+    margin: 0;
+    color: #93c5fd;
+}
+
+.aiRerunButton {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8125rem;
+    background-color: #1e3a8a;
+    color: #bfdbfe;
+    border: 1px solid #2d4a8a;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.aiRerunButton:hover {
+    background-color: #1e40af;
 }
 
 .aiSummaryLoading {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: #0c4a6e;
+    color: #93c5fd;
 }
 
 .aiSummaryBox {
     font-size: 0.9375rem;
-    line-height: 1.7;
-    color: #111827;
+    line-height: 1.8;
+    color: #e2e8f0;
     white-space: pre-wrap;
+}
+
+.aiSummaryEmpty {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
 }
 
 .emptyBox {

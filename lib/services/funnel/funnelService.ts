@@ -43,138 +43,66 @@ export async function fetchEntryFormFunnelData(
     const parsedStartDate = parseDateString(startDate)
     const parsedEndDate = parseDateString(endDate)
 
+    const baseRequest = {
+        propertyId,
+        dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
+        metrics: ['totalUsers'],
+        limit: 100000,
+    }
+
+    const pageFilter = filterConfig?.dimension && filterConfig?.operator && filterConfig?.expression
+        ? {
+            filter: {
+                fieldName: filterConfig.dimension,
+                stringFilter: { matchType: filterConfig.operator, value: filterConfig.expression },
+            },
+        }
+        : undefined
+
+    const [clickReport, viewReport] = await Promise.all([
+        fetchGA4Data(
+            { ...baseRequest, dimensions: ['customEvent:click_label'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
+            token
+        ).catch(() => null),
+        fetchGA4Data(
+            { ...baseRequest, dimensions: ['customEvent:view_label'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
+            token
+        ).catch(() => null),
+    ])
+
+    // ラベル → totalUsers のマップを構築
+    const clickMap = new Map<string, number>()
+    const viewMap = new Map<string, number>()
+
+    for (const row of clickReport?.rows ?? []) {
+        const label = row.dimensionValues?.[0]?.value ?? ''
+        const users = parseInt(row.metricValues[0]?.value || '0', 10)
+        clickMap.set(label, (clickMap.get(label) ?? 0) + users)
+    }
+    for (const row of viewReport?.rows ?? []) {
+        const label = row.dimensionValues?.[0]?.value ?? ''
+        const users = parseInt(row.metricValues[0]?.value || '0', 10)
+        viewMap.set(label, (viewMap.get(label) ?? 0) + users)
+    }
+
     for (let i = 0; i < funnelConfig.steps.length; i++) {
         const step = funnelConfig.steps[i]
+        const clickUsers = clickMap.get(step.customEventLabel) ?? 0
+        const viewUsers = viewMap.get(step.customEventLabel) ?? 0
+        const totalUsers = Math.max(clickUsers, viewUsers)
 
-        let clickFilter: any = {
-            filter: {
-                fieldName: 'customEvent:click_label',
-                stringFilter: {
-                    matchType: 'EXACT',
-                    value: step.customEventLabel,
-                },
-            },
-        }
+        funnelData.steps.push({
+            stepName: step.stepName,
+            customEventLabel: step.customEventLabel,
+            users: totalUsers,
+            clickUsers,
+            viewUsers,
+            conversionRate: 0,
+            dropoffRate: 0,
+        })
 
-        let viewFilter: any = {
-            filter: {
-                fieldName: 'customEvent:view_label',
-                stringFilter: {
-                    matchType: 'EXACT',
-                    value: step.customEventLabel,
-                },
-            },
-        }
-
-        if (filterConfig && filterConfig.dimension && filterConfig.operator && filterConfig.expression) {
-            clickFilter = {
-                andGroup: {
-                    expressions: [
-                        {
-                            filter: {
-                                fieldName: 'customEvent:click_label',
-                                stringFilter: {
-                                    matchType: 'EXACT',
-                                    value: step.customEventLabel,
-                                },
-                            },
-                        },
-                        {
-                            filter: {
-                                fieldName: filterConfig.dimension,
-                                stringFilter: {
-                                    matchType: filterConfig.operator,
-                                    value: filterConfig.expression,
-                                },
-                            },
-                        },
-                    ],
-                },
-            }
-
-            viewFilter = {
-                andGroup: {
-                    expressions: [
-                        {
-                            filter: {
-                                fieldName: 'customEvent:view_label',
-                                stringFilter: {
-                                    matchType: 'EXACT',
-                                    value: step.customEventLabel,
-                                },
-                            },
-                        },
-                        {
-                            filter: {
-                                fieldName: filterConfig.dimension,
-                                stringFilter: {
-                                    matchType: filterConfig.operator,
-                                    value: filterConfig.expression,
-                                },
-                            },
-                        },
-                    ],
-                },
-            }
-        }
-
-        try {
-            const clickReport = await fetchGA4Data(
-                {
-                    propertyId,
-                    dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
-                    dimensions: ['customEvent:click_label'],
-                    metrics: ['totalUsers'],
-                    dimensionFilter: clickFilter,
-                    limit: 100000,
-                },
-                token
-            )
-
-            const viewReport = await fetchGA4Data(
-                {
-                    propertyId,
-                    dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
-                    dimensions: ['customEvent:view_label'],
-                    metrics: ['totalUsers'],
-                    dimensionFilter: viewFilter,
-                    limit: 100000,
-                },
-                token
-            )
-
-            let clickUsers = 0
-            let viewUsers = 0
-
-            if (clickReport && clickReport.rows) {
-                clickUsers = clickReport.rows.reduce((sum, row) => {
-                    return sum + parseInt(row.metricValues[0]?.value || '0', 10)
-                }, 0)
-            }
-
-            if (viewReport && viewReport.rows) {
-                viewUsers = viewReport.rows.reduce((sum, row) => {
-                    return sum + parseInt(row.metricValues[0]?.value || '0', 10)
-                }, 0)
-            }
-
-            const totalUsers = Math.max(clickUsers, viewUsers)
-
-            funnelData.steps.push({
-                stepName: step.stepName,
-                customEventLabel: step.customEventLabel,
-                users: totalUsers,
-                clickUsers,
-                viewUsers,
-                conversionRate: 0,
-                dropoffRate: 0,
-            })
-
-            if (i === 0) {
-                funnelData.totalUsers = totalUsers
-            }
-        } catch (error) {
-            console.error(`ファネルステップ ${step.stepName} のデータ取得に失敗:`, error)
+        if (i === 0) {
+            funnelData.totalUsers = totalUsers
         }
     }
 

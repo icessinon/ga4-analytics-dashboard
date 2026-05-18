@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DateInput from '@/components/DateInput'
 import CustomSelect from '@/components/CustomSelect'
 import NeonCheckbox from '@/components/NeonCheckbox'
 import styles from './AbTestScheduleConfig.module.css'
@@ -92,9 +93,8 @@ export default function AbTestScheduleConfig({ value, onChange }: Props) {
                         <span>特定の日時に実行</span>
                         {config.executionType === 'scheduled' && (
                             <div className={styles.dateTimeInputs}>
-                                <input
-                                    type="date"
-                                    value={config.scheduledDate?.split('T')[0] || ''}
+                                                                    <DateInput
+                                                                    value={config.scheduledDate?.split('T')[0] || ''}
                                     onChange={(e) => {
                                         const date = e.target.value
                                         const time = config.scheduledTime || '09:00'
