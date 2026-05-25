@@ -1,180 +1,207 @@
 # GA4 Analytics Dashboard
 
-Google Analytics 4 のデータを分析し、ABテスト・ファネル分析・ヒートマップ分析を行うダッシュボードです。
+x-work.jp（求人転職サービス）向けの GA4 データ分析・施策管理ダッシュボード。
 
 ---
 
-## 機能
+## 機能一覧
 
-- **GA4データ分析**: GA4 API からデータ取得、レポート生成
-- **ABテスト分析**: 統計的有意性計算、AI評価、スケジュール実行
-- **ファネル分析**: エントリーフォームファネル、期間比較、Gemini 評価
-- **ヒートマップ分析**: view ラベルベースのゾーン可視化（クリック・スクロール深度）
-- **プロダクト別分析**: 複数プロダクトのデータを分離して管理
+| カテゴリ | 機能 |
+|---|---|
+| **ダッシュボード** | プロダクト別 KPI サマリー、CV 設定 |
+| **レポート** | PV / CV / CVR 月次トレンド、AI 分析 |
+| **月次インサイト** | 今月 vs 先月 KPI 比較、週次内訳（第1〜5週）、AI レポート生成 |
+| **AB テスト** | 統計的有意性検定、勝者判定、AI 評価、スケジュール自動実行 |
+| **ファネル分析** | エントリーフォームファネル、期間比較、エンゲージメント分析 |
+| **ユーザー分析** | セグメントビルダー、スコアリング、スティッキネス、コホート |
+| **ユーザージャーニー** | 離脱経路分析、AI 分析 |
+| **ヒートマップ** | クリック・スクロール深度のゾーン可視化 |
+| **AI 利用状況** | Gemini API コスト・呼び出し数の日次/週次/月次確認、CSV エクスポート |
+| **データ履歴** | レポート実行履歴、AB テスト履歴 |
 
 ---
 
 ## 技術スタック
 
 | 項目 | 内容 |
-|------|------|
+|---|---|
 | フレームワーク | Next.js 16（App Router）、React 19 |
 | 言語 | TypeScript |
-| DB | PostgreSQL + Prisma |
-| キャッシュ・キュー | Redis |
-| スタイル | **CSS Modules**（`[ComponentName].module.css`。Tailwind は使用しない） |
+| DB | PostgreSQL 16 + Prisma |
+| キャッシュ | Redis 7 |
+| AI | Google Gemini 2.5 Flash |
+| スタイル | CSS Modules（Tailwind は使用しない） |
 | グラフ | Recharts |
+| インフラ | AWS EC2 t4g.small（ARM）、Docker Compose |
 
 ---
 
-## セットアップ
+## ローカル開発
 
-### 方法 A: Docker で全体を起動（推奨・本番同様）
+### 前提
 
-1. **環境変数**（compose 用に `.env` が必要。中身は任意）
+- Docker Desktop がインストールされていること
+- `service-account-key.json`（GA4 サービスアカウントキー）をプロジェクト直下に配置
 
-   ```bash
-   cp .env.example .env
-   # または空でよい場合: touch .env
-   # .env を編集（GA4・Gemini・Slack 等）。DATABASE_URL / REDIS_URL は compose で自動設定される。
-   # GA4: ローカルで KEY_PATH で動いていた場合、同じファイルをプロジェクト直下に service-account-key.json として置く（docker-compose でコンテナにマウント済み）。別名で置いている場合は同じパスにコピーするか、GA4_SERVICE_ACCOUNT_KEY に JSON を 1 行で設定。
-   ```
+### 起動
 
-2. **ビルドと起動（ローカル・ポート競合を避ける場合）**
+```bash
+cp .env.example .env
+# .env を編集（GEMINI_API_KEY, SLACK_WEBHOOK_URL 等）
 
-   ```bash
-   docker-compose -f docker-compose.local.yml up -d --build
-   ```
+docker compose -f docker-compose.local.yml up -d
+```
 
-   - **postgres** (5432) / **redis** (6380) / **app** (3003) / **scheduler** が起動する（ポート 80 は使わない）。
-   - **app** は開発モード（`npm run dev`）で動作し、**ソースをマウントしているためコード・CSS の変更は保存すると自動で反映**されます（ビルドのやり直しは不要）。初回起動時のみコンテナ内で `npm ci` が走るため、少し時間がかかります。
-   - 初回は app 起動時に `prisma migrate deploy` が自動実行される。
-   - **app が一覧にない・すぐ落ちる場合**: `docker-compose -f docker-compose.local.yml logs app` でエラーを確認。`service-account-key.json` が無いときは `touch service-account-key.json` で空ファイルを用意しておく（GA4 未使用なら中身は不要）。
+ブラウザで [http://localhost:3003](http://localhost:3003) を開く。
 
-   本番用にポート 80 で起動する場合は `docker compose up -d --build`（要: ポート 80 が空いていること）。
+- ソースをボリュームマウントしているため、**コード変更は保存と同時に反映**（ビルド不要）
+- 初回起動時のみ `npm ci` と `prisma migrate deploy` が自動実行される
+- ポート: app=3003, postgres=5432, redis=6380
 
-   **「compose build requires buildx 0.17.0 or later」と出る場合**（Docker Buildx が古い環境）は、イメージを先に `docker build` で作成してから起動する。
+### npm で直接起動する場合（DB のみ Docker）
 
-   ```bash
-   docker build -t ga4-analytics-dashboard:latest -f Dockerfile .
-   docker compose up -d
-   ```
+```bash
+docker compose -f docker-compose.local.yml up -d postgres redis
 
-   **t3a.medium（メモリ 4GB）など**では、次のスクリプトでビルドするか、下記の手動コマンドを実行してください
-
-   ```bash
-   chmod +x scripts/docker-build-lowmem.sh
-   ./scripts/docker-build-lowmem.sh
-   docker compose up -d
-   ```
-
-   または手動で:
-
-   ```bash
-   DOCKER_BUILDKIT=1 docker build -t ga4-analytics-dashboard:latest -f Dockerfile .
-   docker compose up -d
-   ```
-
-   - Dockerfile 内で `NODE_OPTIONS=--max-old-space-size=2048` を指定しているため、Node（npm ci / next build）のヒープは最大 2GB に抑えられます。
-   - `next.config.ts` の `experimental.cpus: 1` で Next.js の静的生成ワーカー数を 1 に制限、`webpackMemoryOptimizations: true` でビルド時のメモリ使用を抑えています（低メモリ環境向け）。
-   - それでも OOM になる場合は、スワップを 2GB 程度追加するか、一時的に大きなインスタンスでビルドしたイメージを t3a.medium に転送してください。
-
-3. ブラウザで [http://localhost:3003](http://localhost:3003) を開く。
-
-**Docker 構成**: `docker-compose.local.yml` 単体で **postgres** / **redis** / **app**（Next.js、ホスト 3003）/ **scheduler**（ABテストスケジュール実行、任意）の 4 サービス。scheduler は使うときだけ `docker-compose up -d` で起動し、不要なら `docker-compose up -d postgres redis app` で app のみ起動できる。app と scheduler は同一イメージを利用し、scheduler は app の `/api/ab-test/execute` を内部で呼び出す。Slack 通知の「詳細を見る」リンク・ドメイン・ポート、および OAuth2 リダイレクト URI は `.env` の **APP_URL**（または NEXT_PUBLIC_APP_URL）で指定する（例: Docker で 3003 なら `APP_URL=http://localhost:3003`、本番なら `APP_URL=https://your-domain.com`）。未設定時は `http://localhost:3003`（開発用）が使われる。
-
-### 方法 B: ローカルでアプリのみ（開発用）
-
-1. **依存関係**
-
-   ```bash
-   npm install
-   ```
-
-2. **環境変数**
-
-   ```bash
-   cp .env.example .env.local
-   # .env.local を編集（DATABASE_URL, REDIS_URL をローカル用に）
-   ```
-
-3. **DB・Redis だけ Docker**（app は npm で動かす場合）
-
-   ```bash
-   docker-compose -f docker-compose.local.yml up -d postgres redis
-   npm run db:generate
-   npm run db:migrate
-   ```
-
-4. **起動**
-
-   ```bash
-   npm run dev
-   ```
-
-   ブラウザで [http://localhost:3000](http://localhost:3000) を開く。
+npm install
+npm run db:migrate
+npm run dev
+```
 
 ---
 
-## 開発
+## 環境変数
 
-### ディレクトリ構造
+`.env.example` をコピーして `.env` を作成。
+
+| 変数 | 必須 | 説明 |
+|---|---|---|
+| `DATABASE_URL` | ✓ | PostgreSQL 接続文字列 |
+| `REDIS_URL` | ✓ | Redis 接続文字列 |
+| `GEMINI_API_KEY` | | Google Gemini API キー（AI 機能を使う場合） |
+| `SLACK_WEBHOOK_URL` | | AB テスト完了通知の Slack Webhook |
+| `INTERNAL_API_SECRET` | ✓ | スケジューラー→API 間の内部認証シークレット |
+| `APP_URL` | | アプリの公開 URL（Slack 通知リンク用） |
+| `NEXT_PUBLIC_APP_URL` | | クライアントから参照する公開 URL |
+
+---
+
+## 本番デプロイ
+
+### 構成
+
+- **ビルド**: ローカル Mac または GitHub Actions（EC2 ではビルドしない）
+- **イメージ配布**: GHCR（GitHub Container Registry）
+- **インフラ**: EC2 t4g.small（`docker compose up -d` で常時稼働）
+
+### 自動デプロイ（GitHub Actions）
+
+`master` ブランチへの push で自動的にビルド・GHCR push が走る。
+
+EC2 側は cron（5分ごと）で pull・再起動する：
+
+```bash
+# EC2 で一度だけ設定
+crontab -e
+```
 
 ```
-app/              # Next.js App Router（api, 各ページ）
-components/       # 共有コンポーネント（機能別）
-lib/              # API クライアント・services・utils
-workers/          # バックグラウンドワーカー（ABテストスケジューラー等）
-prisma/           # スキーマ・マイグレーション
+*/5 * * * * cd /var/www/ga4-analytics-dashboard && git pull origin master && docker compose pull && docker compose up -d >> /var/log/ga4-deploy.log 2>&1
 ```
 
-### スクリプト
+### 初回 EC2 セットアップ
+
+```bash
+# GHCR にログイン（GitHub Personal Access Token が必要）
+echo "GITHUB_TOKEN" | docker login ghcr.io -u GITHUB_USERNAME --password-stdin
+
+# リポジトリをクローン
+git clone https://github.com/xmile-inc/ga4-analytics-dashboard.git /var/www/ga4-analytics-dashboard
+cd /var/www/ga4-analytics-dashboard
+
+# .env と service-account-key.json を配置
+cp .env.example .env
+vi .env
+
+# 起動
+docker compose up -d
+```
+
+### EC2 のスワップ設定（OOM 防止）
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+---
+
+## ディレクトリ構造
+
+```
+app/
+  api/          # API Routes
+  ab-test/      # AB テスト
+  ai-usage/     # AI 利用状況
+  analytics/    # アナリティクス
+  dashboard/    # ダッシュボード
+  funnel/       # ファネル分析
+  heatmap/      # ヒートマップ
+  insights/     # 月次インサイト
+  journey/      # ユーザージャーニー
+  reports/      # トレンドレポート
+  user/         # ユーザー分析（セグメント・スコアリング等）
+components/     # 共有コンポーネント
+lib/
+  api/          # GA4・Gemini クライアント
+  services/     # ビジネスロジック
+  utils/        # ユーティリティ
+workers/        # バックグラウンドワーカー（AB テストスケジューラー）
+prisma/         # スキーマ・マイグレーション
+.github/
+  workflows/    # GitHub Actions（deploy.yml）
+```
+
+---
+
+## npm スクリプト
 
 | コマンド | 説明 |
-|----------|------|
-| `npm run dev` | 開発サーバー |
-| `npm run build` / `npm run start` | 本番ビルド・起動 |
-| `npm run db:migrate` | マイグレーション |
+|---|---|
+| `npm run dev` | 開発サーバー起動 |
+| `npm run build` | 本番ビルド |
+| `npm run start` | 本番サーバー起動 |
+| `npm run db:migrate` | DB マイグレーション実行 |
 | `npm run db:generate` | Prisma クライアント生成 |
-| `npm run worker` | バックグラウンドワーカー（現状は scheduler を読み込む） |
-| `npm run scheduler` | ABテストスケジューラー（スケジュール実行を使うときだけ起動。Docker では任意） |
-
-### 型・スタイルの運用
-
-- **型**: 全体は `types.ts`（ルート）、ページ/コンポーネント固有は `app/[feature]/types.ts` や `components/[feature]/types.ts`
-- **スタイル**: 必ず CSS Modules（`*.module.css`）。Tailwind クラスは直接書かない。ダークモードは `@media (prefers-color-scheme: dark)` で対応。
-- **コメント**: 自明なコメント・デバッグ用 `console.log` は削除。必要な説明は JSDoc。
-- **整理状況**: デバッグ用UI・不要コードの削除と、Docker 移行・GA4 認証・スケジュール JST・Link prefetch 無効化・preload 注意書きなどのリファクタは完了済み。`console.error` はエラー調査用として API/サービス層にのみ残している。
-
-### 開発時のコンソール警告（preload）
-
-「The resource ... was preloaded using link preload but not used within a few seconds」は Next.js App Router が CSS チャンクを preload する際にブラウザが出す**既知の警告**です（[vercel/next.js#51524](https://github.com/vercel/next.js/issues/51524)）。動作には影響しないため無視してよいです。気になる場合は DevTools の Console で「preload」をフィルタ除外してください。フォント preload は `app/layout.tsx` で無効化済み、リンクの prefetch は `@/components/Link` で無効化済みです。
+| `npm run scheduler` | AB テストスケジューラー起動（Docker 外で使う場合） |
 
 ---
 
-## DB 設計
+## DB スキーマ
 
-スキーマ: `prisma/schema.prisma`。
-
-### エンティティ一覧
+`prisma/schema.prisma` 参照。
 
 | テーブル | 役割 |
-|----------|------|
-| **products** | プロダクト（GA4 プロパティ紐付け） |
-| **page_cv_configs** | ページ別 CV イベント設定（ダッシュボード用） |
-| **reports** | レポート定義（トレンド・AB 用） |
-| **report_executions** | レポート実行履歴・結果 |
-| **ab_tests** | ABテスト定義・勝者・改善率等 |
-| **ab_test_report_executions** | ABテスト実行履歴 |
-| **funnel_configs** | ファネル設定（件数表示等） |
-| **funnel_executions** | ファネル実行履歴・結果（設定は JSON） |
-| **sessions** | セッション（ダッシュボード用） |
-| **heatmap_events** | ヒートマップ用イベント |
+|---|---|
+| `products` | プロダクト（GA4 プロパティ紐付け） |
+| `page_cv_configs` | ページ別 CV イベント設定 |
+| `reports` | レポート定義 |
+| `report_executions` | レポート実行履歴・結果 |
+| `ab_tests` | AB テスト定義・勝者・改善率 |
+| `ab_test_report_executions` | AB テスト実行履歴 |
+| `funnel_configs` | ファネル設定 |
+| `funnel_executions` | ファネル実行履歴・結果 |
+| `sessions` | セッション管理 |
+| `heatmap_events` | ヒートマップイベント |
 
-### リレーション概要
+---
 
-- **Product** → reports, abTests, funnelConfigs, funnelExecutions, heatmapEvents, sessions, pageCvConfigs
-- **Report** → executions
-- **AbTest** → reportExecutions, results
-- **AbTestReportExecution** → abTest, reportExecution
-- **FunnelExecution** → product（設定・結果は JSON）
+## 開発ルール
+
+- **スタイル**: CSS Modules のみ（`*.module.css`）。Tailwind クラスは直接書かない
+- **型**: ページ固有の型はそのファイル内、共有型は `types.ts`
+- **コメント**: 自明なものは書かない。WHY が非自明な場合のみ1行で記述
+- **ログ**: `console.error` は API・サービス層のエラー調査用のみ残す
