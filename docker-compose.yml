@@ -35,7 +35,7 @@ services:
       retries: 5
 
   app:
-    image: ghcr.io/xmile-inc/ga4-analytics-dashboard/app:latest
+    image: ghcr.io/icessinon/ga4-analytics-dashboard/app:latest
     pull_policy: always
     container_name: ga4-dashboard-app
     restart: unless-stopped
@@ -59,7 +59,7 @@ services:
         condition: service_healthy
 
   scheduler:
-    image: ghcr.io/xmile-inc/ga4-analytics-dashboard/scheduler:latest
+    image: ghcr.io/icessinon/ga4-analytics-dashboard/scheduler:latest
     pull_policy: always
     container_name: ga4-dashboard-scheduler
     restart: unless-stopped
