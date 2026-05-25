@@ -80,7 +80,6 @@ function AnalyticsPageContent() {
         },
         geminiConfig: {
             enabled: false,
-            apiKey: '',
         },
     })
 
@@ -802,14 +801,9 @@ function AnalyticsPageContent() {
 
                 <GeminiConfig
                     enabled={config.geminiConfig.enabled}
-                    apiKey={config.geminiConfig.apiKey}
                     onEnabledChange={(enabled) => setConfig({
                         ...config,
                         geminiConfig: { ...config.geminiConfig, enabled },
-                    })}
-                    onApiKeyChange={(apiKey) => setConfig({
-                        ...config,
-                        geminiConfig: { ...config.geminiConfig, apiKey },
                     })}
                 />
 
@@ -892,13 +886,13 @@ function AnalyticsPageContent() {
                                     </div>
                                     {result.abTestEvaluation.aiEvaluation ? (
                                         <div className={styles.resultEvaluationBox}>
-                                            <p className={styles.resultEvaluationBoxTitle}>Gemini評価:</p>
+                                            <p className={styles.resultEvaluationBoxTitle}>AI評価:</p>
                                             <p className={styles.resultEvaluationBoxText}>{result.abTestEvaluation.aiEvaluation}</p>
                                         </div>
                                     ) : result.abTestEvaluation && config.geminiConfig.enabled && (
                                         <div className={styles.resultEvaluationWarning}>
                                             <p className={styles.resultEvaluationWarningText}>
-                                                ⚠️ Gemini評価が表示されませんでした。ブラウザのコンソール（F12）でエラーを確認してください。
+                                                ⚠️ AI評価が表示されませんでした。ブラウザのコンソール（F12）でエラーを確認してください。
                                             </p>
                                         </div>
                                     )}

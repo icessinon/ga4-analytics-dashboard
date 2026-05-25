@@ -121,6 +121,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'GA4分析', subtitle: 'GA4データの分析とレポート', getHref: () => '/analytics', productPrefix: true },
             { title: 'トレンド', subtitle: '月次トレンドレポート（PV/CV/CVR推移）', getHref: (id) => id ? `/trend?productId=${id}` : '/trend', productPrefix: true },
             { title: 'ABテスト', subtitle: 'ABテスト結果の分析と評価', getHref: (id) => id ? `/ab-test?productId=${id}` : '/ab-test', productPrefix: true },
+            { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
         ],
     },
     {
@@ -134,6 +135,18 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         label: '可視化',
         items: [
             { title: 'ヒートマップ', subtitle: 'クリック位置とスクロール深度の可視化', getHref: (id) => id ? `/heatmap?productId=${id}` : '/heatmap', productPrefix: true },
+            { title: 'ユーザー経路分析', subtitle: '来訪から会員登録完了までのフロー可視化', getHref: () => '/journey', productPrefix: true },
+            { title: '離脱分析', subtitle: 'ファネルの各ステップの離脱数・離脱率の高いページを特定', getHref: () => '/exit', productPrefix: true },
+        ],
+    },
+    {
+        label: 'ユーザー分析',
+        items: [
+            { title: 'セグメント行動分析', subtitle: 'デバイス・ブラウザ・流入元別の行動タイムライン', getHref: () => '/user', productPrefix: true },
+            { title: 'コホートリテンション', subtitle: '初回訪問週ごとの継続率マトリクス', getHref: () => '/user/cohort', productPrefix: true },
+            { title: 'ユーザーリスト抽出', subtitle: '条件を組み合わせてセグメントのユーザー数・行動傾向を確認', getHref: () => '/user/segment-builder', productPrefix: true },
+            { title: '活動スコアリング', subtitle: 'セグメントごとの活性度を0〜100点でスコアリング（活性/休眠/離脱リスク分類）', getHref: () => '/user/scoring', productPrefix: true },
+            { title: 'スティッキネス分析', subtitle: 'DAU/WAU/MAUの推移とエンゲージメント深度', getHref: () => '/user/stickiness', productPrefix: true },
         ],
     },
     {
@@ -143,12 +156,14 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: '履歴一覧', subtitle: 'レポートとファネル分析の履歴を確認', getHref: (id) => id ? `/history?productId=${id}` : '/history', productPrefix: true },
             { title: 'GA4データ閲覧', subtitle: 'GA4の生データを期間別で閲覧', getHref: () => '/data', productPrefix: true },
             { title: 'GA4メタデータ', subtitle: '利用可能なメトリクスとディメンション一覧', getHref: () => '/ga4-metadata', productPrefix: true },
+            { title: 'AI利用状況', subtitle: 'AI API使用量・コスト確認', getHref: () => '/ai-usage' },
         ],
     },
     {
         label: 'ドキュメント',
         items: [
-            { title: 'API', subtitle: 'API エンドポイント一覧と説明', getHref: () => '/docs/api' },
+            { title: 'API ドキュメント', subtitle: 'API エンドポイント一覧と説明', getHref: () => '/docs/api' },
+            { title: '機能ドキュメント', subtitle: '全機能の概要・使い方・GA4メトリクス一覧', getHref: () => '/docs/features' },
         ],
     },
 ]

@@ -103,7 +103,6 @@ export interface FunnelPageConfig {
 
 export interface GeminiConfigState {
     enabled: boolean
-    apiKey: string
 }
 
 export interface PeriodFormData extends Period {

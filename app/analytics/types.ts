@@ -51,6 +51,5 @@ export interface ReportConfig {
     }
     geminiConfig: {
         enabled: boolean
-        apiKey: string
     }
 }

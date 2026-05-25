@@ -35,7 +35,6 @@ export default function TrendPage() {
         return `${year}-${month}`
     })
     const [showAiAnalysis, setShowAiAnalysis] = useState(false)
-    const [geminiApiKey, setGeminiApiKey] = useState('')
     const [aiSummary, setAiSummary] = useState<string | null>(null)
     const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
     const [selectedViewMonth, setSelectedViewMonth] = useState<string>('all')
@@ -236,7 +235,6 @@ export default function TrendPage() {
                 trendData,
                 startMonth,
                 endMonth,
-                geminiApiKey: geminiApiKey || undefined,
             }),
         })
             .then((res) => res.json())
@@ -254,7 +252,7 @@ export default function TrendPage() {
         return () => {
             cancelled = true
         }
-    }, [showAiAnalysis, trendData, startMonth, endMonth, geminiApiKey])
+    }, [showAiAnalysis, trendData, startMonth, endMonth])
 
     if (loading && !trendData) {
         return (
@@ -443,15 +441,6 @@ export default function TrendPage() {
                         >
                             <span>AI分析を表示する（セッション時間・月による傾向で回答）</span>
                         </NeonCheckbox>
-                        {showAiAnalysis && (
-                            <input
-                                type="password"
-                                value={geminiApiKey}
-                                onChange={(e) => setGeminiApiKey(e.target.value)}
-                                placeholder="Gemini APIキー（未入力の場合は環境変数を使用）"
-                                className={`${styles.input} ${styles.geminiApiKeyInput}`}
-                            />
-                        )}
                         <p className={styles.helpText}>
                             チェックを付けたときだけ、セッション時間と月による傾向を中心にしたAI分析が表示されます
                         </p>

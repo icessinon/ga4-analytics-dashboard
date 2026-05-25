@@ -1,0 +1,319 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+/* ── 凡例 ── */
+.legendSection {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding: 0.875rem 1rem;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.legendIcon { font-size: 0.875rem; }
+
+.legendLabel {
+    font-weight: 600;
+    color: #e5e7eb;
+    white-space: nowrap;
+}
+
+.legendDesc { color: #6b7280; }
+
+/* ── フォーム ── */
+.section {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 1rem;
+}
+
+.formGrid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.formLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.formSelect {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    min-width: 160px;
+}
+
+.formSelect:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.formActions { margin-top: 1rem; }
+
+/* ── サマリー ── */
+.summaryRow {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.summaryCard {
+    flex: 1;
+    min-width: 160px;
+    border: 1px solid;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.summaryIcon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+
+.summaryRank {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.summaryCount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f3f4f6;
+}
+
+.summaryUsers {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.25rem;
+}
+
+/* ── テーブル ── */
+.tableWrapper { overflow-x: auto; }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.table th {
+    padding: 0.625rem 0.75rem;
+    background-color: #111827;
+    border-bottom: 1px solid #374151;
+    color: #9ca3af;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.thLabel { text-align: left; min-width: 110px; }
+.thNum   { text-align: right; min-width: 80px; }
+.thCenter { text-align: center; }
+
+.dataRow {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.1s;
+}
+
+.dataRow:hover { background: rgba(255,255,255,0.03); }
+
+.tdLabel {
+    padding: 0.625rem 0.75rem;
+    color: #e5e7eb;
+    font-weight: 500;
+}
+
+.tdNum {
+    padding: 0.625rem 0.75rem;
+    text-align: right;
+    color: #d1d5db;
+    font-variant-numeric: tabular-nums;
+}
+
+.tdCenter {
+    padding: 0.625rem 0.75rem;
+    text-align: center;
+}
+
+.rankBadge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.scoreValue {
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.scoreMax {
+    font-size: 0.6875rem;
+    color: #6b7280;
+    margin-left: 2px;
+}
+
+.expandBtn {
+    background: none;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    transition: 0.15s;
+}
+
+.expandBtn:hover {
+    border-color: #6366f1;
+    color: #a5b4fc;
+}
+
+/* ── 詳細展開行 ── */
+.detailRow { background: #111827; }
+
+.detailCell { padding: 1rem 1.25rem; }
+
+.detailGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .detailGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.detailItem { }
+
+.detailLabel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9ca3af;
+    margin-bottom: 0.375rem;
+}
+
+.scoreBar {
+    height: 6px;
+    background: #1f2937;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+
+.scoreBarFill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.detailScore {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    margin-bottom: 0.125rem;
+}
+
+.detailNote {
+    font-size: 0.6875rem;
+    color: #6b7280;
+}
+
+/* ── その他 ── */
+.note {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.empty {
+    color: #6b7280;
+    text-align: center;
+    padding: 2rem;
+}
+
+.errorBox {
+    background-color: rgba(185, 28, 28, 0.15);
+    border: 1px solid #b91c1c;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fca5a5;
+    margin-bottom: 1.5rem;
+}
+
+.errorTitle { font-weight: 600; margin-bottom: 0.25rem; }
+
+.loaderContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    gap: 1rem;
+    color: #9ca3af;
+}
+
+.warningBox {
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid #d97706;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fcd34d;
+}

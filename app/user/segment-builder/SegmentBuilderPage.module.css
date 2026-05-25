@@ -1,0 +1,459 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.section {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.sectionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+/* ── プリセット ── */
+.presets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.presetsLabel {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.presetBtn {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 9999px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.presetBtn:hover {
+    border-color: #6366f1;
+    color: #a5b4fc;
+}
+
+/* ── 期間 ── */
+.dateRow {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.formLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.formInput {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+}
+
+/* ── 条件リスト ── */
+.conditionList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.conditionEmpty {
+    font-size: 0.875rem;
+    color: #6b7280;
+    padding: 0.75rem;
+    border: 1px dashed #374151;
+    border-radius: 0.375rem;
+    text-align: center;
+}
+
+.conditionRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.andBadge {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 4px;
+    padding: 0.125rem 0.375rem;
+    white-space: nowrap;
+}
+
+.conditionSelect {
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.8125rem;
+    min-width: 160px;
+}
+
+.conditionSelectSmall {
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.8125rem;
+    min-width: 100px;
+}
+
+.conditionInput {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.8125rem;
+}
+
+.conditionInput:focus,
+.conditionSelect:focus,
+.conditionSelectSmall:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.removeBtn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #4b5563;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+    flex-shrink: 0;
+}
+
+.removeBtn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.formActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.addBtn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border: 1px dashed #4b5563;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.addBtn:hover {
+    border-color: #6366f1;
+    color: #a5b4fc;
+}
+
+/* ── カバレッジバー ── */
+.coverageBar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+}
+
+.coverageBarTrack {
+    flex: 1;
+    height: 8px;
+    background: #374151;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.coverageBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a5b4fc);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.coverageLabel {
+    font-size: 0.8125rem;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.coverageLabel strong {
+    color: #a5b4fc;
+    font-size: 1rem;
+}
+
+/* ── サマリー ── */
+.summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .summaryGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+    .summaryGrid { grid-template-columns: 1fr 1fr; }
+}
+
+.summaryCard {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.summaryLabel {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.summaryValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    font-variant-numeric: tabular-nums;
+}
+
+.summaryMeta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 0.125rem;
+}
+
+/* ── ブレイクダウン ── */
+.breakdownGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .breakdownGrid { grid-template-columns: 1fr; }
+}
+
+.breakdownCard {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.breakdownTitle {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #9ca3af;
+    margin-bottom: 0.75rem;
+}
+
+.breakdownEmpty {
+    font-size: 0.8125rem;
+    color: #4b5563;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.breakdownList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.breakdownRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.breakdownNameCol {
+    flex: 1;
+    min-width: 0;
+}
+
+.breakdownName {
+    font-size: 0.8125rem;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    margin-bottom: 0.125rem;
+}
+
+.breakdownBar {
+    height: 4px;
+    background: #1f2937;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.breakdownBarFill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.breakdownUsers {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.breakdownEngagement {
+    font-size: 0.6875rem;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+/* ── トレンドチャート ── */
+.trendChartWrapper {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem 0.5rem 0.5rem;
+}
+
+.trendTooltip {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    color: #e5e7eb;
+    line-height: 1.5;
+    min-width: 140px;
+}
+
+.trendTooltipDate {
+    font-weight: 600;
+    color: #a5b4fc;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.trendTooltipRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #9ca3af;
+    font-size: 0.8125rem;
+}
+
+.trendTooltipVal {
+    color: #f9fafb;
+    font-weight: 600;
+}
+
+/* ── エラー・ローダー ── */
+.errorBox {
+    background-color: rgba(185, 28, 28, 0.15);
+    border: 1px solid #b91c1c;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fca5a5;
+    margin-bottom: 1.5rem;
+}
+
+.errorTitle {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.loaderContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    gap: 1rem;
+    color: #9ca3af;
+}
+
+.warningBox {
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid #d97706;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fcd34d;
+}

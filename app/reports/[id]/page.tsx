@@ -281,7 +281,7 @@ export default function ReportDetailPage() {
                             )}
                             {abTestEvaluation.aiEvaluation && (
                                 <div className={styles.geminiContainer}>
-                                    <p className={styles.geminiTitle}>Gemini評価</p>
+                                    <p className={styles.geminiTitle}>AI評価</p>
                                     <p className={styles.geminiText}>
                                         {abTestEvaluation.aiEvaluation}
                                     </p>
@@ -484,7 +484,7 @@ export default function ReportDetailPage() {
                         )}
                         {abTestEvaluation.aiEvaluation && (
                             <div className={styles.geminiContainer}>
-                                <p className={styles.geminiTitle}>Gemini評価</p>
+                                <p className={styles.geminiTitle}>AI評価</p>
                                 <p className={styles.geminiText}>
                                     {abTestEvaluation.aiEvaluation}
                                 </p>

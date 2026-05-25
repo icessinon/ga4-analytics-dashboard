@@ -197,6 +197,12 @@ export default function AbTestDetailPage() {
                     <div className={styles.headerActions}>
                         <BackLink href="/ab-test">一覧に戻る</BackLink>
                         <button
+                            onClick={() => router.push(`/ab-test/${abTest.id}/segment`)}
+                            className={styles.segmentButton}
+                        >
+                            セグメント別CVR
+                        </button>
+                        <button
                             onClick={() => router.push(`/ab-test?edit=${abTest.id}`)}
                             className={styles.editButton}
                         >

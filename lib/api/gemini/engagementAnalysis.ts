@@ -2,6 +2,7 @@
  * エンゲージメントファネル用Gemini分析
  * ページ別の滞在時間ファネルを要約・考察する
  */
+import { logGeminiUsage } from './logger'
 
 export interface EngagementAnalysisRequest {
     startDate: string
@@ -51,12 +52,13 @@ export async function analyzeEngagementWithGemini(
     request: EngagementAnalysisRequest,
     apiKey: string
 ): Promise<string | null> {
-    if (!apiKey?.trim()) return null
+    const key = apiKey?.trim() || process.env.GEMINI_API_KEY
+    if (!key) return null
 
     try {
         const prompt = buildEngagementPrompt(request)
         const modelName = 'gemini-2.5-flash'
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`
 
         const response = await fetch(url, {
             method: 'POST',
@@ -79,6 +81,18 @@ export async function analyzeEngagementWithGemini(
         }
 
         const data = await response.json()
+
+        const usage = data.usageMetadata
+        if (usage) {
+            logGeminiUsage({
+                function: 'analyzeEngagementWithGemini',
+                model: modelName,
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            })
+        }
+
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text
         return text ? String(text).trim() : null
     } catch (error) {

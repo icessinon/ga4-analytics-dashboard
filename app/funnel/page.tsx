@@ -42,7 +42,6 @@ function FunnelPageContent() {
     const [configLoaded, setConfigLoaded] = useState(false)
     const [geminiConfig, setGeminiConfig] = useState<GeminiConfigState>({
         enabled: false,
-        apiKey: '',
     })
     const [periods, setPeriods] = useState<Period[]>([
         { label: '期間A', startDate: '', endDate: '' },
@@ -139,12 +138,10 @@ function FunnelPageContent() {
                             const savedGeminiConfig = execution.funnelConfig.geminiConfig
                             setGeminiConfig({
                                 enabled: savedGeminiConfig.enabled === true,
-                                apiKey: savedGeminiConfig.apiKey || '',
                             })
                         } else if (execution.resultData?.geminiEvaluation) {
                             setGeminiConfig({
                                 enabled: true,
-                                apiKey: '',
                             })
                         }
                         
@@ -572,9 +569,7 @@ function FunnelPageContent() {
 
                     <GeminiConfig
                         enabled={geminiConfig.enabled}
-                        apiKey={geminiConfig.apiKey}
                         onEnabledChange={(enabled) => setGeminiConfig({ ...geminiConfig, enabled })}
-                        onApiKeyChange={(apiKey) => setGeminiConfig({ ...geminiConfig, apiKey })}
                     />
 
                     <button
@@ -722,7 +717,7 @@ function FunnelPageContent() {
 
                     {funnelData.geminiEvaluation && (
                         <div className={styles.section}>
-                            <h2 className={styles.sectionTitle}>Gemini評価</h2>
+                            <h2 className={styles.sectionTitle}>AI評価</h2>
                             <div className={styles.geminiBox}>
                                 <p className={styles.geminiText}>
                                     {funnelData.geminiEvaluation}

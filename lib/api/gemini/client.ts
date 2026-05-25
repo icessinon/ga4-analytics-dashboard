@@ -2,6 +2,7 @@
  * Gemini API クライアント
  * 元のGASコードのevaluateWithGemini関数を参考に実装
  */
+import { logGeminiUsage } from './logger'
 
 export interface GeminiEvaluationRequest {
     evaluation: {
@@ -35,9 +36,8 @@ export async function evaluateWithGemini(
     request: GeminiEvaluationRequest,
     apiKey: string
 ): Promise<string | null> {
-    if (!apiKey || !apiKey.trim()) {
-        return null;
-    }
+    const key = apiKey?.trim() || process.env.GEMINI_API_KEY
+    if (!key) return null
 
     try {
         const prompt = buildEvaluationPrompt(request.evaluation, request.winner, request.runnerUp, request.config);
@@ -46,7 +46,7 @@ export async function evaluateWithGemini(
         // GASコードでは gemini-2.5-flash を使用
         // 利用可能なモデル: gemini-2.5-flash, gemini-1.5-flash, gemini-1.5-pro
         const modelName = 'gemini-2.5-flash'
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`
         const payload = {
             contents: [
                 {
@@ -80,6 +80,17 @@ export async function evaluateWithGemini(
         }
 
         const responseData = await response.json()
+
+        const usage = responseData.usageMetadata
+        if (usage) {
+            logGeminiUsage({
+                function: 'evaluateWithGemini',
+                model: modelName,
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            })
+        }
 
         if (responseData.candidates && responseData.candidates.length > 0) {
             const candidate = responseData.candidates[0]

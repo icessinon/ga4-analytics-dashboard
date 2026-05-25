@@ -75,7 +75,6 @@ export default function AbTestFormModal({
         },
         geminiConfig: {
             enabled: false,
-            apiKey: '',
         },
     })
 
@@ -180,7 +179,7 @@ export default function AbTestFormModal({
                         minImprovementRate: 5,
                         minDifferencePt: 0.5,
                     },
-                    geminiConfig: config.geminiConfig || { enabled: false, apiKey: '' },
+                    geminiConfig: config.geminiConfig || { enabled: false },
                 })
                 if (config.cvrB) setShowCvrB(true)
                 if (config.cvrC) setShowCvrC(true)
@@ -259,7 +258,6 @@ export default function AbTestFormModal({
                 },
                 geminiConfig: {
                     enabled: false,
-                    apiKey: '',
                 },
             })
 
@@ -987,14 +985,9 @@ export default function AbTestFormModal({
 
                         <GeminiConfig
                             enabled={ga4Config.geminiConfig.enabled}
-                            apiKey={ga4Config.geminiConfig.apiKey}
                             onEnabledChange={(enabled) => setGa4Config({
                                 ...ga4Config,
                                 geminiConfig: { ...ga4Config.geminiConfig, enabled }
-                            })}
-                            onApiKeyChange={(apiKey) => setGa4Config({
-                                ...ga4Config,
-                                geminiConfig: { ...ga4Config.geminiConfig, apiKey }
                             })}
                         />
                     </div>

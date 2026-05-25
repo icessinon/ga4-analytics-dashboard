@@ -39,7 +39,6 @@ export default function EngagementFunnelPage() {
     const [endDate, setEndDate] = useState('')
     const [pagePathSearch, setPagePathSearch] = useState('')
     const [showAiAnalysis, setShowAiAnalysis] = useState(false)
-    const [geminiApiKey, setGeminiApiKey] = useState('')
     const [aiSummary, setAiSummary] = useState<string | null>(null)
     const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
 
@@ -151,7 +150,6 @@ export default function EngagementFunnelPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     engagementData: { startDate: targetData.startDate, endDate: targetData.endDate, rows: targetData.rows },
-                    geminiApiKey: geminiApiKey || undefined,
                 }),
             })
             const resData = await res.json()
@@ -238,15 +236,6 @@ export default function EngagementFunnelPage() {
                         >
                             <span>AI分析を表示する</span>
                         </NeonCheckbox>
-                        {showAiAnalysis && (
-                            <input
-                                type="password"
-                                value={geminiApiKey}
-                                onChange={(e) => setGeminiApiKey(e.target.value)}
-                                placeholder="Gemini APIキー（未入力の場合は環境変数を使用）"
-                                className={`${styles.input} ${styles.inputWide} ${styles.geminiApiKeyInput}`}
-                            />
-                        )}
                         <p className={styles.helpText}>
                             チェックを付けたときだけ、ファネル結果に対するAI分析が表示されます
                         </p>

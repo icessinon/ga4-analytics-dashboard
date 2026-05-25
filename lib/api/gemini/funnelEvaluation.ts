@@ -1,6 +1,7 @@
 /**
  * ファネル分析用Gemini評価
  */
+import { logGeminiUsage } from './logger'
 
 export interface FunnelEvaluationRequest {
     funnelData: {
@@ -23,15 +24,14 @@ export async function evaluateFunnelWithGemini(
     request: FunnelEvaluationRequest,
     apiKey: string
 ): Promise<string | null> {
-    if (!apiKey || !apiKey.trim()) {
-        return null
-    }
+    const key = apiKey?.trim() || process.env.GEMINI_API_KEY
+    if (!key) return null
 
     try {
         const prompt = buildFunnelEvaluationPrompt(request.funnelData, request.startDate, request.endDate)
 
         const modelName = 'gemini-2.5-flash'
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`
         
         const payload = {
             contents: [
@@ -66,6 +66,17 @@ export async function evaluateFunnelWithGemini(
         }
 
         const responseData = await response.json()
+
+        const usage = responseData.usageMetadata
+        if (usage) {
+            logGeminiUsage({
+                function: 'evaluateFunnelWithGemini',
+                model: modelName,
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            })
+        }
 
         if (responseData.candidates && responseData.candidates.length > 0) {
             const candidate = responseData.candidates[0]
@@ -111,15 +122,14 @@ export async function evaluateComparisonWithGemini(
     request: ComparisonEvaluationRequest,
     apiKey: string
 ): Promise<string | null> {
-    if (!apiKey || !apiKey.trim()) {
-        return null
-    }
+    const key = apiKey?.trim() || process.env.GEMINI_API_KEY
+    if (!key) return null
 
     try {
         const prompt = buildComparisonEvaluationPrompt(request.periods)
 
         const modelName = 'gemini-2.5-flash'
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`
         
         const payload = {
             contents: [
@@ -154,6 +164,17 @@ export async function evaluateComparisonWithGemini(
         }
 
         const responseData = await response.json()
+
+        const usage = responseData.usageMetadata
+        if (usage) {
+            logGeminiUsage({
+                function: 'evaluateComparisonWithGemini',
+                model: modelName,
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            })
+        }
 
         if (responseData.candidates && responseData.candidates.length > 0) {
             const candidate = responseData.candidates[0]

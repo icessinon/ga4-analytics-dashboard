@@ -228,7 +228,7 @@ export default function FunnelExecutionDetailPage() {
 
                     {(comparisonData.geminiEvaluation || execution.geminiEvaluation) && (
                         <div className={styles.card}>
-                            <h2 className={styles.cardTitle}>Gemini評価（期間比較分析）</h2>
+                            <h2 className={styles.cardTitle}>AI評価（期間比較分析）</h2>
                             <div className={styles.geminiContainer}>
                                 <p className={styles.geminiText}>
                                     {comparisonData.geminiEvaluation || execution.geminiEvaluation}
@@ -300,7 +300,7 @@ export default function FunnelExecutionDetailPage() {
 
                                 {(displaySingleData.geminiEvaluation || execution.geminiEvaluation) && (
                                     <div className={styles.card}>
-                                        <h2 className={styles.cardTitle}>Gemini評価</h2>
+                                        <h2 className={styles.cardTitle}>AI評価</h2>
                                         <div className={styles.geminiContainer}>
                                             <p className={styles.geminiText}>
                                                 {displaySingleData.geminiEvaluation || execution.geminiEvaluation}

@@ -2,6 +2,7 @@
  * トレンド分析用Gemini評価
  * 落ち込む月・いい月の傾向、多面的な考察を返す
  */
+import { logGeminiUsage } from './logger'
 
 export interface TrendAnalysisRequest {
     trendData: Array<{
@@ -87,12 +88,13 @@ export async function analyzeTrendWithGemini(
     request: TrendAnalysisRequest,
     apiKey: string
 ): Promise<string | null> {
-    if (!apiKey?.trim()) return null
+    const key = apiKey?.trim() || process.env.GEMINI_API_KEY
+    if (!key) return null
 
     try {
         const prompt = buildTrendAnalysisPrompt(request)
         const modelName = 'gemini-2.5-flash'
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`
 
         const response = await fetch(url, {
             method: 'POST',
@@ -115,8 +117,19 @@ export async function analyzeTrendWithGemini(
         }
 
         const data = await response.json()
-        const text =
-            data.candidates?.[0]?.content?.parts?.[0]?.text
+
+        const usage = data.usageMetadata
+        if (usage) {
+            logGeminiUsage({
+                function: 'analyzeTrendWithGemini',
+                model: modelName,
+                promptTokens: usage.promptTokenCount ?? 0,
+                completionTokens: usage.candidatesTokenCount ?? 0,
+                totalTokens: usage.totalTokenCount ?? 0,
+            })
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text
         return text ? String(text).trim() : null
     } catch (error) {
         console.error('Trend analysis Gemini error:', error)

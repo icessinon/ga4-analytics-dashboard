@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import BackLink from '@/components/BackLink'
 import { API_LIST } from './apiList'
 import type { ApiEndpoint, ApiParam } from './types'
@@ -104,6 +105,9 @@ export default function ApiDocsPage() {
                 ))}
             </div>
             <div className={styles.footer}>
+                <Link href="/docs/features" style={{ fontSize: '0.875rem', color: '#818cf8', textDecoration: 'none', marginRight: '1.5rem' }}>
+                    機能ドキュメントを見る →
+                </Link>
                 <BackLink href="/">ダッシュボードに戻る</BackLink>
             </div>
         </div>

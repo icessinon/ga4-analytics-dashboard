@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         )
 
         let aiEvaluation = null
-        if (geminiConfig?.enabled && geminiConfig?.apiKey) {
+        if (geminiConfig?.enabled) {
             aiEvaluation = await evaluateWithGemini(
                 {
                     evaluation,

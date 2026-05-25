@@ -1,0 +1,621 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+/* ── フォーム ── */
+.formSection {
+    background: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.presetRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.presetLabel {
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+.presetBtn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid #4b5563;
+    border-radius: 9999px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.presetBtn:hover {
+    border-color: #f97316;
+    color: #fb923c;
+}
+
+.presetBtnActive {
+    border-color: #f97316 !important;
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: #fb923c !important;
+}
+
+.formRow {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 160px;
+}
+
+.label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background: #111827;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #f97316;
+}
+
+.button {
+    padding: 0.5rem 1.5rem;
+    background: #f97316;
+    color: #fff;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    height: 38px;
+    transition: 0.2s;
+}
+
+.button:hover:not(:disabled) { background: #ea580c; }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── サマリー ── */
+.summaryRow {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.summaryCard {
+    flex: 1;
+    min-width: 140px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+}
+
+.summaryLabel {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.summaryValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    font-variant-numeric: tabular-nums;
+}
+
+.summaryHighlight { color: #f97316; }
+
+/* ── Sankey ── */
+.sankeySection {
+    background: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.sectionNote {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.sankeyWrap {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.sankeySvg {
+    width: 100%;
+    min-width: 600px;
+    display: block;
+}
+
+.flowPath {
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.flowPath:hover { opacity: 0.75 !important; }
+
+.nodeGroup { cursor: pointer; }
+
+/* ── Tooltip ── */
+.tooltip {
+    position: absolute;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    pointer-events: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    z-index: 10;
+    max-width: 260px;
+}
+
+.tooltipDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.tooltipTitle {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 2px;
+}
+
+.tooltipValue {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* ── ランキング ── */
+.rankingGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .rankingGrid { grid-template-columns: 1fr; }
+}
+
+.rankingCard {
+    background: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+}
+
+.rankingTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.rankingSubtitle {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.rankTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.rankTh {
+    text-align: left;
+    padding: 0.375rem 0.5rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 1px solid #374151;
+}
+
+.rankThNum {
+    text-align: right;
+    padding: 0.375rem 0.5rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.rankRow { border-bottom: 1px solid rgba(255,255,255,0.04); }
+.rankRow:hover td { background: rgba(255,255,255,0.03); }
+
+.rankTd {
+    padding: 0.5rem;
+    color: #e5e7eb;
+}
+
+.rankTdNum {
+    padding: 0.5rem;
+    text-align: right;
+    color: #d1d5db;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rankDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+    margin-right: 0.375rem;
+    vertical-align: middle;
+}
+
+/* ── デバイスフィルター ── */
+.deviceRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #374151;
+}
+
+.deviceBtn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid #4b5563;
+    border-radius: 9999px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.deviceBtn:hover:not(:disabled) {
+    border-color: #f97316;
+    color: #fb923c;
+}
+
+.deviceBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.deviceBtnActive {
+    border-color: #f97316 !important;
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: #fb923c !important;
+}
+
+/* ── チャネルフィルター ── */
+.channelBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.channelChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid #4b5563;
+    border-radius: 9999px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.channelChip:hover {
+    border-color: #6b7280;
+    color: #d1d5db;
+}
+
+.channelChipActive {
+    font-weight: 600;
+}
+
+.chipDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+/* ── 経路パターン ── */
+.pathSection {
+    background: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.pathSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.pathViewToggle {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.pathViewBtn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8125rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.pathViewBtn:hover { color: #9ca3af; border-color: #6b7280; }
+
+.pathViewBtnActive {
+    border-color: #6366f1 !important;
+    background: rgba(99,102,241,0.15) !important;
+    color: #818cf8 !important;
+}
+
+/* ── パスグループビュー ── */
+.pathGroupList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pathGroup {
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.pathGroupHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #111827;
+    border-bottom: 1px solid #374151;
+}
+
+.pathGroupChannel {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    flex: 1;
+}
+
+.pathGroupTotal {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-variant-numeric: tabular-nums;
+}
+
+.pathGroupRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.pathGroupRow:last-child { border-bottom: none; }
+.pathGroupRow:hover { background: rgba(255,255,255,0.02); }
+
+.pathGroupChain {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.pathGroupBar {
+    width: 80px;
+    height: 6px;
+    background: #1f2937;
+    border-radius: 9999px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #374151;
+}
+
+.pathGroupBarFill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s;
+}
+
+.pathGroupCount {
+    font-size: 0.8125rem;
+    color: #9ca3af;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.pathTableWrap {
+    overflow-x: auto;
+}
+
+.pathTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.pathTh {
+    text-align: left;
+    padding: 0.375rem 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.pathThNum {
+    text-align: right;
+    padding: 0.375rem 0.75rem;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.pathRow {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.pathRow:hover td {
+    background: rgba(255,255,255,0.03);
+}
+
+.pathTdRank {
+    padding: 0.5rem 0.75rem;
+    color: #6b7280;
+    font-size: 0.75rem;
+    width: 2rem;
+}
+
+.pathTd {
+    padding: 0.5rem 0.75rem;
+    color: #e5e7eb;
+    white-space: nowrap;
+}
+
+.pathTdNum {
+    padding: 0.5rem 0.75rem;
+    text-align: right;
+    color: #d1d5db;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.pathSteps {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.pathStep {
+    padding: 0.125rem 0.5rem;
+    border: 1px solid;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    background: rgba(255,255,255,0.03);
+}
+
+.pathArrow {
+    color: #4b5563;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* ── 共通 ── */
+.notice {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid #d97706;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fcd34d;
+    margin-bottom: 1rem;
+}
+
+.error {
+    background: rgba(185,28,28,0.15);
+    border: 1px solid #b91c1c;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fca5a5;
+    margin-bottom: 1rem;
+}
+
+.loaderContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 0;
+    gap: 1rem;
+}
+
+.loaderText {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
