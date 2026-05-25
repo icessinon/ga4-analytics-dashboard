@@ -35,12 +35,8 @@ services:
       retries: 5
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: app
-    image: ga4-analytics-dashboard:app
-    pull_policy: never
+    image: ghcr.io/xmile-inc/ga4-analytics-dashboard/app:latest
+    pull_policy: always
     container_name: ga4-dashboard-app
     restart: unless-stopped
     ports:
@@ -63,12 +59,8 @@ services:
         condition: service_healthy
 
   scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: scheduler
-    image: ga4-analytics-dashboard:scheduler
-    pull_policy: never
+    image: ghcr.io/xmile-inc/ga4-analytics-dashboard/scheduler:latest
+    pull_policy: always
     container_name: ga4-dashboard-scheduler
     restart: unless-stopped
     environment:
