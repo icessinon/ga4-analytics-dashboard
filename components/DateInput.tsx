@@ -9,9 +9,10 @@ interface DateInputProps {
     required?: boolean
     min?: string
     max?: string
+    id?: string
 }
 
-export default function DateInput({ value, onChange, className, required, min, max }: DateInputProps) {
+export default function DateInput({ value, onChange, className, required, min, max, id }: DateInputProps) {
     const ref = useRef<HTMLInputElement>(null)
 
     const handleClick = () => {
@@ -27,6 +28,7 @@ export default function DateInput({ value, onChange, className, required, min, m
             value={value}
             onChange={onChange}
             onClick={handleClick}
+            id={id}
             className={className}
             required={required}
             min={min}

@@ -1,0 +1,43 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Dockerイメージをビルド
+        run: |
+          docker build --target app      -t ga4-analytics-dashboard:app      .
+          docker build --target scheduler -t ga4-analytics-dashboard:scheduler .
+
+      - name: SSH鍵を設定
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: イメージをEC2へ転送
+        run: |
+          docker save ga4-analytics-dashboard:app ga4-analytics-dashboard:scheduler \
+            | gzip \
+            | ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+                "gunzip | docker load"
+
+      - name: EC2でgit pull・コンテナ再起動
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            set -e
+            cd /var/www/ga4-analytics-dashboard
+            git pull origin master
+            docker compose up -d
+            docker compose ps
+          "

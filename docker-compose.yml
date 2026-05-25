@@ -4,8 +4,9 @@ services:
     image: postgres:16-alpine
     container_name: ga4-dashboard-postgres
     restart: unless-stopped
-    ports:
-      - "5432:5432"
+    # 本番では外部公開不要。必要な場合のみコメントアウトを外す
+    # ports:
+    #   - "5432:5432"
     environment:
       POSTGRES_DB: ga4_dashboard
       POSTGRES_USER: postgres
@@ -22,8 +23,11 @@ services:
     image: redis:7-alpine
     container_name: ga4-dashboard-redis
     restart: unless-stopped
-    ports:
-      - "6380:6379"
+    # 本番では外部公開不要
+    # ports:
+    #   - "6380:6379"
+    # t4g.small（2GB）でのOOM防止: 100MB上限、古いキーから削除
+    command: ["redis-server", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -34,7 +38,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ga4-analytics-dashboard:latest
+      target: app
+    image: ga4-analytics-dashboard:app
     pull_policy: never
     container_name: ga4-dashboard-app
     restart: unless-stopped
@@ -48,9 +53,9 @@ services:
       INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     env_file:
       - .env
-    # GA4_SERVICE_ACCOUNT_KEY_PATH を使う場合: プロジェクト直下に service-account-key.json を置く
     volumes:
       - ./service-account-key.json:/app/service-account-key.json:ro
+      - logs_data:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,11 +66,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ga4-analytics-dashboard:latest
+      target: scheduler
+    image: ga4-analytics-dashboard:scheduler
     pull_policy: never
     container_name: ga4-dashboard-scheduler
     restart: unless-stopped
-    command: ["npx", "tsx", "workers/ab-test-scheduler.ts"]
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ga4_dashboard?schema=public
@@ -86,3 +91,4 @@ services:
 
 volumes:
   postgres_data:
+  logs_data:

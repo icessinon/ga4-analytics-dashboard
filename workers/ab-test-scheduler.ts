@@ -3,9 +3,9 @@ import { findAbTestsToExecute } from '@/lib/services/ab-test/scheduleService'
 
 /**
  * 定期的にDBをチェックして、実行すべきABテストを実行
- * 1分ごとにチェック（本番環境では5分間隔に変更推奨）
+ * 5分ごとにチェック
  */
-const cronExpression = '0 */1 * * * *'
+const cronExpression = '0 */5 * * * *'
 cron.schedule(cronExpression, async () => {
     try {
         const abTestIds = await findAbTestsToExecute()

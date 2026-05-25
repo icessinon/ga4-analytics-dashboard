@@ -86,3 +86,4 @@ services:
 volumes:
   postgres_data:
   app_node_modules:
+  logs_data:
