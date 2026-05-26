@@ -5,6 +5,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import DateInput from '@/components/DateInput'
 import Loader from '@/components/Loader'
 import BackLink from '@/components/BackLink'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './ExitPage.module.css'
 
 const ALL_STEPS = [
@@ -254,7 +255,7 @@ export default function ExitPage() {
                 <>
                     {/* ファネル離脱チャート */}
                     <div className={styles.funnelSection}>
-                        <p className={styles.sectionTitle}>ファネル離脱状況</p>
+                        <p className={styles.sectionTitle}>ファネル離脱状況<InfoTooltip text="各ステップのページを含むセッション数と、次ステップへの引き継ぎ率。脱落率 = (前ステップ − 当ステップ) ÷ 前ステップ。" direction="bottom" /></p>
                         <p className={styles.sectionNote}>
                             各ステップのセッション数と次ステップへの引き継ぎ率。色は緑＝良好 / 黄＝要注意 / 赤＝改善優先を示します。
                         </p>
@@ -318,10 +319,10 @@ export default function ExitPage() {
                                 <thead>
                                     <tr>
                                         <th className={styles.exitTh}>ページカテゴリ</th>
-                                        <th className={styles.exitThNum}>推定離脱数</th>
+                                        <th className={styles.exitThNum}>推定離脱数<InfoTooltip text="GA4のexitsメトリクス非対応のため、PV × (1 - エンゲージメント率) で推定した値。" direction="bottom" /></th>
                                         <th className={styles.exitThNum}>PV</th>
-                                        <th className={styles.exitThNum}>離脱傾向</th>
-                                        <th className={styles.exitThNum}>エンゲージメント率</th>
+                                        <th className={styles.exitThNum}>離脱傾向<InfoTooltip text="1 - エンゲージメント率で算出。高いほどエンゲージせずに離れるユーザーが多いことを示す。" direction="bottom" /></th>
+                                        <th className={styles.exitThNum}>エンゲージメント率<InfoTooltip text="このページへの訪問のうち、エンゲージドセッション（10秒以上 or 2PV以上 or CV）の割合。" direction="bottom" /></th>
                                     </tr>
                                 </thead>
                                 <tbody>

@@ -15,6 +15,7 @@ import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import AISpinner from '@/components/AISpinner/AISpinner'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './StickinessPage.module.css'
 
 interface DailyPoint { date: string; dau: number; wau: number; mau: number }
@@ -274,19 +275,19 @@ export default function StickinessPage() {
                     {!compare ? (
                         <div className={styles.summaryRow}>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>平均DAU</p>
+                                <p className={styles.summaryLabel}>平均DAU<InfoTooltip text="Daily Active Users（日次アクティブユーザー）の期間平均。毎日何人が利用しているかを示す。" direction="bottom" /></p>
                                 <p className={styles.summaryValue}>{current.avgDAU.toLocaleString()}</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>MAU（期間ユニーク）</p>
+                                <p className={styles.summaryLabel}>MAU（期間ユニーク）<InfoTooltip text="Monthly Active Users。対象期間内にサイトを訪れたユニークユーザーの総数。" direction="bottom" /></p>
                                 <p className={styles.summaryValue}>{current.totalMAU.toLocaleString()}</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>DAU/MAU スティッキネス</p>
+                                <p className={styles.summaryLabel}>DAU/MAU スティッキネス<InfoTooltip text="平均DAU ÷ MAU。ユーザーが月の何割の日数でサービスを使うかを示す。20%以上が高エンゲージメントの目安。" direction="bottom" /></p>
                                 <p className={styles.summaryHighlight}>{fmtPct(current.stickinessDAUMAU)}</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>平均セッション/ユーザー</p>
+                                <p className={styles.summaryLabel}>平均セッション/ユーザー<InfoTooltip text="1ユーザーあたりの平均セッション数（sessions ÷ activeUsers）。訪問頻度の高さを示す。" direction="bottom" /></p>
                                 <p className={styles.summaryValue}>{current.avgSessionsPerUser}</p>
                             </div>
                         </div>
@@ -294,15 +295,15 @@ export default function StickinessPage() {
                         /* 比較サマリーカード */
                         <div className={styles.compareSummaryGrid}>
                             {[
-                                { label: '平均DAU', a: current.avgDAU, b: compare.avgDAU, fmt: (n: number) => n.toLocaleString(), isHighlight: false },
-                                { label: 'MAU（期間ユニーク）', a: current.totalMAU, b: compare.totalMAU, fmt: (n: number) => n.toLocaleString(), isHighlight: false },
-                                { label: 'DAU/MAU スティッキネス', a: current.stickinessDAUMAU, b: compare.stickinessDAUMAU, fmt: fmtPct, isHighlight: true },
-                                { label: '平均セッション/ユーザー', a: current.avgSessionsPerUser, b: compare.avgSessionsPerUser, fmt: String, isHighlight: false },
-                            ].map(({ label, a, b, fmt, isHighlight }) => {
+                                { label: '平均DAU', tooltip: 'Daily Active Users（日次アクティブユーザー）の期間平均。', a: current.avgDAU, b: compare.avgDAU, fmt: (n: number) => n.toLocaleString(), isHighlight: false },
+                                { label: 'MAU（期間ユニーク）', tooltip: '対象期間内のユニークユーザー総数（Monthly Active Users）。', a: current.totalMAU, b: compare.totalMAU, fmt: (n: number) => n.toLocaleString(), isHighlight: false },
+                                { label: 'DAU/MAU スティッキネス', tooltip: '平均DAU ÷ MAU。月の何割の日数でサービスを使うかを示す。20%以上が高エンゲージメントの目安。', a: current.stickinessDAUMAU, b: compare.stickinessDAUMAU, fmt: fmtPct, isHighlight: true },
+                                { label: '平均セッション/ユーザー', tooltip: '1ユーザーあたりの平均セッション数（sessions ÷ activeUsers）。', a: current.avgSessionsPerUser, b: compare.avgSessionsPerUser, fmt: String, isHighlight: false },
+                            ].map(({ label, tooltip, a, b, fmt, isHighlight }) => {
                                 const d = delta(a, b, fmt)
                                 return (
                                     <div key={label} className={styles.compareCard}>
-                                        <p className={styles.summaryLabel}>{label}</p>
+                                        <p className={styles.summaryLabel}>{label}{tooltip && <InfoTooltip text={tooltip} direction="bottom" />}</p>
                                         <div className={styles.compareCardRow}>
                                             <div>
                                                 <span className={styles.comparePeriodBadge} style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>期間A</span>

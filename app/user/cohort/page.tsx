@@ -5,6 +5,7 @@ import DateInput from '@/components/DateInput'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './CohortPage.module.css'
 
 interface WeekData {
@@ -174,7 +175,7 @@ export default function CohortPage() {
             {cohorts && !loading && (
                 <div className={styles.section}>
                     <div className={styles.resultHeader}>
-                        <p className={styles.resultTitle}>リテンションマトリクス（週次）</p>
+                        <p className={styles.resultTitle}>リテンションマトリクス（週次）<InfoTooltip text="初回訪問週（コホート）ごとに、その後の週にどれだけのユーザーが戻ってきたかを示す。Week 0 = 初回訪問週（100%固定）。" direction="bottom" /></p>
                         <p className={styles.resultMeta}>{cohorts.length} コホート</p>
                     </div>
 

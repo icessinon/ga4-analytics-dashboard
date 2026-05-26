@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import type { ReportDetail } from './types'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './ReportDetailPage.module.css'
 
 export default function ReportDetailPage() {
@@ -207,7 +208,7 @@ export default function ReportDetailPage() {
                                 <div className={styles.evaluationSection}>
                                     <div className={styles.evaluationGrid}>
                                         <div>
-                                            <p className={styles.evaluationLabel}>統計的有意差</p>
+                                            <p className={styles.evaluationLabel}>統計的有意差<InfoTooltip text="Z検定による有意差検定。信頼水準95%（Z値≥1.96）を超えると「有意差あり」と判定。CVRの差が偶然ではない可能性を示す。" /></p>
                                             <p className={styles.evaluationValue}>
                                                 {abTestEvaluation.checks.significance?.passed ? '✅' : '❌'}{' '}
                                                 {abTestEvaluation.checks.significance?.value !== undefined
@@ -221,7 +222,7 @@ export default function ReportDetailPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <p className={styles.evaluationLabel}>サンプルサイズ（最低PV数）</p>
+                                            <p className={styles.evaluationLabel}>サンプルサイズ（最低PV数）<InfoTooltip text="統計的に信頼できる結果を得るために必要な最低PV数。両バリアントが基準を満たしていると✅となる。" /></p>
                                             <p className={styles.evaluationValue}>
                                                 {abTestEvaluation.checks.sampleSize?.passed ? '✅' : '❌'}{' '}
                                                 {(() => {
@@ -263,7 +264,7 @@ export default function ReportDetailPage() {
                                             )}
                                         </div>
                                         <div>
-                                            <p className={styles.evaluationLabel}>改善率</p>
+                                            <p className={styles.evaluationLabel}>改善率<InfoTooltip text="(バリアントB CVR − A CVR) ÷ A CVR × 100。バリアントBがAより何%CVRが改善しているかを示す。" /></p>
                                             <p className={styles.evaluationValue}>
                                                 {abTestEvaluation.checks.improvement?.passed ? '✅' : '❌'}{' '}
                                                 {abTestEvaluation.checks.improvement?.improvementRate !== undefined

@@ -12,6 +12,7 @@ import type { ChartMetric, DashboardStats, PageMetrics, PageMetricsSeriesPoint, 
 import { CV_DIMENSION_OPTIONS, QUICK_ACCESS_GROUPS } from '@/app/dashboard/types'
 import { getChartPeriodLabel, getMonthOptions, getRangeForGranularity, periodToTimestamp } from '@/app/dashboard/utils'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './DashboardPage.module.css'
 
 export default function DashboardPage() {
@@ -614,7 +615,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('pv') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>PV</h3>
+                                        <h3 className={styles.statTitle}>PV<InfoTooltip text="ページビュー数。ユーザーがページを閲覧した総回数（リロード含む）。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueBlue}`}>
                                             {pageMetrics.pv.toLocaleString()}
                                         </p>
@@ -631,7 +632,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('cv') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>CV</h3>
+                                        <h3 className={styles.statTitle}>CV<InfoTooltip text="コンバージョン数。設定したCVイベント（応募・会員登録など）が発生した回数。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueGreen}`}>
                                             {pageMetrics.cv.toLocaleString()}
                                         </p>
@@ -648,7 +649,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('cvr') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>CVR</h3>
+                                        <h3 className={styles.statTitle}>CVR<InfoTooltip text="コンバージョン率（CV ÷ PV × 100）。このページを見たユーザーのうちCVした割合。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValuePurple}`}>
                                             {pageMetrics.cvr.toFixed(2)}%
                                         </p>
@@ -665,7 +666,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('exitRate') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>離脱率</h3>
+                                        <h3 className={styles.statTitle}>離脱率<InfoTooltip text="このページからサイトを離れた割合（exits ÷ pageViews）。数値が低いほど良好。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValuePink}`}>
                                             {pageMetrics.exitRate != null ? `${pageMetrics.exitRate.toFixed(2)}%` : '—'}
                                         </p>
@@ -682,7 +683,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('newUserRate') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>新規訪問率</h3>
+                                        <h3 className={styles.statTitle}>新規訪問率<InfoTooltip text="このページを訪れたユーザーのうち、初回訪問ユーザーの割合（newUsers ÷ activeUsers）。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueCyan}`}>
                                             {pageMetrics.newUserRate.toFixed(2)}%
                                         </p>
@@ -699,7 +700,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('bounceCount') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>直帰数</h3>
+                                        <h3 className={styles.statTitle}>直帰数<InfoTooltip text="このページ1ページのみ閲覧してサイトを離れたセッション数。直帰率ではなく実数値。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueOrange}`}>
                                             {pageMetrics.bounceCount.toLocaleString()}
                                         </p>
@@ -716,7 +717,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('averageSessionDuration') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>平均滞在時間</h3>
+                                        <h3 className={styles.statTitle}>平均滞在時間<InfoTooltip text="1セッションあたりの平均滞在時間（averageSessionDuration）。GA4は離脱ページの滞在時間は計測されない。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueCyan}`}>
                                             {pageMetrics.averageSessionDurationLabel}
                                         </p>
@@ -733,7 +734,7 @@ export default function DashboardPage() {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('engagementRate') } }}
                                 >
                                     <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>エンゲージメント率</h3>
+                                        <h3 className={styles.statTitle}>エンゲージメント率<InfoTooltip text="エンゲージドセッション ÷ 全セッション。エンゲージドセッション＝10秒以上滞在 or 2ページ以上閲覧 or CVが発生したセッション。" /></h3>
                                         <p className={`${styles.statValue} ${styles.statValueGreen}`}>
                                             {pageMetrics.engagementRate.toFixed(2)}%
                                         </p>

@@ -6,6 +6,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import DateInput from '@/components/DateInput'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './SegmentBuilderPage.module.css'
 
 interface Condition {
@@ -326,12 +327,13 @@ export default function SegmentBuilderPage() {
                                 <span className={styles.coverageLabel}>
                                     全体の <strong>{((total.activeUsers / siteTotalUsers) * 100).toFixed(1)}%</strong>
                                     &nbsp;（全ユーザー {siteTotalUsers.toLocaleString()} 人中 {total.activeUsers.toLocaleString()} 人）
+                                    <InfoTooltip text="条件なし（全ユーザー）クエリとの比較。セグメントのアクティブユーザー ÷ サイト全体のアクティブユーザーで算出。" direction="bottom" />
                                 </span>
                             </div>
                         )}
                         <div className={styles.summaryGrid}>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>ユーザー数</p>
+                                <p className={styles.summaryLabel}>ユーザー数<InfoTooltip text="条件に一致したアクティブユーザー数（GA4: activeUsers）。" /></p>
                                 <p className={styles.summaryValue}>{total.activeUsers.toLocaleString()}</p>
                                 {siteTotalUsers !== null && siteTotalUsers > 0 && (
                                     <p className={styles.summaryMeta}>
@@ -340,7 +342,7 @@ export default function SegmentBuilderPage() {
                                 )}
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>新規ユーザー</p>
+                                <p className={styles.summaryLabel}>新規ユーザー<InfoTooltip text="対象期間内に初めてサイトを訪問したユーザー数。括弧内はユーザー数に占める割合。" /></p>
                                 <p className={styles.summaryValue}>{total.newUsers.toLocaleString()}</p>
                                 <p className={styles.summaryMeta}>
                                     {total.activeUsers > 0 ? `${((total.newUsers / total.activeUsers) * 100).toFixed(1)}%` : '-'}
@@ -355,21 +357,21 @@ export default function SegmentBuilderPage() {
                                 <p className={styles.summaryValue}>{total.pageViews.toLocaleString()}</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>PV/セッション</p>
+                                <p className={styles.summaryLabel}>PV/セッション<InfoTooltip text="1セッションあたりの平均ページビュー数（pageViews ÷ sessions）。コンテンツの回遊度を示す指標。" /></p>
                                 <p className={styles.summaryValue}>
                                     {total.sessions > 0 ? (total.pageViews / total.sessions).toFixed(1) : '-'}
                                 </p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>平均滞在時間</p>
+                                <p className={styles.summaryLabel}>平均滞在時間<InfoTooltip text="1セッションあたりの平均滞在時間（GA4: averageSessionDuration）。最後のページの時間は含まれない。" /></p>
                                 <p className={styles.summaryValue}>{formatDuration(total.avgSessionDuration)}</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>エンゲージメント率</p>
+                                <p className={styles.summaryLabel}>エンゲージメント率<InfoTooltip text="エンゲージドセッション ÷ 全セッション。10秒以上滞在 or 2PV以上 or CV発生したセッションを「エンゲージド」とみなす。" /></p>
                                 <p className={styles.summaryValue}>{(total.engagementRate * 100).toFixed(1)}%</p>
                             </div>
                             <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>直帰率</p>
+                                <p className={styles.summaryLabel}>直帰率<InfoTooltip text="1ページのみ閲覧してサイトを離れたセッションの割合。GA4の直帰率＝エンゲージメントしなかったセッション ÷ 全セッション。" /></p>
                                 <p className={styles.summaryValue}>{(total.bounceRate * 100).toFixed(1)}%</p>
                             </div>
                         </div>

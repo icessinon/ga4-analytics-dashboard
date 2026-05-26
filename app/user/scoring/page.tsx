@@ -5,6 +5,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import AISpinner from '@/components/AISpinner/AISpinner'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './ScoringPage.module.css'
 
 interface ScoreBreakdown {
@@ -274,12 +275,12 @@ export default function ScoringPage() {
                                         <tr>
                                             <th className={styles.thLabel}>セグメント</th>
                                             <th className={styles.thCenter}>ランク</th>
-                                            <th className={styles.thNum}>スコア</th>
+                                            <th className={styles.thNum}>スコア<InfoTooltip text="0〜100点のスコア。直近性・頻度・熱量・深度の4指標（各25点）を合算して算出。" direction="bottom" /></th>
                                             <th className={styles.thNum}>ユーザー数</th>
-                                            <th className={styles.thNum}>直近7日比</th>
-                                            <th className={styles.thNum}>セッション/人</th>
-                                            <th className={styles.thNum}>PV/セッション</th>
-                                            <th className={styles.thNum}>EG率</th>
+                                            <th className={styles.thNum}>直近7日比<InfoTooltip text="全期間ユーザーのうち直近7日以内に訪問したユーザーの割合（Recency指標の元データ）。" direction="bottom" /></th>
+                                            <th className={styles.thNum}>セッション/人<InfoTooltip text="1ユーザーあたりの平均セッション数（sessions ÷ activeUsers）。訪問頻度の指標（Frequency）。" direction="bottom" /></th>
+                                            <th className={styles.thNum}>PV/セッション<InfoTooltip text="1セッションあたりの平均ページビュー数。コンテンツ回遊の深さを示す（Depth指標）。" direction="bottom" /></th>
+                                            <th className={styles.thNum}>EG率<InfoTooltip text="エンゲージメント率（engagedSessions ÷ sessions）。熱量を示す指標（Engagement）。" direction="bottom" /></th>
                                             <th className={styles.thCenter}>詳細</th>
                                         </tr>
                                     </thead>
@@ -327,25 +328,25 @@ export default function ScoringPage() {
                                                             <td colSpan={9} className={styles.detailCell}>
                                                                 <div className={styles.detailGrid}>
                                                                     <div className={styles.detailItem}>
-                                                                        <p className={styles.detailLabel}>直近性（Recency）</p>
+                                                                        <p className={styles.detailLabel}>直近性（Recency）<InfoTooltip text="直近7日以内に来訪したユーザーの比率が高いほど高得点。最大25点。" /></p>
                                                                         <ScoreBar value={seg.scores.recency} color="#818cf8" />
                                                                         <p className={styles.detailScore}>{seg.scores.recency} / 25点</p>
                                                                         <p className={styles.detailNote}>直近7日のユーザー比率: {(seg.recentUserRatio * 100).toFixed(1)}%</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
-                                                                        <p className={styles.detailLabel}>頻度（Frequency）</p>
+                                                                        <p className={styles.detailLabel}>頻度（Frequency）<InfoTooltip text="セッション数 ÷ ユーザー数（訪問頻度）が高いほど高得点。最大25点。" /></p>
                                                                         <ScoreBar value={seg.scores.frequency} color="#34d399" />
                                                                         <p className={styles.detailScore}>{seg.scores.frequency} / 25点</p>
                                                                         <p className={styles.detailNote}>セッション/人: {seg.sessionsPerUser.toFixed(2)}</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
-                                                                        <p className={styles.detailLabel}>熱量（Engagement）</p>
+                                                                        <p className={styles.detailLabel}>熱量（Engagement）<InfoTooltip text="エンゲージメント率（エンゲージドセッション ÷ 全セッション）が高いほど高得点。最大25点。" /></p>
                                                                         <ScoreBar value={seg.scores.engagement} color="#fbbf24" />
                                                                         <p className={styles.detailScore}>{seg.scores.engagement} / 25点</p>
                                                                         <p className={styles.detailNote}>エンゲージメント率: {(seg.engagementRate * 100).toFixed(1)}%</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
-                                                                        <p className={styles.detailLabel}>深度（Depth）</p>
+                                                                        <p className={styles.detailLabel}>深度（Depth）<InfoTooltip text="PV ÷ セッション数（1セッションで何ページ閲覧するか）が高いほど高得点。最大25点。" /></p>
                                                                         <ScoreBar value={seg.scores.depth} color="#f87171" />
                                                                         <p className={styles.detailScore}>{seg.scores.depth} / 25点</p>
                                                                         <p className={styles.detailNote}>PV/セッション: {seg.pvPerSession.toFixed(2)}</p>

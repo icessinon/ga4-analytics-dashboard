@@ -9,6 +9,7 @@ import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import AISpinner from '@/components/AISpinner/AISpinner'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './InsightsPage.module.css'
 
 interface MonthMetrics {
@@ -110,12 +111,12 @@ export default function InsightsPage() {
     }
 
     const METRICS = data ? [
-        { label: 'アクティブユーザー', current: data.current.activeUsers.toLocaleString(), prev: data.previous.activeUsers.toLocaleString(), delta: pctDiff(data.current.activeUsers, data.previous.activeUsers) },
-        { label: '新規ユーザー', current: data.current.newUsers.toLocaleString(), prev: data.previous.newUsers.toLocaleString(), delta: pctDiff(data.current.newUsers, data.previous.newUsers) },
-        { label: 'セッション数', current: data.current.sessions.toLocaleString(), prev: data.previous.sessions.toLocaleString(), delta: pctDiff(data.current.sessions, data.previous.sessions) },
-        { label: 'エンゲージメント率', current: `${(data.current.engagementRate * 100).toFixed(1)}%`, prev: `${(data.previous.engagementRate * 100).toFixed(1)}%`, delta: pctDiff(data.current.engagementRate, data.previous.engagementRate) },
-        { label: '平均セッション時間', current: fmtSec(data.current.avgSessionDuration), prev: fmtSec(data.previous.avgSessionDuration), delta: pctDiff(data.current.avgSessionDuration, data.previous.avgSessionDuration) },
-        { label: 'ページビュー', current: data.current.screenPageViews.toLocaleString(), prev: data.previous.screenPageViews.toLocaleString(), delta: pctDiff(data.current.screenPageViews, data.previous.screenPageViews) },
+        { label: 'アクティブユーザー', tooltip: 'GA4の activeUsers。対象期間内にサイトを1回以上訪問したユニークユーザー数。', current: data.current.activeUsers.toLocaleString(), prev: data.previous.activeUsers.toLocaleString(), delta: pctDiff(data.current.activeUsers, data.previous.activeUsers) },
+        { label: '新規ユーザー', tooltip: '対象期間内に初めてサイトを訪問したユーザー数（GA4のクッキー/Googleシグナル基準）。', current: data.current.newUsers.toLocaleString(), prev: data.previous.newUsers.toLocaleString(), delta: pctDiff(data.current.newUsers, data.previous.newUsers) },
+        { label: 'セッション数', tooltip: 'ユーザーがサイトを訪問した回数。30分操作がないと新しいセッションとなる。', current: data.current.sessions.toLocaleString(), prev: data.previous.sessions.toLocaleString(), delta: pctDiff(data.current.sessions, data.previous.sessions) },
+        { label: 'エンゲージメント率', tooltip: 'エンゲージドセッション ÷ 全セッション。エンゲージドセッション＝10秒以上滞在 or 2PV以上 or CVが発生したセッション。', current: `${(data.current.engagementRate * 100).toFixed(1)}%`, prev: `${(data.previous.engagementRate * 100).toFixed(1)}%`, delta: pctDiff(data.current.engagementRate, data.previous.engagementRate) },
+        { label: '平均セッション時間', tooltip: '1セッションあたりの平均滞在時間。GA4では最後のページの滞在時間は含まれないため実態より短く出る傾向がある。', current: fmtSec(data.current.avgSessionDuration), prev: fmtSec(data.previous.avgSessionDuration), delta: pctDiff(data.current.avgSessionDuration, data.previous.avgSessionDuration) },
+        { label: 'ページビュー', tooltip: 'GA4の screenPageViews。ページが表示された総回数（同一ユーザーの複数回閲覧・リロードを含む）。', current: data.current.screenPageViews.toLocaleString(), prev: data.previous.screenPageViews.toLocaleString(), delta: pctDiff(data.current.screenPageViews, data.previous.screenPageViews) },
     ] : []
 
     // 週次比較チャートデータ
@@ -188,9 +189,9 @@ export default function InsightsPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {METRICS.map(({ label, current, prev, delta }) => (
+                                    {METRICS.map(({ label, tooltip, current, prev, delta }) => (
                                         <tr key={label} className={styles.tr}>
-                                            <td className={styles.td}>{label}</td>
+                                            <td className={styles.td}>{label}{tooltip && <InfoTooltip text={tooltip} />}</td>
                                             <td className={styles.tdNum} style={{ color: '#f3f4f6', fontWeight: 600 }}>{current}</td>
                                             <td className={styles.tdNum} style={{ color: '#9ca3af' }}>{prev}</td>
                                             <td className={styles.tdNum}>
