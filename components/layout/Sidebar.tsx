@@ -37,7 +37,7 @@ export default function Sidebar() {
         const hrefPath = href.split('?')[0]
         if (hrefPath === '/') return pathname === '/'
         const path = pathname.split('?')[0]
-        return path === hrefPath || (path.startsWith(hrefPath + '/'))
+        return path === hrefPath
     }
 
     return (

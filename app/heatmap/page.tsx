@@ -15,7 +15,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts'
-import type { ViewLabelRow } from './types'
+import type { ViewLabelRow, ViewLabelsByDevice } from './types'
 import styles from './HeatmapPage.module.css'
 
 function fmtLocal(d: Date): string {
@@ -32,21 +32,73 @@ function getDefaultDates() {
 }
 
 const HEAT_COLORS = [
-    '#dbeafe', // 50
-    '#93c5fd', // 300
-    '#3b82f6', // 500
-    '#1d4ed8', // 700
-    '#1e3a8a', // 900
+    '#dbeafe',
+    '#93c5fd',
+    '#3b82f6',
+    '#1d4ed8',
+    '#1e3a8a',
 ]
 
 function getHeatColor(value: number, max: number): string {
     if (max <= 0) return HEAT_COLORS[0]
     const ratio = value / max
-    const idx = Math.min(
-        Math.floor(ratio * (HEAT_COLORS.length - 1)),
-        HEAT_COLORS.length - 1
-    )
+    const idx = Math.min(Math.floor(ratio * (HEAT_COLORS.length - 1)), HEAT_COLORS.length - 1)
     return HEAT_COLORS[idx] ?? HEAT_COLORS[0]
+}
+
+function DeviceChart({ title, rows, badge }: { title: string; rows: ViewLabelRow[]; badge?: string }) {
+    const maxCount = rows.length > 0 ? Math.max(...rows.map((r) => r.count)) : 0
+    return (
+        <div className={styles.deviceChart}>
+            <div className={styles.deviceChartHeader}>
+                <h3 className={styles.deviceChartTitle}>{title}</h3>
+                {badge && <span className={styles.deviceBadge}>{badge}</span>}
+                <span className={styles.deviceTotal}>{rows.length} ラベル</span>
+            </div>
+            {rows.length === 0 ? (
+                <p className={styles.emptyText}>データなし</p>
+            ) : (
+                <div className={styles.chartWrap}>
+                    <ResponsiveContainer width="100%" height={Math.max(260, rows.length * 30)}>
+                        <BarChart
+                            data={rows}
+                            layout="vertical"
+                            margin={{ top: 4, right: 20, left: 8, bottom: 4 }}
+                        >
+                            <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+                            <YAxis
+                                type="category"
+                                dataKey="viewLabel"
+                                width={160}
+                                tick={{ fontSize: 11, fill: '#d1d5db' }}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(v) => (String(v).length > 22 ? String(v).slice(0, 19) + '...' : v)}
+                            />
+                            <Tooltip
+                                formatter={(value: number) => [value.toLocaleString(), 'イベント数']}
+                                labelFormatter={(label) => `${label}`}
+                                cursor={{ fill: 'rgba(255,255,255,0.08)' }}
+                                contentStyle={{
+                                    backgroundColor: '#1f2937',
+                                    border: '1px solid #4b5563',
+                                    borderRadius: '0.375rem',
+                                    fontSize: '12px',
+                                }}
+                                labelStyle={{ color: '#f3f4f6', fontWeight: 600 }}
+                                itemStyle={{ color: '#d1d5db' }}
+                            />
+                            <Bar dataKey="count" radius={[0, 3, 3, 0]} isAnimationActive={false}>
+                                {rows.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={getHeatColor(entry.count, maxCount)} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+        </div>
+    )
 }
 
 export default function HeatmapPage() {
@@ -57,7 +109,7 @@ export default function HeatmapPage() {
     const [pagePaths, setPagePaths] = useState<string[]>([])
     const [pagePathsLoading, setPagePathsLoading] = useState(false)
     const [pagePath, setPagePath] = useState('')
-    const [data, setData] = useState<ViewLabelRow[] | null>(null)
+    const [data, setData] = useState<ViewLabelsByDevice | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -69,34 +121,28 @@ export default function HeatmapPage() {
         }
         let cancelled = false
         setPagePathsLoading(true)
-        fetch('/api/funnel/engagement/page-paths', {
+        fetch('/api/heatmap/page-paths', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                propertyId: currentProduct.ga4PropertyId,
+                productId: currentProduct.id,
                 startDate,
                 endDate,
                 accessToken: accessToken.trim() || undefined,
             }),
         })
             .then((r) => r.json())
-            .then((data) => {
+            .then((d) => {
                 if (cancelled) return
-                const paths = data.pagePaths ?? []
+                const paths = d.pagePaths ?? []
                 setPagePaths(paths)
                 if (paths.length && !paths.includes(pagePath)) {
                     setPagePath(paths.includes('/') ? '/' : paths[0] ?? '')
                 }
             })
-            .catch(() => {
-                if (!cancelled) setPagePaths([])
-            })
-            .finally(() => {
-                if (!cancelled) setPagePathsLoading(false)
-            })
-        return () => {
-            cancelled = true
-        }
+            .catch(() => { if (!cancelled) setPagePaths([]) })
+            .finally(() => { if (!cancelled) setPagePathsLoading(false) })
+        return () => { cancelled = true }
     }, [currentProduct?.id, currentProduct?.ga4PropertyId, startDate, endDate, accessToken])
 
     const handleFetch = async () => {
@@ -120,13 +166,11 @@ export default function HeatmapPage() {
                 }),
             })
             const json = await res.json()
-            if (!res.ok) {
-                throw new Error(json.error || json.message || '取得に失敗しました')
-            }
-            if (json.success && Array.isArray(json.data)) {
-                setData(json.data)
+            if (!res.ok) throw new Error(json.error || json.message || '取得に失敗しました')
+            if (json.success && json.byDevice) {
+                setData(json.byDevice)
             } else {
-                setData([])
+                setData({ mobile: [], desktop: [], tablet: [] })
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : '取得に失敗しました')
@@ -134,8 +178,6 @@ export default function HeatmapPage() {
             setLoading(false)
         }
     }
-
-    const maxCount = data && data.length > 0 ? Math.max(...data.map((r) => r.count)) : 0
 
     return (
         <div className={styles.container}>
@@ -159,31 +201,15 @@ export default function HeatmapPage() {
                             <span className={styles.value}>{currentProduct.name}</span>
                         </div>
                         <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-start">
-                                開始日
-                            </label>
-                            <DateInput
-                                id="heatmap-start"
-                                className={styles.input}
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
+                            <label className={styles.label} htmlFor="heatmap-start">開始日</label>
+                            <DateInput id="heatmap-start" className={styles.input} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         </div>
                         <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-end">
-                                終了日
-                            </label>
-                            <DateInput
-                                id="heatmap-end"
-                                className={styles.input}
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
+                            <label className={styles.label} htmlFor="heatmap-end">終了日</label>
+                            <DateInput id="heatmap-end" className={styles.input} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                         </div>
                         <div className={styles.formRow}>
-                            <label className={styles.label} id="heatmap-pagepath-label">
-                                ページパス（任意）
-                            </label>
+                            <label className={styles.label} id="heatmap-pagepath-label">ページパス（任意）</label>
                             <CustomSelect
                                 value={
                                     pagePath === '' || (pagePaths.length > 0 && pagePaths.includes(pagePath))
@@ -195,12 +221,12 @@ export default function HeatmapPage() {
                                     pagePathsLoading
                                         ? [{ value: '', label: '取得中...' }]
                                         : [
-                                                { value: '', label: '指定しない（全体）' },
-                                                ...pagePaths.map((path) => ({
-                                                    value: path,
-                                                    label: path === '/' ? '/' : path.length > 60 ? path.slice(0, 57) + '...' : path,
-                                                })),
-                                            ]
+                                            { value: '', label: '指定しない（全体）' },
+                                            ...pagePaths.map((path) => ({
+                                                value: path,
+                                                label: path === '/' ? '/' : path.length > 60 ? path.slice(0, 57) + '...' : path,
+                                            })),
+                                        ]
                                 }
                                 triggerClassName={styles.select}
                                 disabled={pagePathsLoading}
@@ -209,9 +235,7 @@ export default function HeatmapPage() {
                             />
                         </div>
                         <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-token">
-                                GA4 アクセストークン（任意）
-                            </label>
+                            <label className={styles.label} htmlFor="heatmap-token">GA4 アクセストークン（任意）</label>
                             <input
                                 id="heatmap-token"
                                 type="password"
@@ -222,75 +246,26 @@ export default function HeatmapPage() {
                             />
                         </div>
                         <div className={styles.formActions}>
-                            <button
-                                type="button"
-                                className={styles.submitButton}
-                                onClick={handleFetch}
-                                disabled={loading}
-                            >
+                            <button type="button" className={styles.submitButton} onClick={handleFetch} disabled={loading}>
                                 {loading ? '取得中...' : 'view ラベルを取得'}
                             </button>
                         </div>
                     </div>
 
-                    {loading && (
-                        <div className={styles.loaderWrap}>
-                            <Loader />
-                        </div>
-                    )}
+                    {loading && <div className={styles.loaderWrap}><Loader /></div>}
 
-                    {error && (
-                        <div className={styles.errorCard}>
-                            <p className={styles.errorText}>{error}</p>
-                        </div>
-                    )}
+                    {error && <div className={styles.errorCard}><p className={styles.errorText}>{error}</p></div>}
 
                     {!loading && data && (
                         <div className={styles.resultCard}>
-                            <h2 className={styles.resultTitle}>view ラベル別イベント数（上＝ページ上部に近い想定）</h2>
-                            {data.length === 0 ? (
-                                <p className={styles.emptyText}>
-                                    該当期間に view_label のイベントがありません。サイトで view ラベルが送信されているか確認してください。
-                                </p>
-                            ) : (
-                                <div className={styles.chartWrap}>
-                                    <ResponsiveContainer width="100%" height={Math.max(300, data.length * 32)}>
-                                        <BarChart
-                                            data={data}
-                                            layout="vertical"
-                                            margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
-                                        >
-                                            <XAxis type="number" tick={{ fontSize: 12, fill: '#ffffff' }} />
-                                            <YAxis
-                                                type="category"
-                                                dataKey="viewLabel"
-                                                width={180}
-                                                tick={{ fontSize: 12, fill: '#ffffff' }}
-                                                tickFormatter={(v) => (String(v).length > 24 ? String(v).slice(0, 21) + '...' : v)}
-                                            />
-                                            <Tooltip
-                                                formatter={(value: number) => [value.toLocaleString(), 'イベント数']}
-                                                labelFormatter={(label) => `view ラベル: ${label}`}
-                                                cursor={{ fill: 'rgba(255,255,255,0.12)' }}
-                                                contentStyle={{
-                                                    backgroundColor: '#1f2937',
-                                                    border: '1px solid #4b5563',
-                                                    borderRadius: '0.375rem',
-                                                }}
-                                                labelStyle={{ color: '#ffffff' }}
-                                            />
-                                            <Bar dataKey="count" radius={[0, 4, 4, 0]} isAnimationActive={false}>
-                                                {data.map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={getHeatColor(entry.count, maxCount)}
-                                                    />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            )}
+                            <h2 className={styles.resultTitle}>view ラベル別イベント数（デバイス別）</h2>
+                            <div className={styles.chartsGrid}>
+                                <DeviceChart title="SP" rows={data.mobile} badge="mobile" />
+                                <DeviceChart title="PC" rows={data.desktop} badge="desktop" />
+                                {data.tablet.length > 0 && (
+                                    <DeviceChart title="タブレット" rows={data.tablet} badge="tablet" />
+                                )}
+                            </div>
                         </div>
                     )}
                 </>

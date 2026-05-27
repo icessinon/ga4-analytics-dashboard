@@ -64,9 +64,6 @@ export async function POST(request: Request) {
             accessToken
         )
 
-        console.log('[Cohort] rows:', report.rows?.length ?? 0)
-        console.log('[Cohort] sample:', JSON.stringify(report.rows?.slice(0, 2)))
-
         // cohortMonday(Date) → { label, weekStart, weeks: Map<relativeWeek, users> }
         type CohortEntry = {
             label: string

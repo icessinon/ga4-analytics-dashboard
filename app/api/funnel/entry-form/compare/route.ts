@@ -27,36 +27,28 @@ export async function POST(request: Request) {
 
         const accessToken = await getGA4AccessToken(customToken)
 
-        const comparisonResults = []
-        const parsedPeriods = []
-
-        for (let index = 0; index < periods.length; index++) {
-            const period = periods[index]
-            const parsedStartDate = parseDateString(period.startDate)
-            const parsedEndDate = parseDateString(period.endDate)
-
-            const funnelData = await fetchEntryFormFunnelData(
-                propertyId,
-                funnelConfig,
-                filterConfig,
-                period.startDate,
-                period.endDate,
-                accessToken
-            )
-
-            parsedPeriods.push({
-                label: period.label || `${parsedStartDate} - ${parsedEndDate}`,
-                startDate: parsedStartDate,
-                endDate: parsedEndDate,
+        const comparisonResults = await Promise.all(
+            periods.map(async (period: { startDate: string; endDate: string; label?: string }) => {
+                const parsedStartDate = parseDateString(period.startDate)
+                const parsedEndDate = parseDateString(period.endDate)
+                const funnelData = await fetchEntryFormFunnelData(
+                    propertyId,
+                    funnelConfig,
+                    filterConfig,
+                    period.startDate,
+                    period.endDate,
+                    accessToken
+                )
+                const label = period.label || `${parsedStartDate} - ${parsedEndDate}`
+                return { label, startDate: parsedStartDate, endDate: parsedEndDate, data: funnelData }
             })
+        )
 
-            comparisonResults.push({
-                label: period.label || `${parsedStartDate} - ${parsedEndDate}`,
-                startDate: parsedStartDate,
-                endDate: parsedEndDate,
-                data: funnelData,
-            })
-        }
+        const parsedPeriods = comparisonResults.map((r) => ({
+            label: r.label,
+            startDate: r.startDate,
+            endDate: r.endDate,
+        }))
 
         if (comparisonResults.length < 2) {
             return NextResponse.json(

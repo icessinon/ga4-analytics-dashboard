@@ -18,13 +18,19 @@ import {
 export type { EngagementFunnelData, EngagementFunnelRow, EngagementMilestone, EngagementMilestoneData }
 export { ENGAGEMENT_MILESTONES }
 
+const timeLabelDimensionCache = new Map<string, 'customEvent:data_time_label' | 'customEvent:view_label'>()
+
 /**
  * data_time_label が利用可能かテスト（GASと同様に1件だけ取得）
+ * propertyId ごとにキャッシュし、毎リクエストの余分な GA4 呼び出しを排除する
  */
 async function detectTimeLabelDimension(
     propertyId: string,
     accessToken: string
 ): Promise<'customEvent:data_time_label' | 'customEvent:view_label'> {
+    const cached = timeLabelDimensionCache.get(propertyId)
+    if (cached) return cached
+
     try {
         await fetchGA4Data(
             {
@@ -36,8 +42,10 @@ async function detectTimeLabelDimension(
             },
             accessToken
         )
+        timeLabelDimensionCache.set(propertyId, 'customEvent:data_time_label')
         return 'customEvent:data_time_label'
     } catch {
+        timeLabelDimensionCache.set(propertyId, 'customEvent:view_label')
         return 'customEvent:view_label'
     }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import DateInput from '@/components/DateInput'
 import Link from '@/components/Link'
 import BackLink from '@/components/BackLink'
@@ -37,7 +37,9 @@ export default function EngagementFunnelPage() {
     const [accessToken, setAccessToken] = useState('')
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
-    const [pagePathSearch, setPagePathSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const searchInputRef = useRef<HTMLInputElement>(null)
     const [showAiAnalysis, setShowAiAnalysis] = useState(false)
     const [aiSummary, setAiSummary] = useState<string | null>(null)
     const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
@@ -49,6 +51,23 @@ export default function EngagementFunnelPage() {
         setStartDate(fmt(firstOfMonth))
         setEndDate(fmt(today))
     }, [])
+
+    const handlePagePathSearchChange = (value: string) => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current)
+        debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 300)
+    }
+
+    const PAGE_SIZE = 200
+
+    const filteredRows = useMemo(
+        () => (data?.rows.filter((row) => !debouncedSearch || row.pagePath.includes(debouncedSearch)) ?? []).slice(0, PAGE_SIZE),
+        [data?.rows, debouncedSearch]
+    )
+
+    const totalFilteredCount = useMemo(
+        () => data?.rows.filter((row) => !debouncedSearch || row.pagePath.includes(debouncedSearch)).length ?? 0,
+        [data?.rows, debouncedSearch]
+    )
 
     const propertyId = currentProduct?.ga4PropertyId ?? ''
 
@@ -119,7 +138,8 @@ export default function EngagementFunnelPage() {
                 setData(result)
                 setDataFullRange(result)
                 setSelectedViewMonth('all')
-                setPagePathSearch('')
+                setDebouncedSearch('')
+                if (searchInputRef.current) searchInputRef.current.value = ''
                 setAiSummary(null)
                 if (showAiAnalysis) runAiAnalysis(result)
             }
@@ -267,9 +287,10 @@ export default function EngagementFunnelPage() {
                                 {data.startDate} 〜 {data.endDate} の結果
                             </h2>
                             <input
+                                ref={searchInputRef}
                                 type="text"
-                                value={pagePathSearch}
-                                onChange={(e) => setPagePathSearch(e.target.value)}
+                                defaultValue=""
+                                onChange={(e) => handlePagePathSearchChange(e.target.value)}
                                 placeholder="ページパスで絞り込み"
                                 className={styles.searchInput}
                             />
@@ -317,6 +338,11 @@ export default function EngagementFunnelPage() {
                         </div>
                     )}
 
+                    {totalFilteredCount > PAGE_SIZE && (
+                        <p className={styles.rowLimitNote}>
+                            {totalFilteredCount.toLocaleString()} 件中 {PAGE_SIZE} 件を表示しています。絞り込みで件数を絞ってください。
+                        </p>
+                    )}
                     <div className={styles.tableWrap}>
                         <table className={styles.table}>
                             <thead>
@@ -337,9 +363,7 @@ export default function EngagementFunnelPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.rows.filter((row) =>
-                                    !pagePathSearch || row.pagePath.includes(pagePathSearch)
-                                ).map((row, i) => (
+                                {filteredRows.map((row, i) => (
                                     <tr key={i}>
                                         <td className={styles.tdPagePath}>{row.pagePath}</td>
                                         <td className={styles.tdRight}>{row.baseUsers.toLocaleString()}</td>

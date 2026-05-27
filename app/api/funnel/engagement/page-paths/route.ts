@@ -4,8 +4,8 @@
  */
 
 import { NextResponse } from 'next/server'
-import { fetchEngagementFunnelData } from '@/lib/services/funnel/engagementFunnelService'
-import { getGA4AccessToken } from '@/lib/api/ga4/client'
+import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
+import { parseDateString } from '@/lib/utils/date'
 import { createErrorResponse } from '@/lib/utils/error'
 
 export async function POST(request: Request) {
@@ -21,21 +21,36 @@ export async function POST(request: Request) {
         }
 
         const accessToken = await getGA4AccessToken(customToken)
+        const parsedStart = parseDateString(startDate || '28daysAgo')
+        const parsedEnd = parseDateString(endDate || 'yesterday')
 
-        const data = await fetchEngagementFunnelData(
-            propertyId,
-            startDate || '28daysAgo',
-            endDate || 'yesterday',
+        // time_on_page イベントが存在するページパスだけを取得（軽量クエリ）
+        const report = await fetchGA4Data(
+            {
+                propertyId,
+                dateRanges: [{ startDate: parsedStart, endDate: parsedEnd }],
+                dimensions: [{ name: 'pagePath' }],
+                metrics: [{ name: 'eventCount' }],
+                dimensionFilter: {
+                    filter: {
+                        fieldName: 'eventName',
+                        stringFilter: { matchType: 'EXACT', value: 'time_on_page' },
+                    },
+                },
+                limit: 500,
+            },
             accessToken
         )
 
-        const pagePaths = data.rows.map((r) => r.pagePath).filter(Boolean)
+        const pagePaths = (report.rows ?? [])
+            .map((r) => r.dimensionValues[0]?.value ?? '')
+            .filter((p) => p && p !== '(not set)')
 
         return NextResponse.json({
             success: true,
             pagePaths,
-            startDate: data.startDate,
-            endDate: data.endDate,
+            startDate: parsedStart,
+            endDate: parsedEnd,
         })
     } catch (error) {
         console.error('Engagement page-paths API error:', error)

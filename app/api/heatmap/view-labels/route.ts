@@ -1,6 +1,7 @@
 /**
  * GA4 の customEvent:view_label ごとのイベント数を取得
  * ヒートマップ（view ラベルベース）のデータソース
+ * deviceCategory ディメンションを追加し、SP/PC 別に分割して返す
  */
 
 import { NextResponse } from 'next/server'
@@ -13,6 +14,12 @@ import { createErrorResponse } from '@/lib/utils/error'
 export interface ViewLabelRow {
     viewLabel: string
     count: number
+}
+
+export interface ViewLabelsByDevice {
+    mobile: ViewLabelRow[]
+    desktop: ViewLabelRow[]
+    tablet: ViewLabelRow[]
 }
 
 export async function POST(request: Request) {
@@ -57,19 +64,19 @@ export async function POST(request: Request) {
         const ga4Request: Parameters<typeof fetchGA4Data>[0] = {
             propertyId: String(propertyId),
             dateRanges: [{ startDate, endDate }],
-            dimensions: [{ name: 'customEvent:view_label' }],
+            dimensions: [
+                { name: 'deviceCategory' },
+                { name: 'customEvent:view_label' },
+            ],
             metrics: [{ name: 'eventCount' }],
-            limit: 500,
+            limit: 1500,
         }
 
         if (pagePath != null && String(pagePath).trim() !== '') {
             ga4Request.dimensionFilter = {
                 filter: {
                     fieldName: 'pagePath',
-                    stringFilter: {
-                        matchType: 'EXACT',
-                        value: String(pagePath).trim(),
-                    },
+                    stringFilter: { matchType: 'EXACT', value: String(pagePath).trim() },
                 },
             }
         }
@@ -78,31 +85,39 @@ export async function POST(request: Request) {
 
         const dimensionHeaders = report.dimensionHeaders || []
         const metricHeaders = report.metricHeaders || []
-        const viewLabelIdx = dimensionHeaders.findIndex(
-            (h) => h.name === 'customEvent:view_label'
-        )
+        const deviceIdx = dimensionHeaders.findIndex((h) => h.name === 'deviceCategory')
+        const viewLabelIdx = dimensionHeaders.findIndex((h) => h.name === 'customEvent:view_label')
         const countIdx = metricHeaders.findIndex((h) => h.name === 'eventCount')
 
-        const rows: ViewLabelRow[] = []
-        for (const row of report.rows || []) {
-            const viewLabel =
-                viewLabelIdx >= 0 && row.dimensionValues?.[viewLabelIdx]
-                    ? String(row.dimensionValues[viewLabelIdx].value).trim()
-                    : ''
-            const count =
-                countIdx >= 0 && row.metricValues?.[countIdx]
-                    ? parseInt(String(row.metricValues[countIdx].value), 10) || 0
-                    : 0
-            if (viewLabel !== '' && viewLabel !== '(not set)') {
-                rows.push({ viewLabel, count })
-            }
+        const byDevice: Record<string, Record<string, number>> = {
+            mobile: {},
+            desktop: {},
+            tablet: {},
         }
 
-        rows.sort((a, b) => b.count - a.count)
+        for (const row of report.rows || []) {
+            const device = deviceIdx >= 0 ? String(row.dimensionValues[deviceIdx]?.value ?? '').toLowerCase() : ''
+            const viewLabel = viewLabelIdx >= 0 ? String(row.dimensionValues[viewLabelIdx]?.value ?? '').trim() : ''
+            const count = countIdx >= 0 ? parseInt(String(row.metricValues[countIdx]?.value ?? '0'), 10) || 0 : 0
+
+            if (!viewLabel || viewLabel === '(not set)') continue
+            if (!byDevice[device]) continue
+
+            byDevice[device][viewLabel] = (byDevice[device][viewLabel] ?? 0) + count
+        }
+
+        const toSortedRows = (map: Record<string, number>): ViewLabelRow[] =>
+            Object.entries(map)
+                .map(([viewLabel, count]) => ({ viewLabel, count }))
+                .sort((a, b) => b.count - a.count)
 
         return NextResponse.json({
             success: true,
-            data: rows,
+            byDevice: {
+                mobile: toSortedRows(byDevice.mobile),
+                desktop: toSortedRows(byDevice.desktop),
+                tablet: toSortedRows(byDevice.tablet),
+            },
             startDate,
             endDate,
         })

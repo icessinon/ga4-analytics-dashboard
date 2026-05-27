@@ -151,6 +151,55 @@
     min-height: 200px;
 }
 
+.chartsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .chartsGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.deviceChart {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 1rem 1rem 1rem 0.5rem;
+}
+
+.deviceChartHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.deviceChartTitle {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0;
+    color: #f3f4f6;
+}
+
+.deviceBadge {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 0.25rem;
+    color: #a5b4fc;
+}
+
+.deviceTotal {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
 .chartWrap :global(.recharts-cartesian-axis-tick text),
 .chartWrap :global(.recharts-label text),
 .chartWrap :global(.recharts-surface text) {
