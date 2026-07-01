@@ -11,6 +11,7 @@ import { evaluateWithGemini } from '@/lib/api/gemini/client'
 import { parseDateString } from '@/lib/utils/date'
 import { prisma } from '@/lib/db/client'
 import { createErrorResponse } from '@/lib/utils/error'
+import { insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 export async function POST(request: Request) {
     try {
@@ -221,18 +222,33 @@ export async function POST(request: Request) {
         }
 
         if (reportRecord) {
+            const startedAt = new Date()
+            const completedAt = new Date()
+            const resultData = JSON.parse(JSON.stringify({ report, cvrResults, abTestEvaluation }))
             executionRecord = await prisma.reportExecution.create({
                 data: {
                     reportId: reportRecord.id,
                     status: 'completed',
-                    startedAt: new Date(),
-                    completedAt: new Date(),
-                    resultData: JSON.parse(JSON.stringify({
-                        report,
-                        cvrResults,
-                        abTestEvaluation,
-                    })),
+                    startedAt,
+                    completedAt,
+                    resultData,
                 },
+            })
+            void insertReportExecutionLog({
+                execution_id:   executionRecord.id,
+                report_id:      reportRecord.id,
+                product_id:     reportRecord.productId,
+                report_type:    reportRecord.reportType,
+                report_name:    reportRecord.name,
+                status:         'completed',
+                config:         JSON.stringify(reportRecord.config),
+                result_summary: JSON.stringify(resultData),
+                started_at:     startedAt.toISOString(),
+                completed_at:   completedAt.toISOString(),
+                error_message:  null,
+                report_month:   jstReportMonth(completedAt),
+                report_date:    jstReportDate(completedAt),
+                synced_at:      nowIso(),
             })
         }
 

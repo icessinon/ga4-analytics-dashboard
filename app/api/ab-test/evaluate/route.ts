@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { evaluateAbTestResult } from '@/lib/services/ab-test/abTestService'
 import { evaluateWithGemini } from '@/lib/api/gemini/client'
 import { prisma } from '@/lib/db/client'
+import { insertAbTestResultLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 export async function POST(request: Request) {
     try {
@@ -97,6 +98,33 @@ export async function POST(request: Request) {
                 aiEvaluation,
                 recommendation: evaluation.recommendation,
             },
+        })
+
+        const now = new Date()
+        void insertAbTestResultLog({
+            result_id:                abTestResult.id,
+            ab_test_id:               abTest.id,
+            product_id:               abTest.productId,
+            ab_test_name:             abTest.name,
+            variant:                  winner.name.charAt(0),
+            variant_a_name:           abTest.variantAName,
+            variant_b_name:           abTest.variantBName,
+            page_views:               winner.data.pv,
+            conversions:              winner.data.cv,
+            conversion_rate:          winner.data.cvr,
+            statistical_significance: Number(evaluation.checks.significance.value) || null,
+            z_score:                  parseFloat(evaluation.checks.significance.zScore) || null,
+            period_days:              evaluation.checks.period.days,
+            ai_evaluation:            aiEvaluation,
+            recommendation:           evaluation.recommendation,
+            winner_variant:           abTest.winnerVariant,
+            improvement_vs_a_pct:     abTest.improvementVsAPercent != null ? Number(abTest.improvementVsAPercent) : null,
+            ab_test_status:           abTest.status,
+            start_date:               abTest.startDate.toISOString().split('T')[0],
+            end_date:                 abTest.endDate ? abTest.endDate.toISOString().split('T')[0] : null,
+            report_month:             jstReportMonth(now),
+            report_date:              jstReportDate(now),
+            synced_at:                nowIso(),
         })
 
         return NextResponse.json({

@@ -1,5 +1,6 @@
 import * as cron from 'node-cron'
 import { findAbTestsToExecute } from '@/lib/services/ab-test/scheduleService'
+import { runBqSync } from './bq-sync-missing'
 
 /**
  * 定期的にDBをチェックして、実行すべきABテストを実行
@@ -58,6 +59,17 @@ cron.schedule(cronExpression, async () => {
         }
     } catch (error) {
         console.error('[AB Test Scheduler] スケジュールチェックエラー:', error)
+    }
+}, {
+    timezone: 'Asia/Tokyo',
+})
+
+// BQ 補完同期: 毎日 04:00 JST に過去 3 日ぶんの未同期レコードを再送
+cron.schedule('0 0 4 * * *', async () => {
+    try {
+        await runBqSync(3, 'cron')
+    } catch (error) {
+        console.error('[BQ Sync] スケジュール実行エラー:', error)
     }
 }, {
     timezone: 'Asia/Tokyo',

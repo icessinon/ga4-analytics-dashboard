@@ -9,6 +9,7 @@ import { parseDateString } from '@/lib/utils/date'
 import { getGeminiApiKey } from '@/lib/utils/gemini'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
+import { insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 interface GA4CvrConfig {
     denominatorLabels?: string[] | string
@@ -285,14 +286,32 @@ export async function POST(request: Request) {
                 }
 
                 const resultDataJson = JSON.parse(JSON.stringify({ report, cvrResults, abTestEvaluation }))
+                const startedAt = new Date()
+                const completedAt = new Date()
                 const reportExecution = await prisma.reportExecution.create({
                     data: {
                         reportId: abTestReport.id,
                         status: 'completed',
-                        startedAt: new Date(),
-                        completedAt: new Date(),
+                        startedAt,
+                        completedAt,
                         resultData: resultDataJson,
                     },
+                })
+                void insertReportExecutionLog({
+                    execution_id:   reportExecution.id,
+                    report_id:      abTestReport.id,
+                    product_id:     abTest.productId,
+                    report_type:    'ab_test',
+                    report_name:    abTestReport.name,
+                    status:         'completed',
+                    config:         JSON.stringify(ga4Config),
+                    result_summary: JSON.stringify(resultDataJson),
+                    started_at:     startedAt.toISOString(),
+                    completed_at:   completedAt.toISOString(),
+                    error_message:  null,
+                    report_month:   jstReportMonth(completedAt),
+                    report_date:    jstReportDate(completedAt),
+                    synced_at:      nowIso(),
                 })
 
                 const abTestReportExecution = await prisma.abTestReportExecution.create({

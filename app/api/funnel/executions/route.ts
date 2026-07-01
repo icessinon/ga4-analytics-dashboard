@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
+import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 export async function GET(request: Request) {
     try {
@@ -103,6 +104,24 @@ export async function POST(request: Request) {
             include: {
                 product: true,
             },
+        })
+
+        const now = new Date()
+        void insertFunnelExecutionLog({
+            execution_id:      execution.id,
+            product_id:        execution.productId,
+            execution_name:    execution.name,
+            funnel_config:     JSON.stringify(funnelConfig),
+            filter_config:     filterConfig ? JSON.stringify(filterConfig) : null,
+            start_date:        typeof startDate === 'string' ? startDate.split('T')[0] : new Date(startDate).toISOString().split('T')[0],
+            end_date:          typeof endDate === 'string' ? endDate.split('T')[0] : new Date(endDate).toISOString().split('T')[0],
+            result_data:       JSON.stringify(resultData),
+            gemini_evaluation: null,
+            status:            'completed',
+            error_message:     null,
+            report_month:      jstReportMonth(now),
+            report_date:       jstReportDate(now),
+            synced_at:         nowIso(),
         })
 
         return NextResponse.json({

@@ -78,14 +78,16 @@ model ReportExecution {
   completedAt     DateTime?
   errorMessage    String?   @db.Text
   resultData      Json?
+  bqSyncedAt      DateTime?
   createdAt       DateTime  @default(now())
-  
+
   report          Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
   abTestExecutions AbTestReportExecution[]
-  
+
   @@index([reportId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
+  @@index([bqSyncedAt])
   @@map("report_executions")
 }
 
@@ -155,12 +157,14 @@ model AbTestResult {
   periodDays              Int?
   aiEvaluation            String?   @db.Text
   recommendation          String?   @db.Text
+  bqSyncedAt              DateTime?
   createdAt               DateTime  @default(now())
-  
+
   abTest                  AbTest    @relation(fields: [abTestId], references: [id], onDelete: Cascade)
-  
+
   @@index([abTestId])
   @@index([reportExecutionId])
+  @@index([bqSyncedAt])
   @@map("ab_test_results")
 }
 
@@ -192,12 +196,14 @@ model FunnelExecution {
   geminiEvaluation String?  @db.Text // Gemini評価結果
   status          String    @default("completed") @db.VarChar(50)
   errorMessage    String?   @db.Text
+  bqSyncedAt      DateTime?
   createdAt       DateTime  @default(now())
-  
+
   product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
+
   @@index([productId])
   @@index([createdAt(sort: Desc)])
+  @@index([bqSyncedAt])
   @@map("funnel_executions")
 }
 

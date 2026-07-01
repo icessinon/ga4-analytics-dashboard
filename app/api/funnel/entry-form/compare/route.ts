@@ -4,6 +4,7 @@ import { parseDateString } from '@/lib/utils/date'
 import { prisma } from '@/lib/db/client'
 import { getGA4AccessToken } from '@/lib/api/ga4/client'
 import { evaluateComparisonWithGemini } from '@/lib/api/gemini/funnelEvaluation'
+import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 export async function POST(request: Request) {
     try {
@@ -175,6 +176,23 @@ export async function POST(request: Request) {
                 },
             })
             executionId = execution.id
+            const now = new Date()
+            void insertFunnelExecutionLog({
+                execution_id:      execution.id,
+                product_id:        execution.productId,
+                execution_name:    execution.name,
+                funnel_config:     JSON.stringify(funnelConfigWithGemini),
+                filter_config:     filterConfig ? JSON.stringify(filterConfig) : null,
+                start_date:        parsedPeriods[0].startDate,
+                end_date:          parsedPeriods[parsedPeriods.length - 1].endDate,
+                result_data:       JSON.stringify(comparisonData),
+                gemini_evaluation: comparisonGeminiEvaluation || null,
+                status:            'completed',
+                error_message:     null,
+                report_month:      jstReportMonth(now),
+                report_date:       jstReportDate(now),
+                synced_at:         nowIso(),
+            })
         }
 
         return NextResponse.json({
