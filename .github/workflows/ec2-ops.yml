@@ -1,0 +1,52 @@
+name: EC2 Ops (手動実行)
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: '追加で実行する任意コマンド（空なら診断のみ）'
+        required: false
+        default: ''
+
+jobs:
+  ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: EC2で診断・コマンド実行
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          EXTRA_CMD: ${{ inputs.command }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: EXTRA_CMD
+          script: |
+            cd /var/www/ga4-analytics-dashboard
+
+            echo "===== docker compose ps ====="
+            docker compose ps || true
+
+            echo ""
+            echo "===== scheduler container state ====="
+            docker inspect ga4-dashboard-scheduler --format 'image={{.Config.Image}} status={{.State.Status}} startedAt={{.State.StartedAt}} restarts={{.RestartCount}}' || true
+
+            echo ""
+            echo "===== scheduler logs (tail 80) ====="
+            docker logs ga4-dashboard-scheduler --tail 80 2>&1 || true
+
+            echo ""
+            echo "===== ab_tests 最新5件 ====="
+            docker exec ga4-dashboard-postgres psql -U postgres -d ga4_dashboard -c 'SELECT id, name, status, "autoExecute", "startDate", "endDate", "lastExecutedAt", "scheduleConfig" FROM ab_tests ORDER BY id DESC LIMIT 5;' || true
+
+            echo ""
+            echo "===== ab_test_report_executions 最新5件 ====="
+            docker exec ga4-dashboard-postgres psql -U postgres -d ga4_dashboard -c 'SELECT id, "abTestId", status, "errorMessage", "createdAt" FROM ab_test_report_executions ORDER BY id DESC LIMIT 5;' || true
+
+            if [ -n "$EXTRA_CMD" ]; then
+              echo ""
+              echo "===== extra command: $EXTRA_CMD ====="
+              eval "$EXTRA_CMD"
+            fi
