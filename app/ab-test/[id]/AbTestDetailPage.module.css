@@ -311,6 +311,135 @@
     margin-bottom: 1rem;
 }
 
+.refreshButton {
+    padding: 0.5rem 1rem;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.refreshButton:hover:not(:disabled) {
+    background-color: #1d4ed8;
+}
+
+.refreshButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.currentBody {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.currentMeta {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.currentError {
+    font-size: 0.875rem;
+    color: #fca5a5;
+    margin: 0 0 0.75rem 0;
+}
+
+.currentCallout {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    color: #e5e7eb;
+}
+
+.currentCallout strong {
+    font-size: 1.125rem;
+}
+
+.currentCalloutWin {
+    background-color: rgba(22, 101, 52, 0.25);
+    border: 1px solid #16a34a;
+    color: #86efac;
+}
+
+.currentCalloutPending {
+    background-color: rgba(245, 158, 11, 0.12);
+    border: 1px solid #d97706;
+    color: #fcd34d;
+}
+
+.currentCalloutNeutral {
+    background-color: #111827;
+    border: 1px solid #374151;
+    color: #9ca3af;
+}
+
+.currentTableWrapper {
+    overflow-x: auto;
+}
+
+.currentTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.currentTable th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    color: #9ca3af;
+    font-weight: 600;
+    border-bottom: 1px solid #4b5563;
+    white-space: nowrap;
+}
+
+.currentTable td {
+    padding: 0.625rem 0.75rem;
+    color: #e5e7eb;
+    border-bottom: 1px solid #374151;
+    white-space: nowrap;
+}
+
+.currentLeaderRow td {
+    background-color: rgba(59, 130, 246, 0.08);
+}
+
+.leaderBadge {
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+.currentCvr {
+    font-weight: 700;
+    color: #f3f4f6;
+}
+
+.currentLiftUp {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.currentLiftDown {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.currentNote {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin: 0;
+}
+
 .reportList {
     display: flex;
     flex-direction: column;

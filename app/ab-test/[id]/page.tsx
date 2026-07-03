@@ -11,6 +11,32 @@ import { parseJsonResponse } from '@/lib/utils/fetch'
 import type { AbTest, AbTestReportExecution } from './types'
 import styles from './AbTestDetailPage.module.css'
 
+interface CurrentVariant {
+    key: string
+    pv: number
+    cv: number
+    cvr: number
+}
+
+interface CurrentComparison {
+    variant: string
+    liftVsA: number | null
+    significance: number
+    requiredSignificance: number
+    isSufficient: boolean
+}
+
+interface CurrentResult {
+    startDate: string
+    endDate: string
+    elapsedDays: number
+    reliability: { level: string; icon: string; description: string }
+    variants: CurrentVariant[]
+    comparisons: CurrentComparison[]
+    leader: string | null
+    fetchedAt: string
+}
+
 export default function AbTestDetailPage() {
     const router = useRouter()
     const params = useParams()
@@ -23,6 +49,9 @@ export default function AbTestDetailPage() {
     const [nextExecutionDate, setNextExecutionDate] = useState<Date | null>(null)
     const [updatingStatus, setUpdatingStatus] = useState(false)
     const [showCompletionModal, setShowCompletionModal] = useState(false)
+    const [currentResult, setCurrentResult] = useState<CurrentResult | null>(null)
+    const [currentLoading, setCurrentLoading] = useState(false)
+    const [currentError, setCurrentError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!abTestId) {
@@ -39,6 +68,12 @@ export default function AbTestDetailPage() {
             loadNextExecutionDate()
         }
     }, [abTest])
+
+    useEffect(() => {
+        if (abTest && (abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config) {
+            loadCurrentResult()
+        }
+    }, [abTest?.id, abTest?.status])
 
     useEffect(() => {
         const onFocus = () => {
@@ -87,6 +122,23 @@ export default function AbTestDetailPage() {
         }
     }
 
+
+    async function loadCurrentResult() {
+        setCurrentLoading(true)
+        setCurrentError(null)
+        try {
+            const response = await fetch(`/api/ab-test/${abTestId}/current`)
+            const data = await parseJsonResponse<CurrentResult & { error?: string; message?: string }>(response)
+            if (!response.ok || data.error) {
+                throw new Error(data.message || data.error || '途中経過の取得に失敗しました')
+            }
+            setCurrentResult(data)
+        } catch (err) {
+            setCurrentError(err instanceof Error ? err.message : 'エラーが発生しました')
+        } finally {
+            setCurrentLoading(false)
+        }
+    }
 
     async function handleStatusChange(newStatus: string) {
         if (!abTest) return
@@ -289,6 +341,117 @@ export default function AbTestDetailPage() {
                     )}
                 </div>
             </div>
+
+            {(abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config && (
+                <div className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>現在の途中経過</h2>
+                        <button
+                            onClick={loadCurrentResult}
+                            disabled={currentLoading}
+                            className={styles.refreshButton}
+                        >
+                            {currentLoading ? '集計中...' : '最新に更新'}
+                        </button>
+                    </div>
+
+                    {currentError && (
+                        <p className={styles.currentError}>途中経過の取得に失敗しました: {currentError}</p>
+                    )}
+
+                    {currentLoading && !currentResult && (
+                        <p className={styles.currentMeta}>GA4からリアルタイム集計中です...</p>
+                    )}
+
+                    {currentResult && (
+                        <div className={styles.currentBody}>
+                            <p className={styles.currentMeta}>
+                                集計期間: {currentResult.startDate} 〜 {currentResult.endDate}（経過{currentResult.elapsedDays}日 {currentResult.reliability.icon} {currentResult.reliability.level}・{currentResult.reliability.description}）
+                                ／ 集計時刻: {new Date(currentResult.fetchedAt).toLocaleString('ja-JP')}
+                            </p>
+
+                            {(() => {
+                                const { leader, variants, comparisons } = currentResult
+                                if (!leader) {
+                                    return (
+                                        <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
+                                            まだ十分なデータがありません
+                                        </div>
+                                    )
+                                }
+                                const rivalKey = leader !== 'A'
+                                    ? leader
+                                    : variants
+                                        .filter((v) => v.key !== 'A' && v.pv > 0)
+                                        .sort((a, b) => b.cvr - a.cvr)[0]?.key
+                                const comp = comparisons.find((c) => c.variant === rivalKey)
+                                if (!comp) {
+                                    return (
+                                        <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
+                                            現時点では {leader} がリードしています
+                                        </div>
+                                    )
+                                }
+                                return comp.isSufficient ? (
+                                    <div className={`${styles.currentCallout} ${styles.currentCalloutWin}`}>
+                                        現時点では <strong>{leader}</strong> が優勢です（有意差{comp.significance}% ≧ 必要{comp.requiredSignificance}%）
+                                    </div>
+                                ) : (
+                                    <div className={`${styles.currentCallout} ${styles.currentCalloutPending}`}>
+                                        現時点では <strong>{leader}</strong> がリードしていますが、まだ判定に足る有意差はありません（有意差{comp.significance}% ／ 必要{comp.requiredSignificance}%）
+                                    </div>
+                                )
+                            })()}
+
+                            <div className={styles.currentTableWrapper}>
+                                <table className={styles.currentTable}>
+                                    <thead>
+                                        <tr>
+                                            <th>バリアント</th>
+                                            <th>PV（分母）</th>
+                                            <th>CV（分子）</th>
+                                            <th>CVR</th>
+                                            <th>Aとの差</th>
+                                            <th>有意差(vs A)</th>
+                                            <th>判定</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {currentResult.variants.map((v) => {
+                                            const comp = currentResult.comparisons.find((c) => c.variant === v.key)
+                                            const isLeader = currentResult.leader === v.key
+                                            return (
+                                                <tr key={v.key} className={isLeader ? styles.currentLeaderRow : undefined}>
+                                                    <td>
+                                                        {v.key}
+                                                        {isLeader && <span className={styles.leaderBadge}>リード中</span>}
+                                                    </td>
+                                                    <td>{v.pv.toLocaleString()}</td>
+                                                    <td>{v.cv.toLocaleString()}</td>
+                                                    <td className={styles.currentCvr}>{(v.cvr * 100).toFixed(2)}%</td>
+                                                    <td className={
+                                                        comp?.liftVsA == null ? undefined
+                                                            : comp.liftVsA >= 0 ? styles.currentLiftUp : styles.currentLiftDown
+                                                    }>
+                                                        {comp?.liftVsA == null
+                                                            ? '-'
+                                                            : `${comp.liftVsA >= 0 ? '+' : ''}${(comp.liftVsA * 100).toFixed(1)}%`}
+                                                    </td>
+                                                    <td>{comp ? `${comp.significance}%（必要${comp.requiredSignificance}%）` : '-'}</td>
+                                                    <td>{comp ? (comp.isSufficient ? '✅ 有意差あり' : '⏳ 判定中') : '-'}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className={styles.currentNote}>
+                                ※ GA4からのオンデマンド集計です（当日データを含むため、直近の数値は変動する場合があります）
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {abTest.ga4Config && (
                 <div className={styles.section}>
