@@ -19,6 +19,12 @@ export interface Ga4CvrConfig {
     metric?: string
 }
 
+export interface AbTestFunnelStep {
+    stepName: string
+    dimension: string
+    labels: Partial<Record<'A' | 'B' | 'C' | 'D', string[]>>
+}
+
 export interface AbTest {
     id: number
     name: string
@@ -36,6 +42,7 @@ export interface AbTest {
         cvrB?: Ga4CvrConfig
         cvrC?: Ga4CvrConfig
         cvrD?: Ga4CvrConfig
+        funnelSteps?: AbTestFunnelStep[]
     }
     autoExecute?: boolean
     scheduleConfig?: AbTestScheduleConfig | null

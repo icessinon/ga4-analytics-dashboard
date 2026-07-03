@@ -434,6 +434,26 @@
     font-weight: 600;
 }
 
+.funnelDropoff {
+    margin-left: 0.25rem;
+    color: #9ca3af;
+    font-size: 0.8125rem;
+}
+
+.funnelBestCell {
+    background-color: rgba(22, 101, 52, 0.15);
+}
+
+.funnelBestMark {
+    margin-left: 0.375rem;
+    color: #4ade80;
+}
+
+.funnelTotalRow td {
+    border-top: 2px solid #4b5563;
+    font-weight: 600;
+}
+
 .currentNote {
     font-size: 0.75rem;
     color: #6b7280;

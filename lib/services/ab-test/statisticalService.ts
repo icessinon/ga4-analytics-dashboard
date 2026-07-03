@@ -39,6 +39,11 @@ export function calculateStatisticalSignificance(
 
     const zScore = (p1 - p2) / pooledSE;
 
+    // CV > PV（CVR>100%）等でpooledSEがNaNになるとJSONでnullになり「null%」表示になるためガード
+    if (!Number.isFinite(zScore)) {
+        return { significance: 0, zScore: 0, isSignificant: false };
+    }
+
     let significance = 0;
     const absZ = Math.abs(zScore);
     if (absZ >= 2.58) {

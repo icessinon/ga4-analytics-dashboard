@@ -6,11 +6,32 @@ import AbTestScheduleConfig, { ScheduleConfig } from './AbTestScheduleConfig'
 import CustomSelect from '@/components/CustomSelect'
 import GeminiConfig from '@/components/GeminiConfig'
 import Switch from '@/components/Switch'
-import { GA4_CVR_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
+import { GA4_CVR_DIMENSIONS, GA4_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
 import styles from './AbTestFormModal.module.css'
 import type { AbTestFormModalProps } from './types'
 
 interface Props extends AbTestFormModalProps {}
+
+interface FunnelStepForm {
+    stepName: string
+    dimension: string
+    labelsA: string
+    labelsB: string
+    labelsC: string
+    labelsD: string
+}
+
+const emptyFunnelStep = (): FunnelStepForm => ({
+    stepName: '',
+    dimension: 'customEvent:view_label',
+    labelsA: '',
+    labelsB: '',
+    labelsC: '',
+    labelsD: '',
+})
+
+const joinFunnelLabels = (labels: unknown): string =>
+    Array.isArray(labels) ? labels.join(',') : typeof labels === 'string' ? labels : ''
 
 export default function AbTestFormModal({
     isOpen,
@@ -93,6 +114,11 @@ export default function AbTestFormModal({
     const [testError, setTestError] = useState<string | null>(null)
     const [baselineCvr, setBaselineCvr] = useState('')
     const [dailyPv, setDailyPv] = useState('')
+    const [funnelSteps, setFunnelSteps] = useState<FunnelStepForm[]>([])
+
+    const updateFunnelStep = (index: number, patch: Partial<FunnelStepForm>) => {
+        setFunnelSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
+    }
 
     // 必要サンプルサイズ: 有意水準95%（z=1.96）・検出力80%（z=0.84）の両側Z検定
     const requiredSampleSize = (() => {
@@ -208,6 +234,16 @@ export default function AbTestFormModal({
                 if (config.cvrB) setShowCvrB(true)
                 if (config.cvrC) setShowCvrC(true)
                 if (config.cvrD) setShowCvrD(true)
+                setFunnelSteps(((config.funnelSteps as any[]) ?? []).map((s: any) => ({
+                    stepName: s.stepName || '',
+                    dimension: s.dimension || 'customEvent:view_label',
+                    labelsA: joinFunnelLabels(s.labels?.A),
+                    labelsB: joinFunnelLabels(s.labels?.B),
+                    labelsC: joinFunnelLabels(s.labels?.C),
+                    labelsD: joinFunnelLabels(s.labels?.D),
+                })))
+            } else {
+                setFunnelSteps([])
             }
 
             if (editingTest.scheduleConfig) {
@@ -234,6 +270,7 @@ export default function AbTestFormModal({
             setTestResult(null)
             setTestError(null)
             setTesting(false)
+            setFunnelSteps([])
             setScheduleConfig({
                 enabled: true,
                 executionType: 'on_end',
@@ -440,6 +477,22 @@ export default function AbTestFormModal({
                 numeratorLabels: splitLabels(ga4Config.cvrD.numeratorLabels),
                 metric: ga4Config.cvrD.metric,
             } : undefined,
+            funnelSteps: (() => {
+                const steps = funnelSteps
+                    .map((s) => ({
+                        stepName: s.stepName.trim(),
+                        dimension: s.dimension.trim(),
+                        labels: {
+                            A: splitLabels(s.labelsA),
+                            B: splitLabels(s.labelsB),
+                            C: splitLabels(s.labelsC),
+                            D: splitLabels(s.labelsD),
+                        },
+                    }))
+                    .filter((s) => s.stepName && s.dimension
+                        && (s.labels.A.length > 0 || s.labels.B.length > 0 || s.labels.C.length > 0 || s.labels.D.length > 0))
+                return steps.length > 0 ? steps : undefined
+            })(),
             abTestEvaluationConfig: ga4Config.abTestEvaluationConfig,
             geminiConfig: ga4Config.geminiConfig,
         }
@@ -949,6 +1002,88 @@ export default function AbTestFormModal({
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        <div className={styles.formSection}>
+                            <div className={styles.formSectionHeader}>
+                                <h4 className={styles.formSubSectionTitle}>途中経過ファネル（オプション）</h4>
+                                <button
+                                    type="button"
+                                    className={styles.addStepButton}
+                                    onClick={() => setFunnelSteps([...funnelSteps, emptyFunnelStep()])}
+                                >
+                                    + ステップ追加
+                                </button>
+                            </div>
+                            <p className={styles.helpText}>
+                                CVに至るまでのステップを上から順に定義すると、詳細画面でバリアント別のファネル・離脱率を比較できます。ラベルはカンマ区切りで複数指定可。バリアント共通のステップは同じラベルを入れてください。
+                            </p>
+                            {funnelSteps.map((step, i) => (
+                                <div key={i} className={styles.funnelStepRow}>
+                                    <span className={styles.funnelStepIndex}>{i + 1}.</span>
+                                    <input
+                                        type="text"
+                                        placeholder="ステップ名（例: フォーム表示）"
+                                        value={step.stepName}
+                                        onChange={(e) => updateFunnelStep(i, { stepName: e.target.value })}
+                                        className={styles.input}
+                                        aria-label={`ステップ${i + 1} 名称`}
+                                    />
+                                    <CustomSelect
+                                        value={step.dimension}
+                                        onChange={(v) => updateFunnelStep(i, { dimension: v })}
+                                        options={GA4_DIMENSIONS.map((d) => ({ value: d.value, label: d.label }))}
+                                        triggerClassName={styles.input}
+                                        aria-label={`ステップ${i + 1} ディメンション`}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Aのラベル"
+                                        value={step.labelsA}
+                                        onChange={(e) => updateFunnelStep(i, { labelsA: e.target.value })}
+                                        className={styles.input}
+                                        aria-label={`ステップ${i + 1} Aラベル`}
+                                    />
+                                    {showCvrB && (
+                                        <input
+                                            type="text"
+                                            placeholder="Bのラベル"
+                                            value={step.labelsB}
+                                            onChange={(e) => updateFunnelStep(i, { labelsB: e.target.value })}
+                                            className={styles.input}
+                                            aria-label={`ステップ${i + 1} Bラベル`}
+                                        />
+                                    )}
+                                    {showCvrC && (
+                                        <input
+                                            type="text"
+                                            placeholder="Cのラベル"
+                                            value={step.labelsC}
+                                            onChange={(e) => updateFunnelStep(i, { labelsC: e.target.value })}
+                                            className={styles.input}
+                                            aria-label={`ステップ${i + 1} Cラベル`}
+                                        />
+                                    )}
+                                    {showCvrD && (
+                                        <input
+                                            type="text"
+                                            placeholder="Dのラベル"
+                                            value={step.labelsD}
+                                            onChange={(e) => updateFunnelStep(i, { labelsD: e.target.value })}
+                                            className={styles.input}
+                                            aria-label={`ステップ${i + 1} Dラベル`}
+                                        />
+                                    )}
+                                    <button
+                                        type="button"
+                                        className={styles.removeStepButton}
+                                        onClick={() => setFunnelSteps(funnelSteps.filter((_, idx) => idx !== i))}
+                                        aria-label={`ステップ${i + 1}を削除`}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
                         </div>
 
                         <div className={styles.formSection}>

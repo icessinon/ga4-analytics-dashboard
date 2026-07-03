@@ -37,6 +37,39 @@ interface CurrentResult {
     fetchedAt: string
 }
 
+interface FunnelStepValue {
+    users: number
+    conversionRate: number | null
+    dropoffRate: number | null
+}
+
+interface FunnelResult {
+    mode?: 'manual' | 'auto'
+    detectedSuffixes?: string[]
+    startDate: string
+    endDate: string
+    variants: string[]
+    steps: Array<{
+        stepName: string
+        dimension: string
+        values: Record<string, FunnelStepValue | undefined>
+    }>
+    fetchedAt: string
+}
+
+// GTMタグ規則によりB/C/DのCVRラベルに「__B-1618」等のサフィックスがあれば、
+// funnelSteps未設定でもAPI側の自動検出でファネルを生成できる
+function canShowFunnel(ga4Config: AbTest['ga4Config']): boolean {
+    if ((ga4Config?.funnelSteps?.length ?? 0) > 0) return true
+    for (const cvr of [ga4Config?.cvrB, ga4Config?.cvrC, ga4Config?.cvrD]) {
+        const raw = [cvr?.denominatorLabels, cvr?.numeratorLabels].flatMap((l) =>
+            Array.isArray(l) ? l : typeof l === 'string' ? l.split(',') : []
+        )
+        if (raw.some((label) => /__[A-D]-\w+$/.test(label.trim()))) return true
+    }
+    return false
+}
+
 export default function AbTestDetailPage() {
     const router = useRouter()
     const params = useParams()
@@ -52,6 +85,9 @@ export default function AbTestDetailPage() {
     const [currentResult, setCurrentResult] = useState<CurrentResult | null>(null)
     const [currentLoading, setCurrentLoading] = useState(false)
     const [currentError, setCurrentError] = useState<string | null>(null)
+    const [funnelResult, setFunnelResult] = useState<FunnelResult | null>(null)
+    const [funnelLoading, setFunnelLoading] = useState(false)
+    const [funnelError, setFunnelError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!abTestId) {
@@ -72,6 +108,9 @@ export default function AbTestDetailPage() {
     useEffect(() => {
         if (abTest && (abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config) {
             loadCurrentResult()
+            if (canShowFunnel(abTest.ga4Config)) {
+                loadFunnelResult()
+            }
         }
     }, [abTest?.id, abTest?.status])
 
@@ -137,6 +176,23 @@ export default function AbTestDetailPage() {
             setCurrentError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
             setCurrentLoading(false)
+        }
+    }
+
+    async function loadFunnelResult() {
+        setFunnelLoading(true)
+        setFunnelError(null)
+        try {
+            const response = await fetch(`/api/ab-test/${abTestId}/funnel`)
+            const data = await parseJsonResponse<FunnelResult & { error?: string; message?: string }>(response)
+            if (!response.ok || data.error) {
+                throw new Error(data.message || data.error || 'ファネル集計の取得に失敗しました')
+            }
+            setFunnelResult(data)
+        } catch (err) {
+            setFunnelError(err instanceof Error ? err.message : 'エラーが発生しました')
+        } finally {
+            setFunnelLoading(false)
         }
     }
 
@@ -447,6 +503,102 @@ export default function AbTestDetailPage() {
                             </div>
                             <p className={styles.currentNote}>
                                 ※ GA4からのオンデマンド集計です（当日データを含むため、直近の数値は変動する場合があります）
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {(abTest.status === 'running' || abTest.status === 'paused') && canShowFunnel(abTest.ga4Config) && (
+                <div className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>途中経過ファネル</h2>
+                        <button
+                            onClick={loadFunnelResult}
+                            disabled={funnelLoading}
+                            className={styles.refreshButton}
+                        >
+                            {funnelLoading ? '集計中...' : '最新に更新'}
+                        </button>
+                    </div>
+
+                    {funnelError && (
+                        <p className={styles.currentError}>ファネル集計の取得に失敗しました: {funnelError}</p>
+                    )}
+
+                    {funnelLoading && !funnelResult && (
+                        <p className={styles.currentMeta}>GA4からリアルタイム集計中です...</p>
+                    )}
+
+                    {funnelResult && (
+                        <div className={styles.currentBody}>
+                            <p className={styles.currentMeta}>
+                                集計期間: {funnelResult.startDate} 〜 {funnelResult.endDate}
+                                ／ 集計時刻: {new Date(funnelResult.fetchedAt).toLocaleString('ja-JP')}
+                                {funnelResult.mode === 'auto' && funnelResult.detectedSuffixes && (
+                                    <>
+                                        {' ／ '}
+                                        <span className={styles.leaderBadge}>自動検出</span>
+                                        {' '}タグサフィックス「{funnelResult.detectedSuffixes.map((s) => `__${s}`).join(', ')}」からテスト範囲を自動抽出
+                                    </>
+                                )}
+                            </p>
+                            <div className={styles.currentTableWrapper}>
+                                <table className={styles.currentTable}>
+                                    <thead>
+                                        <tr>
+                                            <th>ステップ</th>
+                                            {funnelResult.variants.map((v) => (
+                                                <th key={v}>{v}（離脱率）</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {funnelResult.steps.map((step, i) => {
+                                            const dropoffs = funnelResult.variants
+                                                .map((v) => step.values[v]?.dropoffRate)
+                                                .filter((d): d is number => d != null)
+                                            const bestDropoff = dropoffs.length >= 2 ? Math.min(...dropoffs) : null
+                                            return (
+                                                <tr key={i}>
+                                                    <td>{i + 1}. {step.stepName}</td>
+                                                    {funnelResult.variants.map((v) => {
+                                                        const val = step.values[v]
+                                                        if (!val) return <td key={v}>-</td>
+                                                        const isBest = bestDropoff != null && val.dropoffRate === bestDropoff
+                                                        return (
+                                                            <td key={v} className={isBest ? styles.funnelBestCell : undefined}>
+                                                                {val.users.toLocaleString()}
+                                                                {val.dropoffRate != null && (
+                                                                    <span className={styles.funnelDropoff}>
+                                                                        （-{(val.dropoffRate * 100).toFixed(1)}%）
+                                                                    </span>
+                                                                )}
+                                                                {isBest && <span className={styles.funnelBestMark}>★</span>}
+                                                            </td>
+                                                        )
+                                                    })}
+                                                </tr>
+                                            )
+                                        })}
+                                        {funnelResult.steps.length > 1 && (
+                                            <tr className={styles.funnelTotalRow}>
+                                                <td>全体到達率（①→最終）</td>
+                                                {funnelResult.variants.map((v) => {
+                                                    const last = funnelResult.steps[funnelResult.steps.length - 1].values[v]
+                                                    return (
+                                                        <td key={v} className={styles.currentCvr}>
+                                                            {last?.conversionRate != null ? `${(last.conversionRate * 100).toFixed(2)}%` : '-'}
+                                                        </td>
+                                                    )
+                                                })}
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className={styles.currentNote}>
+                                ※ ★は同ステップで離脱率が最も低いバリアント。ユーザー数はtotalUsers基準のGA4オンデマンド集計です
                             </p>
                         </div>
                     )}
