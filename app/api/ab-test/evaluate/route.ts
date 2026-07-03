@@ -80,6 +80,8 @@ export async function POST(request: Request) {
                     winner,
                     runnerUp,
                     config,
+                    hypothesis: abTest.hypothesis,
+                    expectedImprovement: abTest.expectedImprovement != null ? Number(abTest.expectedImprovement) : null,
                 },
                 geminiConfig.apiKey
             )

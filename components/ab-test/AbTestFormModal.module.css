@@ -133,6 +133,32 @@
     margin-top: 4px;
 }
 
+.sampleSizeBox {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid #374151;
+    border-radius: 6px;
+}
+
+.sampleSizeTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #93c5fd;
+    margin-bottom: 12px;
+}
+
+.sampleSizeResult {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #e5e7eb;
+}
+
+.sampleSizeResult strong {
+    color: #93c5fd;
+    font-size: 16px;
+}
+
 .statusFixed {
     width: 100%;
     padding: 8px 12px;

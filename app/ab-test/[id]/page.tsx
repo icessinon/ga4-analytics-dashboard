@@ -203,6 +203,12 @@ export default function AbTestDetailPage() {
                             セグメント別CVR
                         </button>
                         <button
+                            onClick={() => router.push(`/ab-test/${abTest.id}/daily`)}
+                            className={styles.segmentButton}
+                        >
+                            日次CVR推移
+                        </button>
+                        <button
                             onClick={() => router.push(`/ab-test?edit=${abTest.id}`)}
                             className={styles.editButton}
                         >
@@ -267,6 +273,18 @@ export default function AbTestDetailPage() {
                         <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
                             <p className={styles.infoLabel}>説明</p>
                             <p className={styles.infoValue}>{abTest.description}</p>
+                        </div>
+                    )}
+                    {abTest.hypothesis && (
+                        <div className={`${styles.infoItem} ${styles.infoItemFull}`}>
+                            <p className={styles.infoLabel}>仮説</p>
+                            <p className={styles.infoValue}>{abTest.hypothesis}</p>
+                        </div>
+                    )}
+                    {abTest.expectedImprovement != null && (
+                        <div className={styles.infoItem}>
+                            <p className={styles.infoLabel}>期待改善率</p>
+                            <p className={styles.infoValue}>{Number(abTest.expectedImprovement).toFixed(1)}%</p>
                         </div>
                     )}
                 </div>

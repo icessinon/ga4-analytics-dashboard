@@ -245,6 +245,8 @@ export async function POST(request: Request) {
                                             winner,
                                             runnerUp,
                                             config: evaluationConfig,
+                                            hypothesis: abTest.hypothesis,
+                                            expectedImprovement: abTest.expectedImprovement != null ? Number(abTest.expectedImprovement) : null,
                                         },
                                         apiKey
                                     )

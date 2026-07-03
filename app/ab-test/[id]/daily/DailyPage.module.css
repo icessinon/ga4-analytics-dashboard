@@ -1,0 +1,235 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #f3f4f6;
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.section {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 1rem;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .formGrid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+    .formGrid { grid-template-columns: 1fr; }
+}
+
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.formLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.formInput {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.375rem;
+    background-color: #111827;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.formActions { margin-top: 1rem; }
+
+.errorBox {
+    background-color: rgba(185, 28, 28, 0.15);
+    border: 1px solid #b91c1c;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: #fca5a5;
+    margin-bottom: 1.5rem;
+}
+
+.errorTitle { font-weight: 600; margin-bottom: 0.25rem; }
+
+.loaderContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    gap: 1rem;
+    color: #9ca3af;
+}
+
+.resultHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.resultTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f3f4f6;
+}
+
+.modeTabs {
+    display: flex;
+    gap: 0.25rem;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    padding: 0.25rem;
+}
+
+.modeTab {
+    padding: 0.375rem 0.875rem;
+    border: none;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.modeTab:hover { color: #e5e7eb; }
+
+.modeTabActive {
+    background-color: #6366f1;
+    color: #fff;
+}
+
+.modeTabActive:hover { color: #fff; }
+
+.empty {
+    color: #6b7280;
+    text-align: center;
+    padding: 2rem;
+}
+
+.chartTooltip {
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.chartTooltipLabel {
+    color: #9ca3af;
+    margin-bottom: 0.25rem;
+}
+
+.chartTooltipRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #e5e7eb;
+}
+
+.tableWrapper {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.table th {
+    padding: 0.625rem 0.75rem;
+    background-color: #111827;
+    border-bottom: 1px solid #374151;
+    color: #9ca3af;
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+.thLabel {
+    text-align: left;
+    min-width: 100px;
+}
+
+.thNum {
+    text-align: right;
+    min-width: 90px;
+}
+
+.dataRow:hover td {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dataRow td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tdLabel {
+    padding: 0.5rem 0.75rem;
+    color: #e5e7eb;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tdNum {
+    padding: 0.5rem 0.75rem;
+    text-align: right;
+    color: #d1d5db;
+    font-variant-numeric: tabular-nums;
+}
+
+.note {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}

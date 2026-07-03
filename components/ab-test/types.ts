@@ -6,6 +6,8 @@ export interface AbTest {
     id: number
     name: string
     description: string | null
+    hypothesis?: string | null
+    expectedImprovement?: number | string | null
     startDate: string
     endDate: string | null
     status: string

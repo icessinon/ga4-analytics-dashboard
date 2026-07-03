@@ -24,6 +24,8 @@ export default function AbTestFormModal({
         productId: currentProductId?.toString() || (products.length === 1 ? products[0].id.toString() : ''),
         name: '',
         description: '',
+        hypothesis: '',
+        expectedImprovement: '',
         startDate: '',
         endDate: '',
         status: 'running',
@@ -89,6 +91,26 @@ export default function AbTestFormModal({
     const [testing, setTesting] = useState(false)
     const [testResult, setTestResult] = useState<any>(null)
     const [testError, setTestError] = useState<string | null>(null)
+    const [baselineCvr, setBaselineCvr] = useState('')
+    const [dailyPv, setDailyPv] = useState('')
+
+    // 必要サンプルサイズ: 有意水準95%（z=1.96）・検出力80%（z=0.84）の両側Z検定
+    const requiredSampleSize = (() => {
+        const p1 = parseFloat(baselineCvr) / 100
+        const improvement = parseFloat(formData.expectedImprovement)
+        if (!Number.isFinite(p1) || p1 <= 0 || p1 >= 1) return null
+        if (!Number.isFinite(improvement) || improvement === 0) return null
+        const p2 = p1 * (1 + improvement / 100)
+        if (p2 <= 0 || p2 >= 1) return null
+        return Math.ceil(((1.96 + 0.84) ** 2 * (p1 * (1 - p1) + p2 * (1 - p2))) / (p2 - p1) ** 2)
+    })()
+
+    const requiredDays = (() => {
+        if (requiredSampleSize == null) return null
+        const pv = parseFloat(dailyPv)
+        if (!Number.isFinite(pv) || pv <= 0) return null
+        return Math.ceil(requiredSampleSize / pv)
+    })()
 
     useEffect(() => {
         if (formData.productId) {
@@ -128,6 +150,8 @@ export default function AbTestFormModal({
                 productId: editingTest.product.id.toString(),
                 name: editingTest.name,
                 description: editingTest.description || '',
+                hypothesis: editingTest.hypothesis || '',
+                expectedImprovement: editingTest.expectedImprovement != null ? String(editingTest.expectedImprovement) : '',
                 startDate: new Date(editingTest.startDate).toISOString().split('T')[0],
                 endDate: editingTest.endDate ? new Date(editingTest.endDate).toISOString().split('T')[0] : '',
                 status: editingTest.status,
@@ -200,6 +224,8 @@ export default function AbTestFormModal({
                 productId: initialProductId,
                 name: '',
                 description: '',
+                hypothesis: '',
+                expectedImprovement: '',
                 startDate: '',
                 endDate: '',
                 status: 'running',
@@ -420,6 +446,7 @@ export default function AbTestFormModal({
 
             await onSubmit({
                 ...formData,
+                expectedImprovement: formData.expectedImprovement === '' ? null : Number(formData.expectedImprovement),
                 ga4Config: ga4ConfigData,
                 scheduleConfig: scheduleConfig.enabled ? scheduleConfig : null,
             })
@@ -480,6 +507,30 @@ export default function AbTestFormModal({
                                     className={styles.input}
                                     rows={3}
                                 />
+                            </div>
+                            <div>
+                                <label className={styles.label}>仮説</label>
+                                <textarea
+                                    value={formData.hypothesis}
+                                    onChange={(e) => setFormData({ ...formData, hypothesis: e.target.value })}
+                                    className={styles.input}
+                                    rows={3}
+                                    placeholder="例: ボタン文言を「応募する」に変えると、緊急性が伝わりCVRが改善する"
+                                />
+                                <p className={styles.helpText}>何をどう変えると、なぜ改善するのかを記録します（完了時の振り返りに使用）</p>
+                            </div>
+                            <div>
+                                <label className={styles.label}>期待改善率（%）</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    value={formData.expectedImprovement}
+                                    onChange={(e) => setFormData({ ...formData, expectedImprovement: e.target.value })}
+                                    className={styles.input}
+                                    placeholder="例: 10"
+                                />
+                                <p className={styles.helpText}>A比でどの程度のCVR改善を期待するか</p>
                             </div>
                             <div>
                                 <label className={styles.label}>開始日 *</label>
@@ -980,6 +1031,49 @@ export default function AbTestFormModal({
                                         className={styles.input}
                                     />
                                 </div>
+                            </div>
+
+                            <div className={styles.sampleSizeBox}>
+                                <p className={styles.sampleSizeTitle}>必要サンプルサイズの目安</p>
+                                <div className={styles.formGrid}>
+                                    <div>
+                                        <label className={styles.label}>ベースラインCVR (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="例: 2.5"
+                                            value={baselineCvr}
+                                            onChange={(e) => setBaselineCvr(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                        <p className={styles.helpText}>現状（Aパターン）のCVR実績値</p>
+                                    </div>
+                                    <div>
+                                        <label className={styles.label}>1日あたり想定PV / バリアント</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            placeholder="例: 500"
+                                            value={dailyPv}
+                                            onChange={(e) => setDailyPv(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                        <p className={styles.helpText}>入力すると必要日数も算出します</p>
+                                    </div>
+                                </div>
+                                {requiredSampleSize != null ? (
+                                    <p className={styles.sampleSizeResult}>
+                                        必要PV: <strong>{requiredSampleSize.toLocaleString()}</strong> / バリアント
+                                        {requiredDays != null && (
+                                            <>　→　必要期間: <strong>約{requiredDays.toLocaleString()}日</strong></>
+                                        )}
+                                    </p>
+                                ) : (
+                                    <p className={styles.helpText}>
+                                        ベースラインCVRと基本情報の「期待改善率」を入力すると自動計算します（有意水準95%・検出力80%）
+                                    </p>
+                                )}
                             </div>
                         </div>
 

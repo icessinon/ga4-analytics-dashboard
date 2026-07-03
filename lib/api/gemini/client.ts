@@ -27,6 +27,8 @@ export interface GeminiEvaluationRequest {
         };
     };
     config: any;
+    hypothesis?: string | null;
+    expectedImprovement?: number | null;
 }
 
 /**
@@ -40,7 +42,7 @@ export async function evaluateWithGemini(
     if (!key) return null
 
     try {
-        const prompt = buildEvaluationPrompt(request.evaluation, request.winner, request.runnerUp, request.config);
+        const prompt = buildEvaluationPrompt(request.evaluation, request.winner, request.runnerUp, request.config, request.hypothesis, request.expectedImprovement);
 
         // Gemini APIのエンドポイント
         // GASコードでは gemini-2.5-flash を使用
@@ -116,7 +118,9 @@ function buildEvaluationPrompt(
     evaluation: any,
     winner: any,
     runnerUp: any,
-    config: any
+    config: any,
+    hypothesis?: string | null,
+    expectedImprovement?: number | null
 ): string {
     const checks = evaluation.checks;
     const isFixedValue =
@@ -126,8 +130,16 @@ function buildEvaluationPrompt(
         ? `${checks.significance.required}%`
         : `${checks.significance.required}% (期間:${checks.significance.periodBased}% / CV数:${checks.significance.cvBased}% / PV数:${checks.significance.pvBased}%)`;
 
-    return `あなたは統計分析の専門家です。以下のABテスト結果を評価し、実務的な見解を述べてください。
+    const hypothesisSection = hypothesis || expectedImprovement != null
+        ? `
+【事前仮説】
+${hypothesis ? `- 仮説: ${hypothesis}` : ''}
+${expectedImprovement != null ? `- 期待改善率: ${expectedImprovement}%（実績: ${evaluation.checks.improvement.improvementRate.toFixed(2)}%）` : ''}
+`
+        : ''
 
+    return `あなたは統計分析の専門家です。以下のABテスト結果を評価し、実務的な見解を述べてください。
+${hypothesisSection}
 【ABテスト結果】
 - 勝利パターン: ${winner.name} (CVR: ${(winner.data.cvr * 100).toFixed(2)}%, PV: ${winner.data.pv.toLocaleString()}, CV: ${winner.data.cv.toLocaleString()})
 - 2位パターン: ${runnerUp.name} (CVR: ${(runnerUp.data.cvr * 100).toFixed(2)}%, PV: ${runnerUp.data.pv.toLocaleString()}, CV: ${runnerUp.data.cv.toLocaleString()})
@@ -158,8 +170,7 @@ ${evaluation.allPassed ? '✅ すべての判定基準を満たしています�
 上記のABテスト結果について、以下の観点から評価してください：
 1. 統計的な信頼性の観点（サンプルサイズ、有意差の解釈）
 2. ビジネス的な意味（改善率の実務的な価値）
-3. 注意点や追加で確認すべき点
-4. 最終的な推奨事項
+${hypothesisSection ? '3. 事前仮説との整合性（仮説どおりだったか、期待改善率に届いたか）\n4. 注意点や追加で確認すべき点\n5. 最終的な推奨事項' : '3. 注意点や追加で確認すべき点\n4. 最終的な推奨事項'}
 
 回答は簡潔に（200文字程度）、実務的な観点を重視してください。`;
 }

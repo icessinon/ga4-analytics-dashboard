@@ -116,6 +116,8 @@ model AbTest {
   productId             Int
   name                  String    @db.VarChar(255)
   description           String?   @db.Text
+  hypothesis            String?   @db.Text          // 事前仮説（Plan: 何をどう変えると何が改善するか）
+  expectedImprovement   Decimal?  @db.Decimal(8, 2) // 期待改善率（%）
   variantAName          String    @db.VarChar(255)
   variantBName          String    @db.VarChar(255)
   startDate             DateTime  @db.Date

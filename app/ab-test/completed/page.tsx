@@ -171,6 +171,9 @@ export default function AbTestCompletedPage() {
                                         {t.description && (
                                             <span className={styles.desc}>{t.description}</span>
                                         )}
+                                        {t.hypothesis && (
+                                            <span className={styles.desc}>仮説: {t.hypothesis}</span>
+                                        )}
                                     </td>
                                     <td className={styles.td}>{t.product.name}</td>
                                     <td className={styles.td}>
@@ -183,6 +186,9 @@ export default function AbTestCompletedPage() {
                                         {t.improvementVsAPercent != null
                                             ? `+${Number(t.improvementVsAPercent).toFixed(1)}%`
                                             : '—'}
+                                        {t.expectedImprovement != null && (
+                                            <span className={styles.desc}>期待: {Number(t.expectedImprovement).toFixed(1)}%</span>
+                                        )}
                                     </td>
                                     {filter !== 'lose' && (
                                         <td className={styles.tdClip}>{t.victoryFactors ?? '—'}</td>

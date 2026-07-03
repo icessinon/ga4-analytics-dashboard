@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 
+function parseImprovement(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null
+    const n = typeof value === 'number' ? value : parseFloat(String(value))
+    return Number.isFinite(n) ? n : null
+}
+
 /**
  * ABテスト一覧を取得（ページネーション対応: デフォルト5件/ページ）
  */
@@ -79,6 +85,8 @@ export async function POST(request: Request) {
             productId,
             name,
             description,
+            hypothesis,
+            expectedImprovement,
             startDate,
             endDate,
             status,
@@ -100,6 +108,8 @@ export async function POST(request: Request) {
                 productId: parseInt(productId, 10),
                 name,
                 description,
+                hypothesis: hypothesis || null,
+                expectedImprovement: parseImprovement(expectedImprovement),
                 variantAName: 'A', // 固定値
                 variantBName: 'B', // 固定値
                 startDate: new Date(startDate),
@@ -147,6 +157,8 @@ export async function PUT(request: Request) {
             id,
             name,
             description,
+            hypothesis,
+            expectedImprovement,
             startDate,
             endDate,
             status,
@@ -166,6 +178,8 @@ export async function PUT(request: Request) {
         const updateData: any = {}
         if (name !== undefined) updateData.name = name
         if (description !== undefined) updateData.description = description
+        if (hypothesis !== undefined) updateData.hypothesis = hypothesis || null
+        if (expectedImprovement !== undefined) updateData.expectedImprovement = parseImprovement(expectedImprovement)
         if (startDate !== undefined) updateData.startDate = new Date(startDate)
         if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null
         if (status !== undefined) updateData.status = status
