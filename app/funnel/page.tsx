@@ -538,7 +538,7 @@ function FunnelPageContent() {
                                             <LabelInput
                                                 value={step.customEventLabel}
                                                 onChange={(v) => updateStep(index, 'customEventLabel', v)}
-                                                placeholder="EF__Line__Area__新規会員登録"
+                                                placeholder="EF__Line__Area__新規会員登録（カンマ区切りで複数指定→合算）"
                                                 className={styles.formInput}
                                                 required
                                             />

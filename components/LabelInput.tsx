@@ -20,17 +20,28 @@ export default function LabelInput({ value, onChange, placeholder, className, re
     const listRef = useRef<HTMLUListElement>(null)
     const id = useId()
 
-    const filtered = value.trim()
-        ? labels.filter((l) => l.toLowerCase().includes(value.toLowerCase()) && l !== value)
+    // カンマ区切りの複数ラベル入力に対応: 最後のセグメントで補完し、選択時はそこだけ置換する
+    const lastSep = Math.max(value.lastIndexOf(','), value.lastIndexOf('、'))
+    const prefix = lastSep >= 0 ? value.slice(0, lastSep + 1) : ''
+    const current = value.slice(lastSep + 1).trim()
+
+    const filtered = current
+        ? labels.filter((l) => l.toLowerCase().includes(current.toLowerCase()) && l !== current)
         : []
 
     const showList = open && filtered.length > 0
 
     const select = (label: string) => {
-        onChange(label)
+        const next = prefix ? `${prefix}${label}` : label
+        onChange(next)
         setOpen(false)
         setHighlighted(-1)
-        inputRef.current?.focus()
+        const input = inputRef.current
+        if (input) {
+            input.focus()
+            // 値の再レンダリング後にカーソルを末尾へ（続けてカンマ入力できるように）
+            requestAnimationFrame(() => input.setSelectionRange(next.length, next.length))
+        }
     }
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,7 +99,7 @@ export default function LabelInput({ value, onChange, placeholder, className, re
                         <li
                             key={label}
                             className={`${styles.item} ${i === highlighted ? styles.itemHighlighted : ''}`}
-                            onMouseDown={() => select(label)}
+                            onMouseDown={(e) => { e.preventDefault(); select(label) }}
                             onMouseEnter={() => setHighlighted(i)}
                         >
                             {label}

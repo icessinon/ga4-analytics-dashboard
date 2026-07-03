@@ -85,10 +85,17 @@ export async function fetchEntryFormFunnelData(
         viewMap.set(label, (viewMap.get(label) ?? 0) + users)
     }
 
+    // カンマ区切りで複数ラベル指定時は各ラベルの値を合算する
+    const parseLabels = (s: string) =>
+        s.split(/[,、]/).map((l) => l.trim()).filter((l) => l !== '')
+    const sumUsers = (map: Map<string, number>, labels: string[]) =>
+        labels.reduce((sum, label) => sum + (map.get(label) ?? 0), 0)
+
     for (let i = 0; i < funnelConfig.steps.length; i++) {
         const step = funnelConfig.steps[i]
-        const clickUsers = clickMap.get(step.customEventLabel) ?? 0
-        const viewUsers = viewMap.get(step.customEventLabel) ?? 0
+        const labels = parseLabels(step.customEventLabel)
+        const clickUsers = sumUsers(clickMap, labels)
+        const viewUsers = sumUsers(viewMap, labels)
         const totalUsers = Math.max(clickUsers, viewUsers)
 
         funnelData.steps.push({
