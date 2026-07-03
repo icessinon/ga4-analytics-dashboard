@@ -7,21 +7,23 @@ export async function POST(request: Request) {
     try {
         const body = await request.json()
         const { current, previous, propertyId, weeklyBreakdown } = body
-        const analysis = await generateWeeklyInsightWithGemini({ current, previous })
+
+        let productId: number | null = null
+        let productName: string | null = null
+        if (propertyId) {
+            const product = await prisma.product.findFirst({
+                where: { ga4PropertyId: String(propertyId) },
+                select: { id: true, name: true },
+            }).catch(() => null)
+            if (product) { productId = product.id; productName = product.name }
+        }
+
+        const analysis = await generateWeeklyInsightWithGemini({ current, previous, productId: productId ?? undefined })
         if (analysis === null) return NextResponse.json({ error: '環境変数 GEMINI_API_KEY が設定されていません' }, { status: 500 })
 
         // target_month は current.startDate (YYYY-MM-DD) から抽出
         const targetMonth = typeof current?.startDate === 'string' ? current.startDate.slice(0, 7) : ''
         if (targetMonth) {
-            let productId: number | null = null
-            let productName: string | null = null
-            if (propertyId) {
-                const product = await prisma.product.findFirst({
-                    where: { ga4PropertyId: String(propertyId) },
-                    select: { id: true, name: true },
-                }).catch(() => null)
-                if (product) { productId = product.id; productName = product.name }
-            }
             const createdAt = nowIso()
             void insertMonthlyInsightLog({
                 insight_id:                `${propertyId ?? 'unknown'}-${targetMonth}-${createdAt}`,

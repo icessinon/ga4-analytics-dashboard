@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend,
 } from 'recharts'
 import BackLink from '@/components/BackLink'
@@ -11,6 +11,12 @@ import AISpinner from '@/components/AISpinner/AISpinner'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
 import styles from './InsightsPage.module.css'
+
+interface CvBreakdown {
+    applyCv: { users: number; pv: number }
+    lpApplyCv: { users: number; pv: number }
+    signupCv: { users: number; pv: number }
+}
 
 interface MonthMetrics {
     startDate: string
@@ -21,6 +27,7 @@ interface MonthMetrics {
     engagementRate: number
     avgSessionDuration: number
     screenPageViews: number
+    cv?: CvBreakdown
     topPages: Array<{ path: string; views: number }>
 }
 
@@ -32,15 +39,65 @@ interface WeekSummary {
     sessions: number
     engagementRate: number
     screenPageViews: number
+    applyCv: number
+    lpApplyCv: number
+    signupCv: number
+}
+
+interface MonthlyTrendPoint {
+    label: string
+    year: number
+    month: number
+    activeUsers: number
+    newUsers: number
+    sessions: number
+    engagementRate: number
+    screenPageViews: number
+    applyCv: number
+    lpApplyCv: number
+    signupCv: number
 }
 
 interface InsightsData {
+    baseMonth: string
+    isCurrentMonth: boolean
     current: MonthMetrics
     previous: MonthMetrics
     weeklyBreakdown: {
         current: WeekSummary[]
         previous: WeekSummary[]
     }
+    monthlyTrend: MonthlyTrendPoint[]
+}
+
+type TrendMetric = 'activeUsers' | 'newUsers' | 'sessions' | 'screenPageViews' | 'engagementRate' | 'applyCv' | 'lpApplyCv' | 'signupCv'
+
+const TREND_METRIC_OPTS: Array<{ value: TrendMetric; label: string }> = [
+    { value: 'activeUsers', label: 'ユーザー数' },
+    { value: 'newUsers', label: '新規' },
+    { value: 'sessions', label: 'セッション' },
+    { value: 'screenPageViews', label: 'PV' },
+    { value: 'engagementRate', label: 'EG率' },
+    { value: 'applyCv', label: '応募CV' },
+    { value: 'lpApplyCv', label: 'LP応募' },
+    { value: 'signupCv', label: '登録CV' },
+]
+
+const CV_TOOLTIPS = {
+    applyCv: '求人応募完了ページ（/entry/thanks）に到達したユニークユーザー数。',
+    lpApplyCv: '人材紹介LPの応募完了ページ（/lp-thanks/*）に到達したユニークユーザー数。drs/crs/mrs等の全LPを合算。',
+    signupCv: '会員登録完了ページ（/members/signup/thanks）に到達したユニークユーザー数。',
+} as const
+
+function todayYm(): string {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function shiftYm(ym: string, delta: number): string {
+    const [y, m] = ym.split('-').map(Number)
+    const d = new Date(y, (m - 1) + delta, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 function pctDiff(a: number, b: number): { text: string; up: boolean } | null {
@@ -63,23 +120,30 @@ function DeltaBadge({ a, b }: { a: number; b: number }) {
 export default function InsightsPage() {
     const { currentProduct } = useProduct()
     const [accessToken, setAccessToken] = useState('')
+    const [baseMonth, setBaseMonth] = useState<string>(todayYm())
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [data, setData] = useState<InsightsData | null>(null)
     const [geminiLoading, setGeminiLoading] = useState(false)
     const [geminiResult, setGeminiResult] = useState<string | null>(null)
     const [geminiError, setGeminiError] = useState<string | null>(null)
-    const [weekMetric, setWeekMetric] = useState<'activeUsers' | 'sessions' | 'screenPageViews'>('activeUsers')
+    const [weekMetric, setWeekMetric] = useState<'activeUsers' | 'sessions' | 'screenPageViews' | 'applyCv' | 'lpApplyCv' | 'signupCv'>('activeUsers')
+    const [trendMetric, setTrendMetric] = useState<TrendMetric>('activeUsers')
 
-    const handleFetch = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const currentYm = todayYm()
+
+    const fetchForMonth = async (targetMonth: string) => {
         if (!currentProduct) return
-        setLoading(true); setError(null); setData(null); setGeminiResult(null)
+        setLoading(true); setError(null); setGeminiResult(null)
         try {
             const res = await fetch('/api/insights', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, accessToken: accessToken || undefined }),
+                body: JSON.stringify({
+                    propertyId: currentProduct.ga4PropertyId,
+                    accessToken: accessToken || undefined,
+                    baseMonth: targetMonth,
+                }),
             })
             const json = await res.json()
             if (!res.ok) throw new Error(json.message || json.error || '取得に失敗しました')
@@ -91,6 +155,17 @@ export default function InsightsPage() {
         }
     }
 
+    const handleFetch = async (e: React.FormEvent) => {
+        e.preventDefault()
+        await fetchForMonth(baseMonth)
+    }
+
+    const changeMonth = (next: string) => {
+        if (next > currentYm) return
+        setBaseMonth(next)
+        fetchForMonth(next)
+    }
+
     const handleGemini = async () => {
         if (!data) return
         setGeminiLoading(true); setGeminiError(null); setGeminiResult(null)
@@ -98,7 +173,12 @@ export default function InsightsPage() {
             const res = await fetch('/api/insights/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ current: data.current, previous: data.previous }),
+                body: JSON.stringify({
+                    current: data.current,
+                    previous: data.previous,
+                    propertyId: currentProduct?.ga4PropertyId,
+                    weeklyBreakdown: data.weeklyBreakdown,
+                }),
             })
             const json = await res.json()
             if (!res.ok) throw new Error(json.error || '分析に失敗しました')
@@ -117,6 +197,9 @@ export default function InsightsPage() {
         { label: 'エンゲージメント率', tooltip: 'エンゲージドセッション ÷ 全セッション。エンゲージドセッション＝10秒以上滞在 or 2PV以上 or CVが発生したセッション。', current: `${(data.current.engagementRate * 100).toFixed(1)}%`, prev: `${(data.previous.engagementRate * 100).toFixed(1)}%`, delta: pctDiff(data.current.engagementRate, data.previous.engagementRate) },
         { label: '平均セッション時間', tooltip: '1セッションあたりの平均滞在時間。GA4では最後のページの滞在時間は含まれないため実態より短く出る傾向がある。', current: fmtSec(data.current.avgSessionDuration), prev: fmtSec(data.previous.avgSessionDuration), delta: pctDiff(data.current.avgSessionDuration, data.previous.avgSessionDuration) },
         { label: 'ページビュー', tooltip: 'GA4の screenPageViews。ページが表示された総回数（同一ユーザーの複数回閲覧・リロードを含む）。', current: data.current.screenPageViews.toLocaleString(), prev: data.previous.screenPageViews.toLocaleString(), delta: pctDiff(data.current.screenPageViews, data.previous.screenPageViews) },
+        { label: '応募CV', tooltip: CV_TOOLTIPS.applyCv, current: (data.current.cv?.applyCv.users ?? 0).toLocaleString(), prev: (data.previous.cv?.applyCv.users ?? 0).toLocaleString(), delta: pctDiff(data.current.cv?.applyCv.users ?? 0, data.previous.cv?.applyCv.users ?? 0) },
+        { label: 'LP応募CV', tooltip: CV_TOOLTIPS.lpApplyCv, current: (data.current.cv?.lpApplyCv.users ?? 0).toLocaleString(), prev: (data.previous.cv?.lpApplyCv.users ?? 0).toLocaleString(), delta: pctDiff(data.current.cv?.lpApplyCv.users ?? 0, data.previous.cv?.lpApplyCv.users ?? 0) },
+        { label: '会員登録CV', tooltip: CV_TOOLTIPS.signupCv, current: (data.current.cv?.signupCv.users ?? 0).toLocaleString(), prev: (data.previous.cv?.signupCv.users ?? 0).toLocaleString(), delta: pctDiff(data.current.cv?.signupCv.users ?? 0, data.previous.cv?.signupCv.users ?? 0) },
     ] : []
 
     // 週次比較チャートデータ
@@ -129,8 +212,8 @@ export default function InsightsPage() {
         ])).sort()
         return labels.map((label) => ({
             label,
-            今月: curMap.get(label)?.[weekMetric] ?? 0,
-            先月: prevMap.get(label)?.[weekMetric] ?? 0,
+            当月: curMap.get(label)?.[weekMetric] ?? 0,
+            前月: prevMap.get(label)?.[weekMetric] ?? 0,
         }))
     })() : []
 
@@ -138,7 +221,12 @@ export default function InsightsPage() {
         { value: 'activeUsers', label: 'ユーザー数' },
         { value: 'sessions', label: 'セッション数' },
         { value: 'screenPageViews', label: 'PV数' },
+        { value: 'applyCv', label: '応募CV' },
+        { value: 'lpApplyCv', label: 'LP応募' },
+        { value: 'signupCv', label: '登録CV' },
     ]
+
+    const trendMetricLabel = TREND_METRIC_OPTS.find((o) => o.value === trendMetric)?.label ?? ''
 
     if (!currentProduct) return (
         <div className={styles.container}>
@@ -155,18 +243,32 @@ export default function InsightsPage() {
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.title}>月次インサイトレポート</h1>
-                    <p className={styles.subtitle}>今月のKPIサマリーと前月比較・AIインサイト</p>
+                    <p className={styles.subtitle}>基準月のKPI・前月比較・過去12ヶ月トレンド・AIインサイト</p>
                 </div>
                 <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
             </div>
 
             <div className={styles.formSection}>
                 <form onSubmit={handleFetch}>
-                    <div className={styles.formField} style={{ marginBottom: '1rem' }}>
-                        <label className={styles.label}>GA4アクセストークン（オプション）</label>
-                        <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="サービスアカウントを使用する場合は空欄でOK" className={styles.input} />
+                    <div className={styles.formRow}>
+                        <div className={styles.formField}>
+                            <label className={styles.label}>基準月</label>
+                            <input
+                                type="month"
+                                value={baseMonth}
+                                onChange={(e) => setBaseMonth(e.target.value)}
+                                max={currentYm}
+                                className={styles.monthPicker}
+                            />
+                        </div>
+                        <div className={styles.formField} style={{ flex: 1 }}>
+                            <label className={styles.label}>GA4アクセストークン（オプション）</label>
+                            <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="サービスアカウントを使用する場合は空欄でOK" className={styles.input} />
+                        </div>
                     </div>
-                    <button type="submit" disabled={loading} className={styles.button}>{loading ? '取得中...' : '今月のデータを取得'}</button>
+                    <button type="submit" disabled={loading} className={styles.button} style={{ marginTop: '1rem' }}>
+                        {loading ? '取得中...' : 'データを取得'}
+                    </button>
                 </form>
             </div>
 
@@ -175,6 +277,35 @@ export default function InsightsPage() {
 
             {data && !loading && (
                 <>
+                    {/* 月ナビゲーション */}
+                    <div className={styles.monthNavBar}>
+                        <button
+                            type="button"
+                            className={styles.monthNavBtn}
+                            onClick={() => changeMonth(shiftYm(data.baseMonth, -1))}
+                        >
+                            ◀ 前月
+                        </button>
+                        <span className={styles.monthNavCurrent}>基準月：{data.baseMonth}</span>
+                        <button
+                            type="button"
+                            className={styles.monthNavBtn}
+                            disabled={data.baseMonth >= currentYm}
+                            onClick={() => changeMonth(shiftYm(data.baseMonth, 1))}
+                        >
+                            翌月 ▶
+                        </button>
+                        {!data.isCurrentMonth && (
+                            <button
+                                type="button"
+                                className={styles.monthNavTodayBtn}
+                                onClick={() => changeMonth(currentYm)}
+                            >
+                                今月に戻る
+                            </button>
+                        )}
+                    </div>
+
                     {/* 月次 KPI サマリー */}
                     <div className={styles.section}>
                         <h2 className={styles.sectionTitle}>KPIサマリー（{data.current.startDate} 〜 {data.current.endDate}）</h2>
@@ -183,8 +314,8 @@ export default function InsightsPage() {
                                 <thead>
                                     <tr>
                                         <th className={styles.th}>指標</th>
-                                        <th className={styles.thNum}>今月</th>
-                                        <th className={styles.thNum}>先月（{data.previous.startDate}〜）</th>
+                                        <th className={styles.thNum}>当月</th>
+                                        <th className={styles.thNum}>前月（{data.previous.startDate}〜）</th>
                                         <th className={styles.thNum}>前月比</th>
                                     </tr>
                                 </thead>
@@ -204,11 +335,124 @@ export default function InsightsPage() {
                         </div>
                     </div>
 
+                    {/* 月次トレンド（過去12ヶ月） */}
+                    {data.monthlyTrend && data.monthlyTrend.length > 0 && (
+                        <div className={styles.section}>
+                            <div className={styles.weeklyHeader}>
+                                <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>月次トレンド（過去12ヶ月）</h2>
+                                <div className={styles.weekMetricTabs}>
+                                    {TREND_METRIC_OPTS.map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() => setTrendMetric(opt.value)}
+                                            className={`${styles.weekMetricTab} ${trendMetric === opt.value ? styles.weekMetricTabActive : ''}`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={styles.weekChartWrapper}>
+                                <ResponsiveContainer width="100%" height={240}>
+                                    <LineChart data={data.monthlyTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                                        <XAxis
+                                            dataKey="label"
+                                            tick={{ fontSize: 11, fill: '#9ca3af' }}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tickFormatter={(v: string) => v.slice(2)}
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} width={48}
+                                            tickFormatter={(v: number) => {
+                                                if (trendMetric === 'engagementRate') return `${(v * 100).toFixed(0)}%`
+                                                return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+                                            }}
+                                        />
+                                        <Tooltip
+                                            cursor={{ stroke: 'rgba(99,102,241,0.35)', strokeWidth: 1 }}
+                                            content={({ active, payload, label: lbl }) => {
+                                                if (!active || !payload?.length) return null
+                                                const v = payload[0].value as number
+                                                const disp = trendMetric === 'engagementRate' ? `${(v * 100).toFixed(1)}%` : v.toLocaleString()
+                                                return (
+                                                    <div className={styles.weekTooltip}>
+                                                        <p className={styles.weekTooltipLabel}>{lbl}</p>
+                                                        <p className={styles.weekTooltipRow}>
+                                                            <span style={{ color: '#6366f1' }}>{trendMetricLabel}</span>
+                                                            <span>{disp}</span>
+                                                        </p>
+                                                    </div>
+                                                )
+                                            }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey={trendMetric}
+                                            stroke="#6366f1"
+                                            strokeWidth={2}
+                                            dot={{ r: 3, fill: '#6366f1' }}
+                                            activeDot={{ r: 5 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* トレンド表 */}
+                            <div className={styles.tableWrapper} style={{ marginTop: '1rem' }}>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th className={styles.th}>月</th>
+                                            <th className={styles.thNum}>ユーザー数</th>
+                                            <th className={styles.thNum}>新規</th>
+                                            <th className={styles.thNum}>セッション</th>
+                                            <th className={styles.thNum}>PV</th>
+                                            <th className={styles.thNum}>EG率</th>
+                                            <th className={styles.thNum}>応募CV<InfoTooltip text={CV_TOOLTIPS.applyCv} /></th>
+                                            <th className={styles.thNum}>LP応募<InfoTooltip text={CV_TOOLTIPS.lpApplyCv} /></th>
+                                            <th className={styles.thNum}>登録CV<InfoTooltip text={CV_TOOLTIPS.signupCv} /></th>
+                                            <th className={styles.thNum}>前月比（AU）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.monthlyTrend.map((m, i) => {
+                                            const prev = i > 0 ? data.monthlyTrend[i - 1] : null
+                                            const isBase = m.label === data.baseMonth
+                                            return (
+                                                <tr key={m.label} className={styles.tr}>
+                                                    <td className={styles.td} style={{ fontWeight: isBase ? 700 : 500, color: isBase ? '#a5b4fc' : '#e5e7eb' }}>
+                                                        {m.label}
+                                                        {isBase && <span className={styles.baseMonthTag}>基準月</span>}
+                                                    </td>
+                                                    <td className={styles.tdNum} style={{ color: '#f3f4f6', fontWeight: isBase ? 600 : 400 }}>{m.activeUsers.toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{m.newUsers.toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{m.sessions.toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{m.screenPageViews.toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{(m.engagementRate * 100).toFixed(1)}%</td>
+                                                    <td className={styles.tdNum}>{(m.applyCv ?? 0).toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{(m.lpApplyCv ?? 0).toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>{(m.signupCv ?? 0).toLocaleString()}</td>
+                                                    <td className={styles.tdNum}>
+                                                        {prev ? <DeltaBadge a={m.activeUsers} b={prev.activeUsers} /> : <span style={{ color: '#6b7280' }}>-</span>}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 週次内訳 */}
                     {weekChartData.length > 0 && (
                         <div className={styles.section}>
                             <div className={styles.weeklyHeader}>
-                                <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>週次内訳（今月 vs 先月）</h2>
+                                <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>週次内訳（当月 vs 前月）</h2>
                                 <div className={styles.weekMetricTabs}>
                                     {WEEK_METRIC_OPTS.map((opt) => (
                                         <button
@@ -254,8 +498,8 @@ export default function InsightsPage() {
                                             wrapperStyle={{ fontSize: '0.8125rem', color: '#9ca3af', paddingTop: '0.5rem' }}
                                             formatter={(value) => <span style={{ color: '#9ca3af' }}>{value}</span>}
                                         />
-                                        <Bar dataKey="今月" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={36} />
-                                        <Bar dataKey="先月" fill="#374151" radius={[3, 3, 0, 0]} maxBarSize={36} />
+                                        <Bar dataKey="当月" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={36} />
+                                        <Bar dataKey="前月" fill="#374151" radius={[3, 3, 0, 0]} maxBarSize={36} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -266,11 +510,12 @@ export default function InsightsPage() {
                                     <thead>
                                         <tr>
                                             <th className={styles.th}>週</th>
-                                            <th className={styles.th} style={{ fontSize: '0.75rem', color: '#6b7280' }}>期間（今月）</th>
+                                            <th className={styles.th} style={{ fontSize: '0.75rem', color: '#6b7280' }}>期間（当月）</th>
                                             <th className={styles.thNum}>ユーザー数</th>
                                             <th className={styles.thNum}>セッション</th>
                                             <th className={styles.thNum}>PV</th>
                                             <th className={styles.thNum}>EG率</th>
+                                            <th className={styles.thNum}>応募CV<InfoTooltip text={CV_TOOLTIPS.applyCv} /></th>
                                             <th className={styles.thNum}>前月同週比</th>
                                         </tr>
                                     </thead>
@@ -297,6 +542,10 @@ export default function InsightsPage() {
                                                     </td>
                                                     <td className={styles.tdNum}>{(week.engagementRate * 100).toFixed(1)}%</td>
                                                     <td className={styles.tdNum}>
+                                                        {(week.applyCv ?? 0).toLocaleString()}
+                                                        {prev && <span className={styles.prevVal}>（{(prev.applyCv ?? 0).toLocaleString()}）</span>}
+                                                    </td>
+                                                    <td className={styles.tdNum}>
                                                         {prev
                                                             ? <DeltaBadge a={week.activeUsers} b={prev.activeUsers} />
                                                             : <span style={{ color: '#6b7280' }}>-</span>
@@ -311,9 +560,9 @@ export default function InsightsPage() {
                         </div>
                     )}
 
-                    {/* 今月の上位ページ */}
+                    {/* 当月の上位ページ */}
                     <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>今月の上位ページ（PV順）</h2>
+                        <h2 className={styles.sectionTitle}>当月の上位ページ（PV順）</h2>
                         <div className={styles.pageList}>
                             {data.current.topPages.map((pg, i) => (
                                 <div key={i} className={styles.pageRow}>
