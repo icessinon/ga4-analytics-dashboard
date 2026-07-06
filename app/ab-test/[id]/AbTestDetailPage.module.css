@@ -379,6 +379,14 @@
     color: #9ca3af;
 }
 
+.currentCalloutError {
+    margin-top: 0.5rem;
+    background-color: rgba(153, 27, 27, 0.2);
+    border: 1px solid #dc2626;
+    color: #fca5a5;
+    font-size: 0.875rem;
+}
+
 .currentTableWrapper {
     overflow-x: auto;
 }

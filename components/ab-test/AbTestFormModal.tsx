@@ -437,6 +437,11 @@ export default function AbTestFormModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        // 日時未入力のまま保存すると自動実行が無音で永久に走らないため、保存前に弾く
+        if (scheduleConfig.enabled && scheduleConfig.executionType === 'scheduled' && !scheduleConfig.scheduledDate) {
+            alert('自動実行「特定の日時に実行」の日時を入力してください')
+            return
+        }
         setSubmitting(true)
         try {
             const ga4ConfigData = {

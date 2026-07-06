@@ -67,15 +67,15 @@ export default function AbTestScheduleConfig({ value, onChange }: Props) {
                             name="executionType"
                             value="on_end_delayed"
                             checked={config.executionType === 'on_end_delayed'}
-                            onChange={() => updateConfig({ executionType: 'on_end_delayed' })}
+                            onChange={() => updateConfig({ executionType: 'on_end_delayed', delayDays: config.delayDays || 1 })}
                         />
                         <span>期間終了後</span>
                         {config.executionType === 'on_end_delayed' && (
                             <input
                                 type="number"
                                 min="1"
-                                value={config.delayDays || 0}
-                                onChange={(e) => updateConfig({ delayDays: parseInt(e.target.value, 10) || 0 })}
+                                value={config.delayDays || 1}
+                                onChange={(e) => updateConfig({ delayDays: parseInt(e.target.value, 10) || 1 })}
                                 className={styles.numberInput}
                             />
                         )}

@@ -20,6 +20,14 @@ function dateAtTimeJST(d: Date, time: string): Date {
     return new Date(`${y}-${pad2(mo)}-${pad2(day)}T${pad2(h)}:${pad2(m)}:00+09:00`)
 }
 
+/**
+ * JSTの暦日をUTCフィールドで読めるように+9hシフトした Date を返す。
+ * now 由来の日時から「JSTでの今日・曜日」を求める際に必須（UTC日付だとJST 00:00〜08:59で前日にズレる）
+ */
+function shiftToJst(d: Date): Date {
+    return new Date(d.getTime() + 9 * 60 * 60 * 1000)
+}
+
 export interface ScheduleConfig {
     enabled: boolean
     executionType: 'on_end' | 'on_end_delayed' | 'scheduled' | 'recurring'
@@ -30,6 +38,32 @@ export interface ScheduleConfig {
         time: string
         daysOfWeek?: number[]
         dayOfMonth?: number
+    }
+}
+
+/**
+ * 一回限りタイプ（on_end / on_end_delayed / scheduled）の実行予定日時を返す。
+ * on_end は最終日のGA4データが揃ってから集計するため、終了日の翌日 09:00 JST に実行する。
+ */
+function getOneShotAnchor(config: ScheduleConfig, endDate: Date | null): Date | null {
+    const timeStr = config.recurringPattern?.time || '09:00'
+    switch (config.executionType) {
+        case 'on_end': {
+            if (!endDate) return null
+            const nextDay = new Date(endDate)
+            nextDay.setUTCDate(nextDay.getUTCDate() + 1)
+            return dateAtTimeJST(nextDay, timeStr)
+        }
+        case 'on_end_delayed': {
+            if (!endDate) return null
+            const delayed = new Date(endDate)
+            delayed.setUTCDate(delayed.getUTCDate() + Math.max(1, config.delayDays || 1))
+            return dateAtTimeJST(delayed, timeStr)
+        }
+        case 'scheduled':
+            return config.scheduledDate ? parseScheduledDateAsJST(config.scheduledDate) : null
+        default:
+            return null
     }
 }
 
@@ -54,17 +88,18 @@ export function calculateNextExecutionDate(
     const timeStr = config.recurringPattern?.time || '09:00'
 
     switch (config.executionType) {
-        case 'on_end':
+        case 'on_end': {
             if (!endDate) return null
-            const endExecution = dateAtTimeJST(endDate, timeStr)
-            return endExecution >= now ? endExecution : null
+            // 最終日のデータが揃ってから実行するため、終了日の翌日に実行する
+            const endExecution = getOneShotAnchor(config, endDate)
+            return endExecution && endExecution >= now ? endExecution : null
+        }
 
-        case 'on_end_delayed':
+        case 'on_end_delayed': {
             if (!endDate) return null
-            const delayedDate = new Date(endDate)
-            delayedDate.setUTCDate(delayedDate.getUTCDate() + (config.delayDays || 0))
-            const delayedAtJST = dateAtTimeJST(delayedDate, timeStr)
-            return delayedAtJST >= now ? delayedAtJST : null
+            const delayedAtJST = getOneShotAnchor(config, endDate)
+            return delayedAtJST && delayedAtJST >= now ? delayedAtJST : null
+        }
 
         case 'scheduled':
             if (!config.scheduledDate) return null
@@ -87,16 +122,13 @@ export function calculateNextExecutionDate(
                     const endDayMs = endDate ? utcDayOnly(endDate) : null
                     let day = new Date(startDate)
                     if (lastExecutedAt) {
-                        day = new Date(lastExecutedAt)
+                        // lastExecutedAt のJST暦日+1日から探索（UTC日付だとJST 00:00〜08:59実行時に同日を再計算してしまう）
+                        day = shiftToJst(lastExecutedAt)
                         day.setUTCDate(day.getUTCDate() + 1)
                     }
                     for (let i = 0; i < 400; i++) {
                         if (endDayMs !== null && utcDayOnly(day) > endDayMs) return null
                         const slot = dateAtTimeJST(day, timeStr)
-                        if (endDayMs !== null && utcDayOnly(new Date(slot)) > endDayMs) {
-                            day.setUTCDate(day.getUTCDate() + 1)
-                            continue
-                        }
                         if (slot >= now) return slot
                         day.setUTCDate(day.getUTCDate() + 1)
                     }
@@ -104,24 +136,25 @@ export function calculateNextExecutionDate(
                 }
 
                 case 'weekly': {
-                    const daysOfWeek = config.recurringPattern.daysOfWeek || [0]
-                    const currentDay = now.getUTCDay()
+                    const daysOfWeek = [...(config.recurringPattern.daysOfWeek || [0])].sort((a, b) => a - b)
+                    const jstNow = shiftToJst(now)
+                    const currentDay = jstNow.getUTCDay()
                     if (daysOfWeek.includes(currentDay)) {
-                        const todayAtTime = dateAtTimeJST(new Date(now.getTime()), timeStr)
+                        const todayAtTime = dateAtTimeJST(jstNow, timeStr)
                         if (todayAtTime >= now) return todayAtTime
                     }
                     const nextDay = daysOfWeek.find((d: number) => d > currentDay) ?? daysOfWeek[0]
                     const daysUntilNext = nextDay > currentDay
                         ? nextDay - currentDay
                         : 7 - currentDay + nextDay
-                    const weeklyDate = new Date(now)
+                    const weeklyDate = shiftToJst(now)
                     weeklyDate.setUTCDate(weeklyDate.getUTCDate() + daysUntilNext)
                     return dateAtTimeJST(weeklyDate, timeStr)
                 }
 
                 case 'monthly': {
                     const dayOfMonth = config.recurringPattern.dayOfMonth || 1
-                    const monthlyDate = new Date(now)
+                    const monthlyDate = shiftToJst(now)
                     monthlyDate.setUTCDate(dayOfMonth)
                     let monthlyAtJST = dateAtTimeJST(monthlyDate, timeStr)
                     if (monthlyAtJST < now) {
@@ -163,17 +196,14 @@ function getLatestPassedRecurringSlot(
             const endDayMs = endDate ? utcDayOnlyMs(endDate) : null
             let day = new Date(startDate)
             if (lastExecutedAt) {
-                day = new Date(lastExecutedAt)
+                // lastExecutedAt のJST暦日+1日から探索（UTC日付だとJST 00:00〜08:59実行時に同日スロットを再検出してしまう）
+                day = shiftToJst(lastExecutedAt)
                 day.setUTCDate(day.getUTCDate() + 1)
             }
             let latestPassed: Date | null = null
             for (let i = 0; i < 400; i++) {
                 if (endDayMs !== null && utcDayOnlyMs(day) > endDayMs) break
                 const slot = dateAtTimeJST(day, timeStr)
-                if (endDayMs !== null && utcDayOnlyMs(new Date(slot)) > endDayMs) {
-                    day.setUTCDate(day.getUTCDate() + 1)
-                    continue
-                }
                 if (slot > now) break
                 latestPassed = slot
                 day.setUTCDate(day.getUTCDate() + 1)
@@ -187,12 +217,13 @@ function getLatestPassedRecurringSlot(
             const endDayMs = endDate ? utcDayOnlyMs(endDate) : null
             let latestPassed: Date | null = null
             for (let back = 0; back < 7; back++) {
-                const d = new Date(now)
+                // JST暦日で曜日判定（UTC日付だとJST 00:00〜08:59のスロットが見つからない）
+                const d = shiftToJst(now)
                 d.setUTCDate(d.getUTCDate() - back)
                 if (!daysOfWeek.includes(d.getUTCDay())) continue
                 const slot = dateAtTimeJST(d, timeStr)
                 if (slot > now) continue
-                const slotDay = utcDayOnlyMs(new Date(slot))
+                const slotDay = utcDayOnlyMs(d)
                 if (slotDay < startDayMs) continue
                 if (endDayMs !== null && slotDay > endDayMs) continue
                 if (!latestPassed || slot > latestPassed) latestPassed = slot
@@ -208,19 +239,18 @@ function getLatestPassedRecurringSlot(
             const slotForMonth = (base: Date) => {
                 const monthlyDate = new Date(base)
                 monthlyDate.setUTCDate(dayOfMonth)
-                return dateAtTimeJST(monthlyDate, timeStr)
+                return { slot: dateAtTimeJST(monthlyDate, timeStr), dayMs: utcDayOnlyMs(monthlyDate) }
             }
 
-            let monthlyDate = new Date(now)
-            let slot = slotForMonth(monthlyDate)
+            const monthlyDate = shiftToJst(now)
+            let { slot, dayMs } = slotForMonth(monthlyDate)
             if (slot > now) {
                 monthlyDate.setUTCMonth(monthlyDate.getUTCMonth() - 1)
-                slot = slotForMonth(monthlyDate)
+                ;({ slot, dayMs } = slotForMonth(monthlyDate))
             }
             if (slot > now) return null
-            const slotDay = utcDayOnlyMs(new Date(slot))
-            if (slotDay < startDayMs) return null
-            if (endDayMs !== null && slotDay > endDayMs) return null
+            if (dayMs < startDayMs) return null
+            if (endDayMs !== null && dayMs > endDayMs) return null
             return slot
         }
 
@@ -246,18 +276,17 @@ export async function findAbTestsToExecute(): Promise<number[]> {
 
     const abTestIds: number[] = []
 
+    // recurring: スロットを過ぎてから実行を許容する猶予（cron 5分間隔の遅延を吸収）
+    const RECURRING_WINDOW_MS = 15 * 60 * 1000
+    // 一回限り（on_end / on_end_delayed / scheduled）: 予定時刻を過ぎてもこの範囲内ならキャッチアップ実行する
+    // （スケジューラ停止からの復帰時に、何ヶ月も前のテストが一斉発火しないよう上限を設ける）
+    const ONE_SHOT_CATCHUP_MS = 48 * 60 * 60 * 1000
+    // 失敗が続く場合のリトライ上限（Slack/BQへの無限スパム防止）
+    const MAX_FAILED_RETRIES = 3
+
     for (const abTest of abTests) {
         const config = abTest.scheduleConfig as unknown as ScheduleConfig
         if (!config || !config.enabled) continue
-
-        let windowMs: number
-        if (config.executionType === 'scheduled') {
-            windowMs = 2 * 60 * 1000
-        } else if (config.executionType === 'recurring') {
-            windowMs = 15 * 60 * 1000
-        } else {
-            windowMs = 120 * 60 * 1000
-        }
 
         let anchor: Date | null = null
 
@@ -272,34 +301,34 @@ export async function findAbTestsToExecute(): Promise<number[]> {
                 now
             )
             const lagMs = latestPassed ? now.getTime() - latestPassed.getTime() : -1
-            if (latestPassed && lagMs >= 0 && lagMs <= windowMs) {
+            if (latestPassed && lagMs >= 0 && lagMs <= RECURRING_WINDOW_MS) {
                 anchor = latestPassed
             }
         } else {
-            const nextExecution = calculateNextExecutionDate(
-                config,
-                abTest.startDate,
-                abTest.endDate,
-                abTest.lastExecutedAt
-            )
-            if (nextExecution && nextExecution <= now) anchor = nextExecution
+            const target = getOneShotAnchor(config, abTest.endDate)
+            if (target && target <= now && now.getTime() - target.getTime() <= ONE_SHOT_CATCHUP_MS) {
+                anchor = target
+            }
         }
 
         if (!anchor) continue
 
-        const executionStart = new Date(anchor.getTime() - windowMs)
-        const executionEnd = new Date(anchor.getTime() + windowMs)
-        const existingExecution = await prisma.abTestReportExecution.findFirst({
+        // アンカー以降に実行済みならスキップ
+        if (abTest.lastExecutedAt && abTest.lastExecutedAt >= anchor) continue
+
+        // アンカー以降の実行レコードで重複判定（実行はアンカー通過後に起きるため上限は不要。
+        // 上限を設けると cron 遅延でレコードが窓の外に落ち、無限再実行になる）
+        const executions = await prisma.abTestReportExecution.findMany({
             where: {
                 abTestId: abTest.id,
-                createdAt: { gte: executionStart, lte: executionEnd },
-                status: { in: ['completed', 'running'] },
+                createdAt: { gte: anchor },
             },
+            select: { status: true },
         })
+        if (executions.some((e) => e.status === 'completed' || e.status === 'running')) continue
+        if (executions.filter((e) => e.status === 'failed').length >= MAX_FAILED_RETRIES) continue
 
-        if (!existingExecution) {
-            abTestIds.push(abTest.id)
-        }
+        abTestIds.push(abTest.id)
     }
 
     return abTestIds

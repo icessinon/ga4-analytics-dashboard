@@ -459,6 +459,12 @@ export default function AbTestDetailPage() {
                                 )
                             })()}
 
+                            {currentResult.variants.some((v) => v.cv > v.pv) && (
+                                <div className={`${styles.currentCallout} ${styles.currentCalloutError}`}>
+                                    ⚠️ CVがPV（分母）を上回っているバリアントがあります（CVR&gt;100%）。分母ラベルがテスト対象ユーザー全体をカバーしているか、CVR設定を見直してください
+                                </div>
+                            )}
+
                             <div className={styles.currentTableWrapper}>
                                 <table className={styles.currentTable}>
                                     <thead>
