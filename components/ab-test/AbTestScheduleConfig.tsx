@@ -123,7 +123,10 @@ export default function AbTestScheduleConfig({ value, onChange }: Props) {
                             name="executionType"
                             value="recurring"
                             checked={config.executionType === 'recurring'}
-                            onChange={() => updateConfig({ executionType: 'recurring' })}
+                            onChange={() => updateConfig({
+                                executionType: 'recurring',
+                                recurringPattern: config.recurringPattern ?? { frequency: 'daily', time: '09:00' },
+                            })}
                         />
                         <span>期間中も定期的に実行</span>
                         {config.executionType === 'recurring' && (
