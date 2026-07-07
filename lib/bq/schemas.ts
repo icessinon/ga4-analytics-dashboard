@@ -98,6 +98,57 @@ export type AbTestResultLogRow = {
 }
 
 // ============================================================
+//  AB テスト終了時 AI 最終レポートログ
+//  テスト完了時に Gemini が生成した勝因・敗因レポートを保存する。
+//  施策提案アドバイザーのコンテキストとしても参照する。
+//  insertId = ab_test_final_report:{ab_test_id}:{report_date} で dedup。
+// ============================================================
+
+export const AB_TEST_FINAL_REPORT_LOG_SCHEMA: BQField[] = [
+  { name: 'ab_test_id',               type: 'INT64',     mode: 'REQUIRED' },
+  { name: 'product_id',               type: 'INT64'     },
+  { name: 'ab_test_name',             type: 'STRING'    },
+  { name: 'hypothesis',               type: 'STRING'    },
+  { name: 'expected_improvement_pct', type: 'FLOAT64'   },
+  { name: 'variant_a_name',           type: 'STRING'    },
+  { name: 'variant_b_name',           type: 'STRING'    },
+  { name: 'winner_variant',           type: 'STRING'    },
+  { name: 'improvement_vs_a_pct',     type: 'FLOAT64'   },
+  { name: 'statistical_significance', type: 'FLOAT64'   },
+  { name: 'variants_summary',         type: 'STRING'    },
+  { name: 'victory_factors',          type: 'STRING'    },
+  { name: 'defeat_factors',           type: 'STRING'    },
+  { name: 'ai_report',                type: 'STRING'    },
+  { name: 'start_date',               type: 'DATE'      },
+  { name: 'end_date',                 type: 'DATE'      },
+  { name: 'report_month',             type: 'STRING'    },
+  { name: 'report_date',              type: 'DATE'      },
+  { name: 'synced_at',                type: 'TIMESTAMP' },
+]
+
+export type AbTestFinalReportLogRow = {
+  ab_test_id:               number
+  product_id:               number | null
+  ab_test_name:             string | null
+  hypothesis:               string | null
+  expected_improvement_pct: number | null
+  variant_a_name:           string | null
+  variant_b_name:           string | null
+  winner_variant:           string | null
+  improvement_vs_a_pct:     number | null
+  statistical_significance: number | null
+  variants_summary:         string | null
+  victory_factors:          string | null
+  defeat_factors:           string | null
+  ai_report:                string | null
+  start_date:               string | null
+  end_date:                 string | null
+  report_month:             string
+  report_date:              string
+  synced_at:                string
+}
+
+// ============================================================
 //  ファネル実行ログ (Postgres funnel_executions ミラー)
 // ============================================================
 
@@ -285,8 +336,9 @@ export type SyncRunLogRow = {
 // ============================================================
 
 export const BQ_TABLES = {
-  report_execution_log: REPORT_EXECUTION_LOG_SCHEMA,
-  ab_test_result_log:   AB_TEST_RESULT_LOG_SCHEMA,
+  report_execution_log:     REPORT_EXECUTION_LOG_SCHEMA,
+  ab_test_result_log:       AB_TEST_RESULT_LOG_SCHEMA,
+  ab_test_final_report_log: AB_TEST_FINAL_REPORT_LOG_SCHEMA,
   funnel_execution_log: FUNNEL_EXECUTION_LOG_SCHEMA,
   monthly_insight_log:  MONTHLY_INSIGHT_LOG_SCHEMA,
   ai_analysis_log:      AI_ANALYSIS_LOG_SCHEMA,

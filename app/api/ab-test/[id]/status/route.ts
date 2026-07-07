@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
+import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
 
 /**
  * 直近の実行結果から勝利バリアントとA比改善率を算出
@@ -88,6 +89,15 @@ export async function PUT(
                 },
             },
         })
+
+        // 手動完了時にAI最終レポートを生成（メモ更新を反映するため再生成）
+        if (status === 'completed') {
+            const report = await generateAndStoreFinalReport(id, { force: true })
+            if (report) {
+                abTest.finalAiReport = report
+                abTest.finalAiReportAt = new Date()
+            }
+        }
 
         return NextResponse.json({
             success: true,

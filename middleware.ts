@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
         return NextResponse.next()
     }
 
-    if (pathname === '/api/ab-test/execute' && request.method === 'POST') {
+    const internalPostPaths = ['/api/ab-test/execute', '/api/alerts/cv-drop']
+    if (internalPostPaths.includes(pathname) && request.method === 'POST') {
         const secret = request.headers.get(INTERNAL_SECRET_HEADER)
         if (secret && process.env.INTERNAL_API_SECRET && secret === process.env.INTERNAL_API_SECRET) {
             return NextResponse.next()

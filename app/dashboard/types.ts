@@ -121,6 +121,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'GA4分析', subtitle: 'GA4データの分析とレポート', getHref: () => '/analytics', productPrefix: true },
             { title: 'トレンド', subtitle: '月次トレンドレポート（PV/CV/CVR推移）', getHref: (id) => id ? `/trend?productId=${id}` : '/trend', productPrefix: true },
             { title: 'ABテスト', subtitle: 'ABテスト結果の分析と評価', getHref: (id) => id ? `/ab-test?productId=${id}` : '/ab-test', productPrefix: true },
+            { title: '施策提案AI壁打ち', subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価', getHref: () => '/ab-test/advisor', productPrefix: true },
             { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
         ],
     },

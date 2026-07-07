@@ -10,6 +10,7 @@ import { getGeminiApiKey } from '@/lib/utils/gemini'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
 import { insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
 
 interface GA4CvrConfig {
     denominatorLabels?: string[] | string
@@ -354,6 +355,11 @@ export async function POST(request: Request) {
                     })
                 } catch (error) {
                     console.error('Slack通知エラー:', error)
+                }
+
+                // テスト期間終了後の実行では AI 最終レポートを生成（未生成の場合のみ）
+                if (abTest.endDate && abTest.endDate.getTime() <= Date.now() && !abTest.finalAiReport) {
+                    await generateAndStoreFinalReport(abTest.id)
                 }
 
                 results.push({

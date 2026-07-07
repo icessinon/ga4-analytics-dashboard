@@ -132,6 +132,8 @@ model AbTest {
   improvementVsAPercent  Decimal?  @db.Decimal(8, 2) // A比の改善率（%）。B/C/D勝利時のみ
   victoryFactors        String?   @db.Text         // 完了時メモ：勝利要因
   defeatFactors         String?   @db.Text         // 完了時メモ：負け要因
+  finalAiReport         String?   @db.Text         // 終了時AI最終レポート
+  finalAiReportAt       DateTime? // 最終レポート生成日時
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   

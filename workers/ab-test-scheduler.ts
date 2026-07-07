@@ -64,6 +64,27 @@ cron.schedule(cronExpression, async () => {
     timezone: 'Asia/Tokyo',
 })
 
+// CV急落アラート: 毎日 09:30 JST に前日CV/CVRを過去4週の同一曜日平均と比較して急落時にSlack通知
+cron.schedule('0 30 9 * * *', async () => {
+    try {
+        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (process.env.INTERNAL_API_SECRET) headers['x-internal-secret'] = process.env.INTERNAL_API_SECRET
+        const response = await fetch(`${appUrl}/api/alerts/cv-drop`, { method: 'POST', headers })
+        if (!response.ok) {
+            console.error(`[CV Drop Alert] HTTPエラー: ${response.status} ${response.statusText}`)
+            return
+        }
+        const data = await response.json() as { results?: Array<{ alerts: unknown[] }> }
+        const alertCount = (data.results ?? []).reduce((sum, r) => sum + r.alerts.length, 0)
+        console.log(`[CV Drop Alert] ${new Date().toISOString()} チェック完了: アラート ${alertCount} 件`)
+    } catch (error) {
+        console.error('[CV Drop Alert] 実行エラー:', error)
+    }
+}, {
+    timezone: 'Asia/Tokyo',
+})
+
 // BQ 補完同期: 毎日 04:00 JST に過去 3 日ぶんの未同期レコードを再送
 cron.schedule('0 0 4 * * *', async () => {
     try {

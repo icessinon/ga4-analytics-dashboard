@@ -49,6 +49,8 @@ export interface AbTest {
     lastExecutedAt?: string | null
     victoryFactors?: string | null
     defeatFactors?: string | null
+    finalAiReport?: string | null
+    finalAiReportAt?: string | null
     product: {
         id: number
         name: string

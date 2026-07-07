@@ -21,6 +21,27 @@ interface CohortRow {
     weeks: Record<number, WeekData>
 }
 
+interface AbTestMarker {
+    id: number
+    name: string
+    startDate: string
+    endDate: string | null
+    status: string
+    winnerVariant: string | null
+}
+
+const MARKER_COLORS = ['#f59e0b', '#ec4899', '#22d3ee', '#a3e635', '#f87171', '#c084fc']
+function markerColor(i: number) { return MARKER_COLORS[i % MARKER_COLORS.length] }
+
+// テスト期間がコホート週 [weekStart, weekStart+6日] と重なるか
+function overlapsWeek(test: AbTestMarker, weekStart: string): boolean {
+    const ws = new Date(weekStart).getTime()
+    const we = ws + 6 * 24 * 60 * 60 * 1000
+    const ts = new Date(test.startDate).getTime()
+    const te = test.endDate ? new Date(test.endDate).getTime() : Infinity
+    return ts <= we && te >= ws
+}
+
 // "2026-05-04" → "5/4〜5/10"
 function weekRangeLabel(weekStart: string): string {
     const start = new Date(weekStart)
@@ -63,6 +84,7 @@ export default function CohortPage() {
     const [cohorts, setCohorts] = useState<CohortRow[] | null>(null)
     const [maxPeriods, setMaxPeriods] = useState(6)
     const [error, setError] = useState<string | null>(null)
+    const [abTests, setAbTests] = useState<AbTestMarker[]>([])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -72,21 +94,47 @@ export default function CohortPage() {
         setCohorts(null)
 
         try {
-            const res = await fetch('/api/user/cohort', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    startDate,
-                    endDate,
-                    periods,
-                    accessToken: accessToken || undefined,
+            const [res, abRes] = await Promise.all([
+                fetch('/api/user/cohort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        propertyId: currentProduct.ga4PropertyId,
+                        startDate,
+                        endDate,
+                        periods,
+                        accessToken: accessToken || undefined,
+                    }),
                 }),
-            })
+                fetch(`/api/ab-test?productId=${currentProduct.id}&limit=50`).catch(() => null),
+            ])
             const data = await res.json()
             if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
             setCohorts(data.cohorts)
             setMaxPeriods(data.maxPeriods)
+
+            if (abRes?.ok) {
+                const abData = await abRes.json()
+                const rangeStart = new Date(startDate).getTime()
+                const rangeEnd = new Date(endDate).getTime()
+                const tests: AbTestMarker[] = (abData.abTests ?? [])
+                    .map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        startDate: t.startDate,
+                        endDate: t.endDate,
+                        status: t.status,
+                        winnerVariant: t.winnerVariant ?? null,
+                    }))
+                    .filter((t: AbTestMarker) => {
+                        const ts = new Date(t.startDate).getTime()
+                        const te = t.endDate ? new Date(t.endDate).getTime() : Infinity
+                        return ts <= rangeEnd && te >= rangeStart
+                    })
+                setAbTests(tests)
+            } else {
+                setAbTests([])
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
@@ -197,6 +245,36 @@ export default function CohortPage() {
                         </span>
                     </div>
 
+                    {abTests.length > 0 && (
+                        <div style={{
+                            margin: '0.5rem 0 0.75rem',
+                            padding: '0.6rem 0.85rem',
+                            background: 'rgba(99,102,241,0.06)',
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.8rem',
+                            color: '#d1d5db',
+                        }}>
+                            <span style={{ fontWeight: 600, marginRight: '0.75rem' }}>期間中の施策（ABテスト）：</span>
+                            {abTests.map((t, ti) => (
+                                <span key={t.id} style={{ marginRight: '1rem', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                    <span style={{
+                                        display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                                        background: markerColor(ti), marginRight: 4, verticalAlign: 'middle',
+                                    }} />
+                                    {t.name}
+                                    <span style={{ color: '#9ca3af' }}>
+                                        （{new Date(t.startDate).toLocaleDateString('ja-JP')}〜{t.endDate ? new Date(t.endDate).toLocaleDateString('ja-JP') : '継続中'}
+                                        {t.winnerVariant ? `・勝者${t.winnerVariant}` : ''}）
+                                    </span>
+                                </span>
+                            ))}
+                            <p style={{ margin: '0.35rem 0 0', color: '#9ca3af' }}>
+                                ●が付いた初回訪問週のコホートは施策実施中に流入したユーザーです。施策前後のコホートでリテンション率を比較できます。
+                            </p>
+                        </div>
+                    )}
+
                     {cohorts.length === 0 ? (
                         <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
                             データがありません。期間を広げて再試行してください。
@@ -217,7 +295,21 @@ export default function CohortPage() {
                                         <tr key={row.cohortName}>
                                             <td className={styles.rowLabel}>
                                                 <div className={styles.rowLabelInner}>
-                                                    <span className={styles.rowWeekLabel}>{weekRangeLabel(row.weekStart)}</span>
+                                                    <span className={styles.rowWeekLabel}>
+                                                        {weekRangeLabel(row.weekStart)}
+                                                        {abTests.map((t, ti) => overlapsWeek(t, row.weekStart) && (
+                                                            <span
+                                                                key={t.id}
+                                                                title={`施策実施中: ${t.name}`}
+                                                                style={{
+                                                                    display: 'inline-block',
+                                                                    width: 8, height: 8, borderRadius: '50%',
+                                                                    background: markerColor(ti),
+                                                                    marginLeft: 5, verticalAlign: 'middle',
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </span>
                                                     {row.weeks[0] && (
                                                         <span className={styles.rowTotalLabel}>
                                                             {row.weeks[0].totalUsers.toLocaleString()} ユーザー

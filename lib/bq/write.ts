@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/client'
 import { bqInsertAll, ensureBQTable } from './client'
 import {
   BQ_TABLES,
+  type AbTestFinalReportLogRow,
   type AbTestResultLogRow,
   type AiAnalysisLogRow,
   type BQTableId,
@@ -99,6 +100,13 @@ export async function insertAbTestResultLog(row: AbTestResultLogRow): Promise<vo
   } catch (err) {
     console.error('[bq] ab_test_result_log insert failed:', err instanceof Error ? err.message : err)
   }
+}
+
+export async function insertAbTestFinalReportLog(row: AbTestFinalReportLogRow): Promise<void> {
+  await insertWithoutTracking('ab_test_final_report_log', [{
+    insertId: `ab_test_final_report:${row.ab_test_id}:${row.report_date}`,
+    json: row,
+  }])
 }
 
 export async function insertFunnelExecutionLog(row: FunnelExecutionLogRow): Promise<void> {

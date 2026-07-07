@@ -398,6 +398,22 @@ export default function AbTestDetailPage() {
                 </div>
             </div>
 
+            {abTest.finalAiReport && (
+                <div className={styles.section}>
+                    <h2 className={styles.sectionTitle}>AI最終レポート</h2>
+                    {abTest.finalAiReportAt && (
+                        <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
+                    )}
+                    <div className={styles.aiReport}>
+                        {abTest.finalAiReport.split('\n').map((line, i) => {
+                            const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                            const bold = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            return <p key={i} className={styles.aiReportLine} dangerouslySetInnerHTML={{ __html: bold }} />
+                        })}
+                    </div>
+                </div>
+            )}
+
             {(abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config && (
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
