@@ -1,20 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
-
-const CHANNEL_LABELS: Record<string, string> = {
-    'Organic Search': 'オーガニック検索',
-    'Paid Search': '有料検索（広告）',
-    'Direct': '直接流入',
-    'Organic Social': 'SNS（自然）',
-    'Paid Social': 'SNS（広告）',
-    'Referral': '外部サイト経由',
-    'Email': 'メール',
-    'Display': 'ディスプレイ広告',
-    'Organic Video': '動画（自然）',
-    'Paid Video': '動画（広告）',
-    '(Other)': 'その他流入',
-    'Unassigned': '未分類',
-}
+import { CHANNEL_LABELS } from '@/lib/constants/channelLabels'
 
 const INDUSTRY_SLUGS = new Set([
     'driver', 'sekokan', 'sekkei', 'soko', 'shokunin', 'seibi', 'hoshu',
@@ -168,13 +154,19 @@ export async function POST(request: Request) {
             }, accessToken),
         ])
 
-        // Q4: ページ別バウンス率（失敗しても他データに影響しないよう独立）
+        // Q4: ページ別バウンス率＋行動シグナル（失敗しても他データに影響しないよう独立）
         let exitQ4Error = ''
         const exitReport = await fetchGA4Data({
             propertyId,
             dateRanges,
             dimensions: [{ name: 'pagePath' }],
-            metrics: [{ name: 'screenPageViews' }, { name: 'bounceRate' }],
+            metrics: [
+                { name: 'screenPageViews' },
+                { name: 'bounceRate' },
+                { name: 'activeUsers' },
+                { name: 'scrolledUsers' },
+                { name: 'userEngagementDuration' },
+            ],
             ...(devFilter && { dimensionFilter: devFilter }),
             limit: 5000,
         }, accessToken).catch((e: Error) => {
@@ -394,24 +386,55 @@ export async function POST(request: Request) {
                 rate: totalGoalViews > 0 ? views / totalGoalViews : 0,
             }))
 
-        // ── Q4 処理: ページカテゴリ別離脱傾向（bounceRate を直接利用）──
-        const exitMap = new Map<string, { pvTotal: number; bounceWeightedSum: number }>()
+        // ── Q4 処理: ページカテゴリ別離脱傾向（bounceRate）＋行動シグナル ──
+        interface SignalAgg { pvTotal: number; bounceWeightedSum: number; users: number; scrolled: number; engagementSec: number }
+        const emptyAgg = (): SignalAgg => ({ pvTotal: 0, bounceWeightedSum: 0, users: 0, scrolled: 0, engagementSec: 0 })
+        const addRow = (map: Map<string, SignalAgg>, key: string, pv: number, bounceRate: number, users: number, scrolled: number, engSec: number) => {
+            const a = map.get(key) ?? emptyAgg()
+            a.pvTotal += pv
+            a.bounceWeightedSum += bounceRate * pv
+            a.users += users
+            a.scrolled += scrolled
+            a.engagementSec += engSec
+            map.set(key, a)
+        }
+
+        const exitMap = new Map<string, SignalAgg>()
+        const rawSignalMap = new Map<string, SignalAgg>()
         for (const row of exitReport.rows ?? []) {
             const path = row.dimensionValues[0]?.value ?? ''
             const pv = parseInt(row.metricValues[0]?.value ?? '0') || 0
             const bounceRate = parseFloat(row.metricValues[1]?.value ?? '0') || 0
+            const users = parseInt(row.metricValues[2]?.value ?? '0') || 0
+            const scrolled = parseInt(row.metricValues[3]?.value ?? '0') || 0
+            const engSec = parseFloat(row.metricValues[4]?.value ?? '0') || 0
             const cat = categorizePath(path)
             if (cat === 'その他' || pv === 0) continue
-            const existing = exitMap.get(cat) || { pvTotal: 0, bounceWeightedSum: 0 }
-            exitMap.set(cat, {
-                pvTotal: existing.pvTotal + pv,
-                bounceWeightedSum: existing.bounceWeightedSum + bounceRate * pv,
-            })
+            addRow(exitMap, cat, pv, bounceRate, users, scrolled, engSec)
+            const rawKey = normalizePath((path || '').split('?')[0] || '/')
+            addRow(rawSignalMap, rawKey, pv, bounceRate, users, scrolled, engSec)
         }
 
+        const toSignal = (a: SignalAgg) => ({
+            avgEngagementSec: a.users > 0 ? a.engagementSec / a.users : 0,
+            scrollRate: a.users > 0 ? Math.min(1, a.scrolled / a.users) : 0,
+            engagementRate: a.pvTotal > 0 ? Math.max(0, 1 - a.bounceWeightedSum / a.pvTotal) : 0,
+        })
+
         const pageExitRates: Record<string, number> = {}
+        const pageSignals: Record<string, { avgEngagementSec: number; scrollRate: number; engagementRate: number }> = {}
         for (const [cat, d] of exitMap.entries()) {
             pageExitRates[cat] = d.pvTotal > 0 ? d.bounceWeightedSum / d.pvTotal : 0
+            pageSignals[cat] = toSignal(d)
+        }
+
+        // URL表示モードで使う正規化パス別シグナル（離脱・遷移パターンに登場するパスのみ返す）
+        const rawPathsUsed = new Set<string>()
+        for (const p of rawDropoutPaths) { rawPathsUsed.add(p.n1); rawPathsUsed.add(p.n2) }
+        for (const p of rawTopPaths) { rawPathsUsed.add(p.n1); rawPathsUsed.add(p.n2) }
+        const rawPageSignals: Record<string, { avgEngagementSec: number; scrollRate: number; engagementRate: number }> = {}
+        for (const [path, d] of rawSignalMap.entries()) {
+            if (rawPathsUsed.has(path)) rawPageSignals[path] = toSignal(d)
         }
 
         return NextResponse.json({
@@ -431,6 +454,8 @@ export async function POST(request: Request) {
             dropoutPaths,
             rawDropoutPaths,
             pageExitRates,
+            pageSignals,
+            rawPageSignals,
             _debug: {
                 exitQ4Rows: exitReport.rows?.length ?? 0,
                 exitQ4Error,

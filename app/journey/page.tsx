@@ -6,6 +6,8 @@ import DateInput from '@/components/DateInput'
 import Loader from '@/components/Loader'
 import BackLink from '@/components/BackLink'
 import AISpinner from '@/components/AISpinner/AISpinner'
+import JourneySankey from '@/components/journey/JourneySankey'
+import { nodeColor, exitRateColor } from '@/components/journey/journeyColors'
 import styles from './JourneyPage.module.css'
 
 interface JourneyNode {
@@ -41,6 +43,12 @@ interface DropoutPath {
     dropout: number
 }
 
+interface PageSignal {
+    avgEngagementSec: number
+    scrollRate: number
+    engagementRate: number
+}
+
 interface FormStat {
     name: string
     goalUsers: number
@@ -65,56 +73,9 @@ interface JourneyData {
     dropoutPaths: DropoutPath[]
     rawDropoutPaths: DropoutPath[]
     pageExitRates: Record<string, number>
+    pageSignals?: Record<string, PageSignal>
+    rawPageSignals?: Record<string, PageSignal>
     _debug?: { exitQ4Rows: number; exitQ4Error: string; q2RawCount: number; q1RawCount: number; rawN1MapSize: number; q2CatCount: number; q1CatCount: number; crossRows: number; internalBase: string; sampleReferrer: string }
-}
-
-function exitRateColor(rate: number): string {
-    if (rate < 0.3) return '#34d399'
-    if (rate < 0.6) return '#fbbf24'
-    return '#f87171'
-}
-
-function exitRateLabel(rate: number): string {
-    if (rate < 0.3) return '低'
-    if (rate < 0.6) return '中'
-    return '高'
-}
-
-// ---- Colors ----
-const NODE_COLORS: Record<string, string> = {
-    'オーガニック検索': '#22c55e',
-    '有料検索（広告）': '#3b82f6',
-    '直接流入': '#94a3b8',
-    'SNS（自然）': '#a855f7',
-    'SNS（広告）': '#d946ef',
-    '外部サイト経由': '#64748b',
-    'メール': '#f59e0b',
-    'ディスプレイ広告': '#06b6d4',
-    '動画（自然）': '#84cc16',
-    '動画（広告）': '#eab308',
-    'その他流入': '#6b7280',
-    '未分類': '#4b5563',
-    'TOP': '#3b82f6',
-    'LP': '#8b5cf6',
-    '人材紹介LP': '#7c3aed',
-    'featured': '#0891b2',
-    'ログイン': '#0ea5e9',
-    'マイページ': '#0284c7',
-    'スカウト': '#0369a1',
-    '検索結果': '#10b981',
-    '大職種一覧': '#059669',
-    '絞り込み検索': '#047857',
-    '資格条件': '#065f46',
-    'コラム': '#a3a3a3',
-    '求人詳細': '#f59e0b',
-    '直接アクセス': '#6b7280',
-    '会員登録フォーム': '#f97316',
-    '応募フォーム': '#ef4444',
-    '会員系その他': '#ea580c',
-}
-
-function nodeColor(id: string): string {
-    return NODE_COLORS[id] || '#818cf8'
 }
 
 const URL_PALETTE = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f43f5e', '#0ea5e9', '#a78bfa', '#34d399', '#fb923c']
@@ -125,122 +86,10 @@ function urlPathColor(path: string): string {
     return URL_PALETTE[Math.abs(h) % URL_PALETTE.length]
 }
 
-// ---- Sankey Layout ----
-const SVG_W = 1100
-const SVG_H = 520
-const NODE_W = 18
-const PAD_X = 130
-const PAD_Y = 48
-const PAD_BOTTOM = 20
-const NODE_GAP = 8
-const MIN_NODE_H = 14
-
-const STAGE_LABELS = ['流入チャネル', '直前ページ', 'ゴール']
-
-function stageX(stage: number): number {
-    const usable = SVG_W - PAD_X * 2 - NODE_W
-    return PAD_X + (stage / 2) * usable
-}
-
-interface LayoutNode extends JourneyNode {
-    x: number
-    y: number
-    height: number
-    color: string
-    outTotal: number
-    inTotal: number
-}
-
-interface RenderedFlow {
-    path: string
-    from: string
-    to: string
-    sessions: number
-    color: string
-}
-
-function computeSankey(nodes: JourneyNode[], flows: JourneyFlow[]): {
-    layoutNodes: LayoutNode[]
-    renderedFlows: RenderedFlow[]
-} {
-    const outTotals = new Map<string, number>()
-    const inTotals = new Map<string, number>()
-    for (const f of flows) {
-        outTotals.set(f.from, (outTotals.get(f.from) || 0) + f.sessions)
-        inTotals.set(f.to, (inTotals.get(f.to) || 0) + f.sessions)
-    }
-
-    const byStage = new Map<number, JourneyNode[]>()
-    for (const node of nodes) {
-        if (!byStage.has(node.stage)) byStage.set(node.stage, [])
-        byStage.get(node.stage)!.push(node)
-    }
-
-    const layoutNodes: LayoutNode[] = []
-    const layoutMap = new Map<string, LayoutNode>()
-
-    for (const [stage, stageNodes] of byStage.entries()) {
-        const sorted = [...stageNodes].sort((a, b) => b.sessions - a.sessions)
-        const total = sorted.reduce((s, n) => s + n.sessions, 0)
-        const availH = SVG_H - PAD_Y - PAD_BOTTOM - NODE_GAP * Math.max(0, sorted.length - 1)
-
-        let cy = PAD_Y
-        for (const node of sorted) {
-            const height = Math.max(MIN_NODE_H, total > 0 ? (node.sessions / total) * availH : MIN_NODE_H)
-            const ln: LayoutNode = {
-                ...node,
-                x: stageX(stage),
-                y: cy,
-                height,
-                color: nodeColor(node.id),
-                outTotal: outTotals.get(node.id) || 0,
-                inTotal: inTotals.get(node.id) || 0,
-            }
-            layoutNodes.push(ln)
-            layoutMap.set(node.id, ln)
-            cy += height + NODE_GAP
-        }
-    }
-
-    const outY = new Map<string, number>()
-    const inY = new Map<string, number>()
-    for (const ln of layoutNodes) {
-        outY.set(ln.id, ln.y)
-        inY.set(ln.id, ln.y)
-    }
-
-    const sortedFlows = [...flows].sort((a, b) => b.sessions - a.sessions)
-    const renderedFlows: RenderedFlow[] = []
-
-    for (const flow of sortedFlows) {
-        const src = layoutMap.get(flow.from)
-        const tgt = layoutMap.get(flow.to)
-        if (!src || !tgt) continue
-
-        const srcH = Math.max(1, src.outTotal > 0 ? (flow.sessions / src.outTotal) * src.height : 1)
-        const tgtH = Math.max(1, tgt.inTotal > 0 ? (flow.sessions / tgt.inTotal) * tgt.height : 1)
-
-        const x1 = src.x + NODE_W
-        const y1 = outY.get(src.id)!
-        const x2 = tgt.x
-        const y2 = inY.get(tgt.id)!
-
-        outY.set(src.id, y1 + srcH)
-        inY.set(tgt.id, y2 + tgtH)
-
-        const cx = x1 + (x2 - x1) * 0.5
-        const path = [
-            `M${x1},${y1}`,
-            `C${cx},${y1} ${cx},${y2} ${x2},${y2}`,
-            `L${x2},${y2 + tgtH}`,
-            `C${cx},${y2 + tgtH} ${cx},${y1 + srcH} ${x1},${y1 + srcH}`,
-            'Z',
-        ].join(' ')
-
-        renderedFlows.push({ path, from: flow.from, to: flow.to, sessions: flow.sessions, color: src.color })
-    }
-
-    return { layoutNodes, renderedFlows }
+function formatDuration(sec: number): string {
+    const s = Math.round(sec)
+    if (s < 60) return `${s}秒`
+    return `${Math.floor(s / 60)}分${s % 60}秒`
 }
 
 function filterByChannel(nodes: JourneyNode[], flows: JourneyFlow[], channel: string | null) {
@@ -252,133 +101,6 @@ function filterByChannel(nodes: JourneyNode[], flows: JourneyFlow[], channel: st
         nodes: nodes.filter(n => usedIds.has(n.id)),
         flows: filteredFlows,
     }
-}
-
-interface TooltipInfo {
-    x: number
-    y: number
-    lines: string[]
-    color: string
-}
-
-function SankeyDiagram({ layoutNodes, renderedFlows, totalGoalViews, goalLabel, pageExitRates }: {
-    layoutNodes: LayoutNode[]
-    renderedFlows: RenderedFlow[]
-    totalGoalViews: number
-    goalLabel: string
-    pageExitRates: Record<string, number>
-}) {
-    const [tooltip, setTooltip] = useState<TooltipInfo | null>(null)
-
-    function pct(n: number) {
-        if (!totalGoalViews) return ''
-        return ` (${((n / totalGoalViews) * 100).toFixed(1)}%)`
-    }
-
-    return (
-        <div className={styles.sankeyWrap}>
-            <svg
-                viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-                className={styles.sankeySvg}
-                onMouseLeave={() => setTooltip(null)}
-            >
-                {STAGE_LABELS.map((label, i) => (
-                    <text key={i} x={stageX(i) + NODE_W / 2} y={PAD_Y - 18}
-                        textAnchor="middle" fontSize={11} fontWeight="600" fill="#9ca3af">
-                        {label}
-                    </text>
-                ))}
-                {STAGE_LABELS.map((_, i) => (
-                    <line key={i} x1={stageX(i) + NODE_W / 2} y1={PAD_Y - 10}
-                        x2={stageX(i) + NODE_W / 2} y2={SVG_H - PAD_BOTTOM}
-                        stroke="#374151" strokeWidth={1} strokeDasharray="3 4" />
-                ))}
-
-                {renderedFlows.map((flow, i) => {
-                    const isToGoal = flow.to === goalLabel
-                    return (
-                        <path key={i} d={flow.path} fill={flow.color}
-                            opacity={isToGoal ? 0.5 : 0.2}
-                            className={styles.flowPath}
-                            onMouseEnter={(e) => setTooltip({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY, color: flow.color, lines: [`${flow.from}  →  ${flow.to}`, `${flow.sessions.toLocaleString()} 件${pct(flow.sessions)}`] })}
-                            onMouseMove={(e) => setTooltip({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY, color: flow.color, lines: [`${flow.from}  →  ${flow.to}`, `${flow.sessions.toLocaleString()} 件${pct(flow.sessions)}`] })}
-                            onMouseLeave={() => setTooltip(null)}
-                        />
-                    )
-                })}
-
-                {layoutNodes.map((node) => {
-                    const isGoal = node.id === goalLabel
-                    const isStage0 = node.stage === 0
-                    const isN1 = node.stage === 1
-                    const labelX = isStage0 ? node.x - 5 : node.x + NODE_W + 5
-                    const anchor = isStage0 ? 'end' : 'start'
-                    const showLabel = node.height >= 14
-                    const label = node.id.length > 10 ? node.id.slice(0, 9) + '…' : node.id
-                    const exitRate = isN1 ? (pageExitRates[node.id] ?? null) : null
-                    const exitColor = exitRate !== null ? exitRateColor(exitRate) : null
-
-                    const tooltipLines = [
-                        node.id,
-                        `${node.sessions.toLocaleString()} 件${pct(node.sessions)}`,
-                        ...(exitRate !== null ? [`離脱率: ${(exitRate * 100).toFixed(1)}% (${exitRateLabel(exitRate)})`] : []),
-                    ]
-
-                    return (
-                        <g key={node.id} className={styles.nodeGroup}
-                            onMouseEnter={(e) => setTooltip({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY, color: exitColor ?? node.color, lines: tooltipLines })}
-                            onMouseMove={(e) => setTooltip({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY, color: exitColor ?? node.color, lines: tooltipLines })}
-                            onMouseLeave={() => setTooltip(null)}
-                        >
-                            {isGoal && (
-                                <rect x={node.x - 3} y={node.y - 3} width={NODE_W + 6} height={node.height + 6}
-                                    fill={node.color} opacity={0.3} rx={5} />
-                            )}
-                            <rect x={node.x} y={node.y} width={NODE_W} height={node.height} fill={node.color} rx={3} />
-                            {/* N-1ノードの離脱傾向インジケーター（右端ライン） */}
-                            {isN1 && exitColor && node.height >= 10 && (
-                                <rect x={node.x + NODE_W - 4} y={node.y} width={4}
-                                    height={node.height} fill={exitColor} rx={2} opacity={0.95} />
-                            )}
-                            {/* N-1の離脱率テキスト（2行表示） */}
-                            {showLabel && isN1 && exitRate !== null && node.height >= 26 ? (
-                                <>
-                                    <text x={labelX} y={node.y + node.height / 2 - 6}
-                                        dominantBaseline="middle" textAnchor={anchor}
-                                        fontSize={10} fill="#e5e7eb" fontWeight="600">
-                                        {label}
-                                    </text>
-                                    <text x={labelX} y={node.y + node.height / 2 + 7}
-                                        dominantBaseline="middle" textAnchor={anchor}
-                                        fontSize={9} fill={exitColor ?? '#9ca3af'} fontWeight="700">
-                                        離脱{(exitRate * 100).toFixed(0)}%
-                                    </text>
-                                </>
-                            ) : showLabel && (
-                                <text x={labelX} y={node.y + node.height / 2} dominantBaseline="middle"
-                                    textAnchor={anchor} fontSize={10}
-                                    fill={isGoal ? '#fbbf24' : '#e5e7eb'}
-                                    fontWeight={isGoal ? '700' : '500'}>
-                                    {label}
-                                </text>
-                            )}
-                        </g>
-                    )
-                })}
-            </svg>
-
-            {tooltip && (
-                <div className={styles.tooltip} style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}>
-                    <div className={styles.tooltipDot} style={{ background: tooltip.color }} />
-                    <div>
-                        {tooltip.lines.map((line, i) => (
-                            <div key={i} className={i === 0 ? styles.tooltipTitle : styles.tooltipValue}>{line}</div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
-    )
 }
 
 const GOAL_PRESETS = [
@@ -470,10 +192,15 @@ export default function JourneyPage() {
         setGeminiResult(null)
         try {
             const paths = dropoutDataMode === 'url' ? (data.rawDropoutPaths ?? []) : (data.dropoutPaths ?? [])
-            const topPaths = paths.slice(0, 20).map((p) => ({
-                channel: p.channel, n2: p.n2, n1: p.n1, dropout: p.dropout,
-                ratio: data.totalUsers > 0 ? p.dropout / data.totalUsers : 0,
-            }))
+            const signalMap = (dropoutDataMode === 'url' ? data.rawPageSignals : data.pageSignals) ?? {}
+            const topPaths = paths.slice(0, 20).map((p) => {
+                const sig = signalMap[p.n1]
+                return {
+                    channel: p.channel, n2: p.n2, n1: p.n1, dropout: p.dropout,
+                    ratio: data.totalUsers > 0 ? p.dropout / data.totalUsers : 0,
+                    ...(sig ? { avgEngagementSec: sig.avgEngagementSec, scrollRate: sig.scrollRate, engagementRate: sig.engagementRate } : {}),
+                }
+            })
             const res = await fetch('/api/journey/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -508,8 +235,6 @@ export default function JourneyPage() {
         ? filterByChannel(data.nodes, data.flows, channelFilter)
         : { nodes: [], flows: [] }
 
-    const sankey = data ? computeSankey(filteredNodes, filteredFlows) : null
-
     const sourcePaths = data
         ? (pathDataMode === 'url' ? (data.rawTopPaths ?? []) : data.topPaths)
         : []
@@ -524,6 +249,10 @@ export default function JourneyPage() {
         ? (channelFilter ? dropoutSource.filter(d => d.channel === channelFilter) : dropoutSource)
         : []
     const totalDropouts = displayedDropouts.reduce((s, d) => s + d.dropout, 0)
+    const dropoutSignalMap: Record<string, PageSignal> = data
+        ? ((dropoutDataMode === 'url' ? data.rawPageSignals : data.pageSignals) ?? {})
+        : {}
+    const totalPathCount = displayedPaths.reduce((s, p) => s + p.count, 0)
 
     return (
         <div className={styles.container}>
@@ -598,7 +327,7 @@ export default function JourneyPage() {
             )}
             {error && <div className={styles.error}>{error}</div>}
 
-            {data && sankey && (
+            {data && (
                 <>
                     {/* フォーム別到達率比較 */}
                     {(data.formStats ?? []).length > 0 && (
@@ -665,6 +394,7 @@ export default function JourneyPage() {
                         <p className={styles.sectionTitle}>経路フロー</p>
                         <p className={styles.sectionNote}>
                             左：流入チャネル　中：フォーム直前のページ　右：{data.goalLabel}
+                            ／ ノードや帯にマウスを乗せると関連する経路だけが強調されます。チャネル（左列）はクリックで絞り込み、ノードはドラッグで移動できます
                         </p>
 
                         {/* チャネルフィルター */}
@@ -687,12 +417,13 @@ export default function JourneyPage() {
                             ))}
                         </div>
 
-                        <SankeyDiagram
-                            layoutNodes={sankey.layoutNodes}
-                            renderedFlows={sankey.renderedFlows}
-                            totalGoalViews={data.totalGoalViews}
+                        <JourneySankey
+                            nodes={filteredNodes}
+                            flows={filteredFlows}
                             goalLabel={data.goalLabel}
+                            totalGoalViews={data.totalGoalViews}
                             pageExitRates={data.pageExitRates}
+                            onChannelClick={(ch) => setChannelFilter((prev) => (prev === ch ? null : ch))}
                         />
                     </div>
 
@@ -747,6 +478,7 @@ export default function JourneyPage() {
                                                 <th className={styles.pathTh}>チャネル</th>
                                                 <th className={styles.pathTh}>推定経路</th>
                                                 <th className={styles.pathThNum}>件数</th>
+                                                <th className={styles.pathThNum}>割合</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -779,6 +511,9 @@ export default function JourneyPage() {
                                                             </div>
                                                         </td>
                                                         <td className={styles.pathTdNum}>{p.count.toLocaleString()}</td>
+                                                        <td className={styles.pathTdNum} style={{ color: '#9ca3af' }}>
+                                                            {totalPathCount > 0 ? ((p.count / totalPathCount) * 100).toFixed(1) : '-'}%
+                                                        </td>
                                                     </tr>
                                                 )
                                             })}
@@ -848,7 +583,8 @@ export default function JourneyPage() {
                                 <div>
                                     <p className={styles.sectionTitle}>離脱経路パターン</p>
                                     <p className={styles.sectionNote}>
-                                        会員登録に進まずに離脱したセッションの経路 ／ 全体比＝期間内の全セッション数に対する割合
+                                        会員登録に進まずに離脱したセッションの経路 ／ 割合＝表示中の離脱経路合計（{totalDropouts.toLocaleString()}件）に対する割合
+                                        ／ 行動シグナルは離脱ページ（最後の列のページ）の値：平均滞在＝平均エンゲージメント時間、スクロール率＝ページ90%までスクロールしたユーザー割合、Eng率＝直帰しなかったセッション割合
                                     </p>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
@@ -888,14 +624,18 @@ export default function JourneyPage() {
                                                 <th className={styles.pathTh}>チャネル</th>
                                                 <th className={styles.pathTh}>離脱経路</th>
                                                 <th className={styles.pathThNum}>離脱数</th>
-                                                <th className={styles.pathThNum}>全体比</th>
+                                                <th className={styles.pathThNum}>割合</th>
+                                                <th className={styles.pathThNum}>平均滞在</th>
+                                                <th className={styles.pathThNum}>スクロール率</th>
+                                                <th className={styles.pathThNum}>Eng率</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {displayedDropouts.slice(0, 20).map((d, i) => {
                                                 const c2 = dropoutDataMode === 'url' ? urlPathColor(d.n2) : nodeColor(d.n2)
                                                 const c1 = dropoutDataMode === 'url' ? urlPathColor(d.n1) : nodeColor(d.n1)
-                                                const globalPct = data.totalSessions > 0 ? (d.dropout / data.totalSessions * 100).toFixed(1) : '-'
+                                                const globalPct = totalDropouts > 0 ? (d.dropout / totalDropouts * 100).toFixed(1) : '-'
+                                                const sig = dropoutSignalMap[d.n1]
                                                 return (
                                                     <tr key={i} className={styles.pathRow}>
                                                         <td className={styles.pathTdRank}>{i + 1}</td>
@@ -920,6 +660,15 @@ export default function JourneyPage() {
                                                         </td>
                                                         <td className={styles.pathTdNum}>{d.dropout.toLocaleString()}</td>
                                                         <td className={styles.pathTdNum} style={{ color: '#9ca3af' }}>{globalPct}%</td>
+                                                        <td className={styles.pathTdNum} style={{ color: '#93c5fd' }}>
+                                                            {sig ? formatDuration(sig.avgEngagementSec) : '-'}
+                                                        </td>
+                                                        <td className={styles.pathTdNum} style={{ color: '#93c5fd' }}>
+                                                            {sig ? `${(sig.scrollRate * 100).toFixed(0)}%` : '-'}
+                                                        </td>
+                                                        <td className={styles.pathTdNum} style={{ color: exitRateColor(sig ? 1 - sig.engagementRate : 0.5) }}>
+                                                            {sig ? `${(sig.engagementRate * 100).toFixed(0)}%` : '-'}
+                                                        </td>
                                                     </tr>
                                                 )
                                             })}
@@ -943,7 +692,7 @@ export default function JourneyPage() {
                                                     <span className={styles.pathGroupChannel}>{channel}</span>
                                                     <span className={styles.pathGroupTotal}>離脱計 {channelTotal.toLocaleString()}</span>
                                                     <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}>
-                                                        (全体の{data.totalSessions > 0 ? (channelTotal / data.totalSessions * 100).toFixed(1) : '-'}%)
+                                                        (離脱全体の{totalDropouts > 0 ? (channelTotal / totalDropouts * 100).toFixed(1) : '-'}%)
                                                     </span>
                                                 </div>
                                                 {rows.map((d, i) => {
@@ -965,8 +714,13 @@ export default function JourneyPage() {
                                                                 <span className={styles.pathArrow}>→</span>
                                                                 <span className={styles.pathStep} style={{ color: '#f87171', borderColor: '#f8717155' }}>離脱</span>
                                                                 <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}>
-                                                                    全体{data.totalSessions > 0 ? (d.dropout / data.totalSessions * 100).toFixed(1) : '-'}%
+                                                                    {totalDropouts > 0 ? (d.dropout / totalDropouts * 100).toFixed(1) : '-'}%
                                                                 </span>
+                                                                {dropoutSignalMap[d.n1] && (
+                                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#93c5fd' }}>
+                                                                        滞在{formatDuration(dropoutSignalMap[d.n1].avgEngagementSec)}・スク{(dropoutSignalMap[d.n1].scrollRate * 100).toFixed(0)}%・Eng{(dropoutSignalMap[d.n1].engagementRate * 100).toFixed(0)}%
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             <div className={styles.pathGroupBar}>
                                                                 <div className={styles.pathGroupBarFill}
