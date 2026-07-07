@@ -61,11 +61,13 @@ function FeatureCard({ feature }: { feature: FeatureDoc }) {
                 </div>
             )}
 
-            <div className={styles.cardFooter}>
-                <Link href={feature.href} className={styles.openLink}>
-                    ページを開く →
-                </Link>
-            </div>
+            {feature.href && (
+                <div className={styles.cardFooter}>
+                    <Link href={feature.href} className={styles.openLink}>
+                        ページを開く →
+                    </Link>
+                </div>
+            )}
         </div>
     )
 }
@@ -83,7 +85,7 @@ export default function FeatureDocsPage() {
                 </div>
                 <div className={styles.headerLinks}>
                     <Link href="/docs/api" className={styles.subLink}>API ドキュメント →</Link>
-                    <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
+                    <BackLink href="/">ダッシュボードに戻る</BackLink>
                 </div>
             </div>
 
@@ -118,7 +120,7 @@ export default function FeatureDocsPage() {
                             </h2>
                             <div className={styles.cardGrid}>
                                 {features.map((f) => (
-                                    <FeatureCard key={f.href} feature={f} />
+                                    <FeatureCard key={f.name} feature={f} />
                                 ))}
                             </div>
                         </section>
@@ -127,7 +129,7 @@ export default function FeatureDocsPage() {
             </div>
 
             <div className={styles.footer}>
-                <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
+                <BackLink href="/">ダッシュボードに戻る</BackLink>
             </div>
         </div>
     )

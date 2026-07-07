@@ -113,6 +113,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         label: '設定',
         items: [
             { title: 'プロダクト管理', subtitle: 'プロダクトの設定と管理', getHref: () => '/products' },
+            { title: 'アラート設定', subtitle: 'CV急落アラートのしきい値・監視対象指標の設定', getHref: () => '/alerts' },
         ],
     },
     {
@@ -122,6 +123,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'トレンド', subtitle: '月次トレンドレポート（PV/CV/CVR推移）', getHref: (id) => id ? `/trend?productId=${id}` : '/trend', productPrefix: true },
             { title: 'ABテスト', subtitle: 'ABテスト結果の分析と評価', getHref: (id) => id ? `/ab-test?productId=${id}` : '/ab-test', productPrefix: true },
             { title: '施策提案AI壁打ち', subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価', getHref: () => '/ab-test/advisor', productPrefix: true },
+            { title: '職種別CV分析', subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV', getHref: () => '/occupation', productPrefix: true },
             { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
         ],
     },

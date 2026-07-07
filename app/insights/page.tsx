@@ -232,7 +232,7 @@ export default function InsightsPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <h1 className={styles.title}>月次インサイトレポート</h1>
-                <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
+                <BackLink href="/">ダッシュボードに戻る</BackLink>
             </div>
             <div className={styles.notice}>プロダクトを選択してください。</div>
         </div>
@@ -245,7 +245,7 @@ export default function InsightsPage() {
                     <h1 className={styles.title}>月次インサイトレポート</h1>
                     <p className={styles.subtitle}>基準月のKPI・前月比較・過去12ヶ月トレンド・AIインサイト</p>
                 </div>
-                <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
+                <BackLink href="/">ダッシュボードに戻る</BackLink>
             </div>
 
             <div className={styles.formSection}>

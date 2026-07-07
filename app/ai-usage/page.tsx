@@ -304,7 +304,7 @@ export default function AiUsagePage() {
                     >
                         CSVで書き出し ↓
                     </button>
-                    <BackLink href="/dashboard">ダッシュボードに戻る</BackLink>
+                    <BackLink href="/">ダッシュボードに戻る</BackLink>
                 </div>
             </div>
 

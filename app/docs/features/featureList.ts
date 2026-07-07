@@ -1,6 +1,7 @@
 export interface FeatureDoc {
     name: string
-    href: string
+    /** UIページがない機能（バックグラウンド実行のみ）は省略 */
+    href?: string
     category: string
     description: string
     capabilities: string[]
@@ -57,6 +58,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'Week0〜Week8+ の継続率マトリクス',
             '期間全体の平均継続率チャート',
             '全体継続率 vs 直近コホートの比較',
+            '施策マーカー（期間中のABテストを色分け表示し、施策実施中に流入したコホートをマトリクス上でマーキング）',
         ],
         metrics: ['cohortActiveUsers', 'cohortRetentionRate'],
         apiRoute: 'POST /api/user/cohort',
@@ -116,14 +118,17 @@ export const FEATURE_LIST: FeatureDoc[] = [
         name: '離脱分析',
         href: '/exit',
         category: '経路・離脱分析',
-        description: 'ファネル各ステップの離脱数・離脱率と、離脱率の高いページを特定します。どのページで最も多くユーザーが離脱しているかを把握するための起点となります。',
+        description: 'ファネル各ステップの離脱数・離脱率と、離脱率の高いページを特定します。行動シグナル（平均滞在時間・スクロール到達率）を組み合わせ、AI が離脱の質（即離脱か読了後離脱か）を判定します。',
         capabilities: [
             'ファネルステップ別の離脱数・離脱率',
             '離脱率ランキング',
             'ページ別の詳細離脱指標',
+            '行動シグナル表示（平均滞在時間・スクロール到達率90%）',
+            'AI による離脱の質の分析（即離脱＝第一印象の問題 / 読了後離脱＝訴求・導線の問題）と改善提案',
         ],
-        metrics: ['sessions', 'screenPageViews', 'exitRate'],
-        apiRoute: 'POST /api/exit',
+        metrics: ['screenPageViews', 'bounceRate', 'engagementRate', 'scrolledUsers', 'userEngagementDuration'],
+        ai: true,
+        apiRoute: 'POST /api/exit, POST /api/exit/gemini',
     },
 
     // ── コンバージョン・ファネル ──
@@ -136,7 +141,8 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'ステップ別ユーザー数・CVR・離脱率',
             '期間比較ファネル（A/B 期間の並列表示）',
             'ステップ間の落ち込み可視化',
-            'AI によるファネル評価・期間比較インサイト',
+            '期間比較時のチャネル別内訳（チャネルごとのセッション・CV・CVR の期間差分）',
+            'AI によるファネル評価・期間比較インサイト（チャネル別変化を含む）',
         ],
         metrics: ['activeUsers', 'eventCount'],
         ai: true,
@@ -170,12 +176,46 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'スケジュール実行・Webhook 通知',
             '勝者判定後の AI 評価コメント',
             'セグメント別（デバイス / チャネルなど）の内訳確認',
+            'テスト終了時の AI 最終レポート自動生成（結果サマリー・仮説検証・勝因敗因・学び・次のアクション）',
+            '最終レポートの BigQuery 蓄積（ab_test_final_report_log）',
         ],
         ai: true,
         apiRoute: 'GET /api/ab-test, POST /api/ab-test/evaluate',
     },
+    {
+        name: '施策提案AI壁打ち',
+        href: '/ab-test/advisor',
+        category: 'ABテスト',
+        description: '検討中の施策・ABテスト案を入力すると、BigQuery と DB に蓄積された過去 AB テストの勝因・敗因・最終レポートをコンテキストに、AI が成功確度・リスク・推奨テスト設計を回答します。',
+        capabilities: [
+            '過去 AB テスト実績（勝者・改善率・有意差・勝因敗因メモ・最終レポート）との照合',
+            '類似する過去施策の提示と成功確度評価（高 / 中 / 低）',
+            'リスク・落とし穴の指摘と成功確度を上げる修正案',
+            '推奨テスト設計（仮説文・期待改善率・期間・評価指標）',
+            '参照した過去 AB テストへのリンク表示',
+        ],
+        ai: true,
+        apiRoute: 'POST /api/ab-test/advisor',
+    },
 
     // ── レポート・データ ──
+    {
+        name: '職種別CV分析',
+        href: '/occupation',
+        category: 'レポート・データ',
+        description: '会員登録フォームの職種パラメータ（occ）別の登録CVと職種ページ配下のセッションから、職種ごとの獲得状況を比較します。事業領域別のLP応募CV内訳も表示します。',
+        capabilities: [
+            '職種別の会員登録CV（サンクスページの ?occ= パラメータで分類）',
+            '職種配下セッション（/{職種スラッグ} 配下ページの合計）と登録率',
+            '職種行クリックでサブカテゴリ内訳を展開（例: /driver/chugata-truck 別セッション・一覧トップ・都道府県・求人詳細）',
+            '事業領域別 LP応募CV（/lp-thanks/{slug} 別の内訳と構成比）',
+            '期間切り替え（7 / 14 / 30 / 90日）',
+            'AI 考察（伸びしろ職種・流入強化候補の特定と施策提案）',
+        ],
+        metrics: ['totalUsers', 'sessions', 'pagePathPlusQueryString'],
+        ai: true,
+        apiRoute: 'POST /api/occupation',
+    },
     {
         name: '月次インサイトレポート',
         href: '/insights',
@@ -227,5 +267,37 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'ビュー別ラベル管理',
         ],
         apiRoute: 'GET /api/heatmap/view-labels',
+    },
+    {
+        name: '週次AIサマリー配信',
+        category: 'レポート・データ',
+        description: '毎週月曜 09:00 JST に先週（月〜日）の主要KPI・チャネル別セッション変動・実行中ABテストの途中経過を集計し、AIサマリー（ハイライト・気になる変化・今週のアクション）を添えて Slack に自動配信します。UIページはなくスケジューラが自動実行します。',
+        capabilities: [
+            '先週 vs 前週の KPI 比較（セッション・新規ユーザー・応募CV・LP応募CV・会員登録CV・全体CVR）',
+            'チャネル別セッションの変動上位（前週比）',
+            '実行中 AB テストの途中経過（バリアント別CVR・有意差）',
+            'AI サマリー（先週のハイライト / 気になる変化 / 今週のアクション）',
+        ],
+        metrics: ['sessions', 'newUsers', 'totalUsers', 'sessionDefaultChannelGroup'],
+        ai: true,
+        apiRoute: 'POST /api/reports/weekly-summary',
+    },
+    {
+        name: 'CV急落アラート',
+        href: '/alerts',
+        category: 'レポート・データ',
+        description: '毎日 09:30 JST に前日のセッション数・応募CV・LP応募CV・会員登録CV・全体CVR をチェックし、過去4週の同一曜日の中央値からしきい値（デフォルト30%）以上下落した指標があれば Slack に通知します。チェックはスケジューラが自動実行し、しきい値や監視対象は設定画面から変更できます。',
+        capabilities: [
+            '曜日変動対策（過去4週の同一曜日と比較）・スパイク対策（平均でなく中央値）',
+            '対象指標: セッション数 / 応募CV / LP応募CV / 会員登録CV / 全体CVR',
+            'しきい値未満のノイズ除去（ベースラインが小さすぎる指標は判定しない）',
+            '発火時の原因ドリルダウン（チャネル別・デバイス別・ページ別の下落幅内訳を自動集計）',
+            'AI 原因仮説（内訳データと整合する原因候補と確認ポイントを生成）',
+            'Slack 通知（下落指標・下落率・内訳・AI仮説）',
+            'プロダクト別設定画面（有効/無効・下落しきい値・最小ベースライン・監視対象指標）',
+        ],
+        metrics: ['sessions', 'totalUsers', 'sessionDefaultChannelGroup', 'deviceCategory'],
+        ai: true,
+        apiRoute: 'POST /api/alerts/cv-drop',
     },
 ]
