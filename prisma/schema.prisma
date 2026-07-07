@@ -28,9 +28,26 @@ model Product {
   heatmapEvents   HeatmapEvent[]
   sessions        Session[]
   pageCvConfigs   PageCvConfig[]
-  
+  alertConfig     AlertConfig?
+
   @@index([isActive])
   @@map("products")
+}
+
+model AlertConfig {
+  id            Int      @id @default(autoincrement())
+  productId     Int      @unique
+  enabled       Boolean  @default(true)
+  dropThreshold Float    @default(0.3)  // 下落率しきい値（0.3 = 30%）
+  minSessions   Int      @default(100)  // ベースラインがこの値未満のセッション指標は判定しない
+  minCv         Int      @default(5)    // ベースラインがこの値未満のCV指標は判定しない
+  metrics       Json?                   // 監視対象指標キーの配列。null = 全指標
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("alert_configs")
 }
 
 model PageCvConfig {

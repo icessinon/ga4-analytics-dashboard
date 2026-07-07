@@ -85,6 +85,26 @@ cron.schedule('0 30 9 * * *', async () => {
     timezone: 'Asia/Tokyo',
 })
 
+// 週次AIサマリー: 毎週月曜 09:00 JST に先週KPI・チャネル変動・ABテスト途中経過をSlack配信
+cron.schedule('0 0 9 * * 1', async () => {
+    try {
+        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (process.env.INTERNAL_API_SECRET) headers['x-internal-secret'] = process.env.INTERNAL_API_SECRET
+        const response = await fetch(`${appUrl}/api/reports/weekly-summary`, { method: 'POST', headers })
+        if (!response.ok) {
+            console.error(`[Weekly Summary] HTTPエラー: ${response.status} ${response.statusText}`)
+            return
+        }
+        const data = await response.json() as { results?: unknown[] }
+        console.log(`[Weekly Summary] ${new Date().toISOString()} 配信完了: ${(data.results ?? []).length} プロダクト`)
+    } catch (error) {
+        console.error('[Weekly Summary] 実行エラー:', error)
+    }
+}, {
+    timezone: 'Asia/Tokyo',
+})
+
 // BQ 補完同期: 毎日 04:00 JST に過去 3 日ぶんの未同期レコードを再送
 cron.schedule('0 0 4 * * *', async () => {
     try {

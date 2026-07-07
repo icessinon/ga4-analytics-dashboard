@@ -1,16 +1,17 @@
 import { prisma } from '@/lib/db/client'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
+import { generateCvDropCauseHypothesis, type DropDrilldown, type DropSegment } from '@/lib/api/gemini/cvDropCause'
 
 // x-work.jpのサンクスページ定義（insights と同じ）: 応募CV / LP応募CV / 会員登録CV
-const CV_PAGE_PREFIXES = {
+export const CV_PAGE_PREFIXES = {
     applyCv: '/entry/thanks',
     lpApplyCv: '/lp-thanks',
     signupCv: '/members/signup/thanks',
 } as const
-type CvKey = keyof typeof CV_PAGE_PREFIXES
+export type CvKey = keyof typeof CV_PAGE_PREFIXES
 
-const METRIC_LABELS: Record<string, string> = {
+export const METRIC_LABELS: Record<string, string> = {
     sessions: 'セッション数',
     applyCv: '応募CV',
     lpApplyCv: 'LP応募CV',
@@ -20,7 +21,7 @@ const METRIC_LABELS: Record<string, string> = {
 
 // 前日値がベースライン（過去4週の同一曜日の中央値）からこれ以上下落したら通知
 // 求人サービスは曜日変動が大きいため、直近7日平均ではなく同一曜日で比較する
-const DROP_THRESHOLD = 0.3
+const DROP_THRESHOLD = Number(process.env.CV_DROP_ALERT_THRESHOLD || '') || 0.3
 // ノイズ除去: ベースライン平均がこの値未満の指標は判定しない
 const MIN_BASELINE = { sessions: 100, cv: 5, cvr: 0.001 } as const
 
@@ -37,7 +38,10 @@ export interface ProductAlertResult {
     productName: string
     propertyId: string
     targetDate: string
+    dropThreshold: number
     alerts: CvDropAlert[]
+    drilldowns?: DropDrilldown[]
+    aiHypothesis?: string | null
 }
 
 interface DailyMetrics {
@@ -96,36 +100,55 @@ function weekday(dateStr: string): number {
     return new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00Z`).getUTCDay()
 }
 
-function detectDrops(days: DailyMetrics[]): { targetDate: string; alerts: CvDropAlert[] } | null {
+const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
+
+// 中央値: キャンペーン等による単発スパイクがベースラインを歪めて誤報するのを防ぐ
+function median(nums: number[]): number {
+    const sorted = [...nums].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+}
+
+export interface AlertConfigValues {
+    dropThreshold: number
+    minSessions: number
+    minCv: number
+    /** 監視対象指標キー。null = 全指標 */
+    metrics: string[] | null
+}
+
+export const DEFAULT_ALERT_CONFIG: AlertConfigValues = {
+    dropThreshold: DROP_THRESHOLD,
+    minSessions: MIN_BASELINE.sessions,
+    minCv: MIN_BASELINE.cv,
+    metrics: null,
+}
+
+function detectDrops(days: DailyMetrics[], config: AlertConfigValues): { targetDate: string; baselineDates: string[]; alerts: CvDropAlert[] } | null {
     if (days.length < 8) return null
     const yesterday = days[days.length - 1]
     const targetWeekday = weekday(yesterday.date)
     // ベースライン: 過去4週の同一曜日
     const baseline = days.slice(0, -1).filter((d) => weekday(d.date) === targetWeekday).slice(-4)
     if (baseline.length < 2) return null // 比較に足るサンプルがない
-    // 中央値: キャンペーン等による単発スパイクがベースラインを歪めて誤報するのを防ぐ
-    const median = (nums: number[]) => {
-        const sorted = [...nums].sort((a, b) => a - b)
-        const mid = Math.floor(sorted.length / 2)
-        return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
-    }
 
     const totalCv = (d: DailyMetrics) => d.cv.applyCv + d.cv.lpApplyCv + d.cv.signupCv
     const cvr = (d: DailyMetrics) => (d.sessions > 0 ? totalCv(d) / d.sessions : 0)
 
     const checks: Array<{ metric: string; yesterday: number; baselineAvg: number; minBaseline: number }> = [
-        { metric: 'sessions', yesterday: yesterday.sessions, baselineAvg: median(baseline.map((d) => d.sessions)), minBaseline: MIN_BASELINE.sessions },
-        { metric: 'applyCv', yesterday: yesterday.cv.applyCv, baselineAvg: median(baseline.map((d) => d.cv.applyCv)), minBaseline: MIN_BASELINE.cv },
-        { metric: 'lpApplyCv', yesterday: yesterday.cv.lpApplyCv, baselineAvg: median(baseline.map((d) => d.cv.lpApplyCv)), minBaseline: MIN_BASELINE.cv },
-        { metric: 'signupCv', yesterday: yesterday.cv.signupCv, baselineAvg: median(baseline.map((d) => d.cv.signupCv)), minBaseline: MIN_BASELINE.cv },
+        { metric: 'sessions', yesterday: yesterday.sessions, baselineAvg: median(baseline.map((d) => d.sessions)), minBaseline: config.minSessions },
+        { metric: 'applyCv', yesterday: yesterday.cv.applyCv, baselineAvg: median(baseline.map((d) => d.cv.applyCv)), minBaseline: config.minCv },
+        { metric: 'lpApplyCv', yesterday: yesterday.cv.lpApplyCv, baselineAvg: median(baseline.map((d) => d.cv.lpApplyCv)), minBaseline: config.minCv },
+        { metric: 'signupCv', yesterday: yesterday.cv.signupCv, baselineAvg: median(baseline.map((d) => d.cv.signupCv)), minBaseline: config.minCv },
         { metric: 'cvr', yesterday: cvr(yesterday), baselineAvg: median(baseline.map(cvr)), minBaseline: MIN_BASELINE.cvr },
     ]
 
     const alerts: CvDropAlert[] = []
     for (const c of checks) {
+        if (config.metrics && !config.metrics.includes(c.metric)) continue
         if (c.baselineAvg < c.minBaseline) continue
         const dropRate = (c.baselineAvg - c.yesterday) / c.baselineAvg
-        if (dropRate >= DROP_THRESHOLD) {
+        if (dropRate >= config.dropThreshold) {
             alerts.push({
                 metric: c.metric,
                 label: METRIC_LABELS[c.metric],
@@ -135,7 +158,103 @@ function detectDrops(days: DailyMetrics[]): { targetDate: string; alerts: CvDrop
             })
         }
     }
-    return { targetDate: yesterday.date, alerts }
+    return { targetDate: yesterday.date, baselineDates: baseline.map((d) => d.date), alerts }
+}
+
+// ── アラート発火時の原因ドリルダウン ──
+
+/** date × セグメント の GA4 レポートから、セグメント別の「前日 vs 同曜日中央値」下落幅を集計 */
+function buildSegmentDrops(
+    rows: Array<{ dimensionValues: Array<{ value?: string }>; metricValues: Array<{ value?: string }> }>,
+    targetDate: string,
+    baselineDates: string[]
+): DropSegment[] {
+    const bySegment = new Map<string, Map<string, number>>()
+    for (const r of rows) {
+        const date = r.dimensionValues[0]?.value ?? ''
+        const segment = r.dimensionValues[1]?.value || '(not set)'
+        const value = parseInt(r.metricValues[0]?.value ?? '0', 10)
+        if (!bySegment.has(segment)) bySegment.set(segment, new Map())
+        const dates = bySegment.get(segment) as Map<string, number>
+        dates.set(date, (dates.get(date) ?? 0) + value)
+    }
+    const drops: DropSegment[] = []
+    for (const [segment, dates] of bySegment) {
+        const yesterday = dates.get(targetDate) ?? 0
+        const baselineMedian = median(baselineDates.map((d) => dates.get(d) ?? 0))
+        const diff = baselineMedian - yesterday
+        if (diff > 0) drops.push({ segment, yesterday, baselineMedian, diff })
+    }
+    return drops.sort((a, b) => b.diff - a.diff).slice(0, 5)
+}
+
+/** 急落した指標に応じて、チャネル別・デバイス別・ページ別の内訳を集計する */
+async function fetchDrilldowns(
+    propertyId: string,
+    accessToken: string,
+    targetDate: string,
+    baselineDates: string[],
+    alerts: CvDropAlert[]
+): Promise<DropDrilldown[]> {
+    const dateRanges = [{ startDate: '29daysAgo', endDate: 'yesterday' }]
+    const alertedMetrics = new Set(alerts.map((a) => a.metric))
+    // CVR急落はセッション・CV両方の内訳で説明できるため、全CV種別を対象にする
+    const cvKeys = (Object.keys(CV_PAGE_PREFIXES) as CvKey[])
+        .filter((k) => alertedMetrics.has(k) || alertedMetrics.has('cvr'))
+
+    const queries: Array<{ label: string; fetch: Promise<{ rows?: Array<{ dimensionValues: Array<{ value?: string }>; metricValues: Array<{ value?: string }> }> }> }> = [
+        {
+            label: 'チャネル別セッション',
+            fetch: fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+                metrics: [{ name: 'sessions' }],
+                limit: 1000,
+            }, accessToken),
+        },
+        {
+            label: 'デバイス別セッション',
+            fetch: fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'deviceCategory' }],
+                metrics: [{ name: 'sessions' }],
+                limit: 1000,
+            }, accessToken),
+        },
+    ]
+    for (const key of cvKeys) {
+        const cvFilter = {
+            dimensionFilter: {
+                filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: CV_PAGE_PREFIXES[key] } },
+            },
+        }
+        queries.push({
+            label: `チャネル別${METRIC_LABELS[key]}`,
+            fetch: fetchGA4Data(Object.assign({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+                metrics: [{ name: 'totalUsers' }],
+                limit: 1000,
+            }, cvFilter), accessToken),
+        })
+        queries.push({
+            label: `ページ別${METRIC_LABELS[key]}`,
+            fetch: fetchGA4Data(Object.assign({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'pagePath' }],
+                metrics: [{ name: 'totalUsers' }],
+                limit: 1000,
+            }, cvFilter), accessToken),
+        })
+    }
+
+    const reports = await Promise.all(queries.map((q) => q.fetch))
+    const drilldowns: DropDrilldown[] = []
+    for (let i = 0; i < queries.length; i++) {
+        const segments = buildSegmentDrops(reports[i].rows ?? [], targetDate, baselineDates)
+        if (segments.length > 0) drilldowns.push({ label: queries[i].label, segments })
+    }
+    return drilldowns
 }
 
 function formatValue(metric: string, v: number): string {
@@ -147,13 +266,28 @@ function buildSlackBlocks(result: ProductAlertResult): SlackBlock[] {
     const lines = result.alerts.map((a) =>
         `• *${a.label}*: ${formatValue(a.metric, a.yesterday)}（過去4週の同曜日中央値 ${formatValue(a.metric, a.baselineAvg)} から *-${(a.dropRate * 100).toFixed(1)}%*）`
     ).join('\n')
-    return [
+    const blocks: SlackBlock[] = [
         { type: 'header', text: { type: 'plain_text', text: `🚨 CV急落アラート: ${result.productName}` } },
-        { type: 'section', text: { type: 'mrkdwn', text: `対象日: *${date}*（前日）\n以下の指標が過去4週の同一曜日の中央値から${DROP_THRESHOLD * 100}%以上下落しています。`} },
+        { type: 'section', text: { type: 'mrkdwn', text: `対象日: *${date}*（前日）\n以下の指標が過去4週の同一曜日の中央値から${Math.round(result.dropThreshold * 100)}%以上下落しています。`} },
         { type: 'section', text: { type: 'mrkdwn', text: lines } },
-        { type: 'divider' },
-        { type: 'section', text: { type: 'mrkdwn', text: '計測タグの欠落・サイト障害・流入急減の可能性を確認してください。' } },
     ]
+    if (result.drilldowns && result.drilldowns.length > 0) {
+        const drilldownText = result.drilldowns.map((d) => {
+            const segLines = d.segments.map((s) =>
+                `　• ${s.segment}: ${Math.round(s.yesterday).toLocaleString()}（中央値 ${Math.round(s.baselineMedian).toLocaleString()}、-${Math.round(s.diff).toLocaleString()}）`
+            ).join('\n')
+            return `*${d.label}（下落幅上位）*\n${segLines}`
+        }).join('\n')
+        blocks.push({ type: 'divider' })
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: drilldownText } })
+    }
+    if (result.aiHypothesis) {
+        blocks.push({ type: 'divider' })
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `🤖 *AI原因仮説*\n${result.aiHypothesis}` } })
+    }
+    blocks.push({ type: 'divider' })
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: '計測タグの欠落・サイト障害・流入急減の可能性を確認してください。' } })
+    return blocks
 }
 
 /**
@@ -163,6 +297,7 @@ function buildSlackBlocks(result: ProductAlertResult): SlackBlock[] {
 export async function checkCvDropAndNotify(): Promise<ProductAlertResult[]> {
     const products = await prisma.product.findMany({
         where: { ga4PropertyId: { not: null } },
+        include: { alertConfig: true },
     })
     if (products.length === 0) return []
 
@@ -172,15 +307,43 @@ export async function checkCvDropAndNotify(): Promise<ProductAlertResult[]> {
 
     for (const product of products) {
         try {
+            if (product.alertConfig && !product.alertConfig.enabled) continue
+            const config: AlertConfigValues = product.alertConfig
+                ? {
+                    dropThreshold: product.alertConfig.dropThreshold,
+                    minSessions: product.alertConfig.minSessions,
+                    minCv: product.alertConfig.minCv,
+                    metrics: Array.isArray(product.alertConfig.metrics) ? (product.alertConfig.metrics as string[]) : null,
+                }
+                : DEFAULT_ALERT_CONFIG
             const days = await fetchDailyMetrics(product.ga4PropertyId as string, accessToken)
-            const detected = detectDrops(days)
+            const detected = detectDrops(days, config)
             if (!detected) continue
             const result: ProductAlertResult = {
                 productId: product.id,
                 productName: product.name,
                 propertyId: product.ga4PropertyId as string,
                 targetDate: detected.targetDate,
+                dropThreshold: config.dropThreshold,
                 alerts: detected.alerts,
+            }
+            if (detected.alerts.length > 0) {
+                // 原因ドリルダウン: チャネル別・デバイス別・ページ別の内訳とAI原因仮説を添付
+                try {
+                    result.drilldowns = await fetchDrilldowns(
+                        product.ga4PropertyId as string, accessToken,
+                        detected.targetDate, detected.baselineDates, detected.alerts
+                    )
+                    result.aiHypothesis = await generateCvDropCauseHypothesis({
+                        productName: product.name,
+                        targetDate: detected.targetDate,
+                        weekdayLabel: WEEKDAY_LABELS[weekday(detected.targetDate)],
+                        alerts: detected.alerts,
+                        drilldowns: result.drilldowns,
+                    }, product.id)
+                } catch (err) {
+                    console.error(`[cvDropAlert] product ${product.id} ドリルダウン失敗:`, err instanceof Error ? err.message : err)
+                }
             }
             results.push(result)
             if (detected.alerts.length > 0 && webhookUrl) {
