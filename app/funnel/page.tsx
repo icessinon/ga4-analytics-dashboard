@@ -9,11 +9,13 @@ import Loader from '@/components/Loader'
 import GeminiConfig from '@/components/GeminiConfig'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import FunnelChart from '@/components/funnel/FunnelChart'
+import ChannelBreakdownTable from '@/components/funnel/ChannelBreakdownTable'
 import ConversionRateChart from '@/components/funnel/ConversionRateChart'
 import DropoffRateChart from '@/components/funnel/DropoffRateChart'
 import PeriodSelector from '@/components/funnel/PeriodSelector'
 import ComparisonTable from '@/components/funnel/ComparisonTable'
 import ComparisonCharts from '@/components/funnel/ComparisonCharts'
+import ChannelComparisonTable from '@/components/funnel/ChannelComparisonTable'
 import { GA4_FILTER_DIMENSIONS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
 import LabelInput from '@/components/LabelInput'
 import type {
@@ -651,6 +653,13 @@ function FunnelPageContent() {
                             periodBLabel={comparisonData.periodB?.label}
                         />
                     </div>
+
+                    <div className={styles.section}>
+                        <h2 className={styles.sectionTitle}>チャネル別CVR変化</h2>
+                        <ChannelComparisonTable
+                            periods={comparisonData.periods || (comparisonData.periodA && comparisonData.periodB ? [comparisonData.periodA, comparisonData.periodB] : [])}
+                        />
+                    </div>
                 </>
             )}
 
@@ -714,6 +723,16 @@ function FunnelPageContent() {
                         <h2 className={styles.sectionTitle}>ドロップオフ率グラフ</h2>
                         <DropoffRateChart data={funnelData.steps} />
                     </div>
+
+                    {(funnelData.channelBreakdown?.length ?? 0) > 0 && (
+                        <div className={styles.section}>
+                            <h2 className={styles.sectionTitle}>チャネル別ファネル</h2>
+                            <ChannelBreakdownTable
+                                breakdown={funnelData.channelBreakdown!}
+                                overallSteps={funnelData.steps}
+                            />
+                        </div>
+                    )}
 
                     {funnelData.geminiEvaluation && (
                         <div className={styles.section}>

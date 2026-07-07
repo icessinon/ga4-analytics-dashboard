@@ -6,6 +6,7 @@ import DateInput from '@/components/DateInput'
 import Loader from '@/components/Loader'
 import BackLink from '@/components/BackLink'
 import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import AISpinner from '@/components/AISpinner/AISpinner'
 import styles from './ExitPage.module.css'
 
 const ALL_STEPS = [
@@ -80,6 +81,14 @@ interface ExitCategory {
     pageViews: number
     exitRate: number
     engagementRate: number
+    avgEngagementSec?: number
+    scrollRate?: number
+}
+
+function formatDuration(sec: number): string {
+    const s = Math.round(sec)
+    if (s < 60) return `${s}秒`
+    return `${Math.floor(s / 60)}分${s % 60}秒`
 }
 
 interface ExitData {
@@ -97,6 +106,9 @@ export default function ExitPage() {
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState<ExitData | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [geminiLoading, setGeminiLoading] = useState(false)
+    const [geminiResult, setGeminiResult] = useState<string | null>(null)
+    const [geminiError, setGeminiError] = useState<string | null>(null)
 
     function handlePreset(idx: number) {
         setPresetIdx(idx)
@@ -152,12 +164,45 @@ export default function ExitPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        setGeminiResult(null)
+        setGeminiError(null)
         await doFetch()
     }
 
     async function handleDeviceChange(device: string) {
         setDeviceFilter(device)
-        if (data) await doFetch({ deviceFilter: device })
+        if (data) {
+            setGeminiResult(null)
+            setGeminiError(null)
+            await doFetch({ deviceFilter: device })
+        }
+    }
+
+    async function handleGeminiAnalysis() {
+        if (!data) return
+        setGeminiLoading(true)
+        setGeminiError(null)
+        setGeminiResult(null)
+        try {
+            const res = await fetch('/api/exit/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    steps: data.steps,
+                    exitCategories: data.exitCategories,
+                    startDate: startDate || '30daysAgo',
+                    endDate: endDate || 'today',
+                    deviceFilter: deviceFilter || undefined,
+                }),
+            })
+            const json = await res.json()
+            if (!res.ok) throw new Error(json.error || '分析に失敗しました')
+            setGeminiResult(json.analysis)
+        } catch (e) {
+            setGeminiError(e instanceof Error ? e.message : 'エラーが発生しました')
+        } finally {
+            setGeminiLoading(false)
+        }
     }
 
     const maxSessions = data ? data.steps[0]?.sessions ?? 1 : 1
@@ -321,6 +366,8 @@ export default function ExitPage() {
                                         <th className={styles.exitTh}>ページカテゴリ</th>
                                         <th className={styles.exitThNum}>推定離脱数<InfoTooltip text="GA4のexitsメトリクス非対応のため、PV × (1 - エンゲージメント率) で推定した値。" direction="bottom" /></th>
                                         <th className={styles.exitThNum}>PV</th>
+                                        <th className={styles.exitThNum}>平均滞在<InfoTooltip text="ユーザー1人あたりの平均エンゲージメント時間。" direction="bottom" /></th>
+                                        <th className={styles.exitThNum}>スクロール率<InfoTooltip text="ページの90%までスクロールしたユーザーの割合。低い＝コンテンツが読まれていない。" direction="bottom" /></th>
                                         <th className={styles.exitThNum}>離脱傾向<InfoTooltip text="1 - エンゲージメント率で算出。高いほどエンゲージせずに離れるユーザーが多いことを示す。" direction="bottom" /></th>
                                         <th className={styles.exitThNum}>エンゲージメント率<InfoTooltip text="このページへの訪問のうち、エンゲージドセッション（10秒以上 or 2PV以上 or CV）の割合。" direction="bottom" /></th>
                                     </tr>
@@ -331,6 +378,12 @@ export default function ExitPage() {
                                             <td className={styles.exitTd}>{row.page}</td>
                                             <td className={styles.exitTdNum}>{row.exits.toLocaleString()}</td>
                                             <td className={styles.exitTdNum}>{row.pageViews.toLocaleString()}</td>
+                                            <td className={styles.exitTdNum} style={{ color: '#93c5fd' }}>
+                                                {row.avgEngagementSec != null ? formatDuration(row.avgEngagementSec) : '-'}
+                                            </td>
+                                            <td className={styles.exitTdNum} style={{ color: '#93c5fd' }}>
+                                                {row.scrollRate != null ? `${(row.scrollRate * 100).toFixed(0)}%` : '-'}
+                                            </td>
                                             <td className={styles.exitTdNum}>
                                                 <div className={styles.exitRateBar}>
                                                     <div className={styles.exitRateTrack}>
@@ -358,6 +411,38 @@ export default function ExitPage() {
                             </table>
                         </div>
                     )}
+
+                    {/* Gemini AI分析 */}
+                    <div className={styles.exitSection}>
+                        <p className={styles.sectionTitle}>離脱状況 AI分析</p>
+                        <p className={styles.sectionNote}>
+                            ファネル離脱状況とページ別の行動シグナル（滞在時間・スクロール率）をもとに、離脱の質（即離脱／読了後離脱）と改善提案を生成します
+                        </p>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <button
+                                onClick={handleGeminiAnalysis}
+                                disabled={geminiLoading}
+                                className={styles.button}
+                                style={{ whiteSpace: 'nowrap' }}
+                            >
+                                {geminiLoading ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <AISpinner /> 分析中...
+                                    </span>
+                                ) : 'AIで分析'}
+                            </button>
+                        </div>
+                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiResult && (
+                            <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
+                                {geminiResult.split('\n').map((line, i) => {
+                                    const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                                    const bold = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </>
             )}
         </div>

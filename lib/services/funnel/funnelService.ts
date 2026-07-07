@@ -5,15 +5,17 @@
 
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { parseDateString } from '@/lib/utils/date'
+import { channelLabel } from '@/lib/constants/channelLabels'
 import type {
     FunnelStep,
     FunnelConfig,
     FunnelFilterConfig,
     FunnelStepData,
     FunnelData,
+    ChannelFunnelData,
 } from '@/app/funnel/types'
 
-export type { FunnelStep, FunnelConfig, FunnelFilterConfig, FunnelStepData, FunnelData }
+export type { FunnelStep, FunnelConfig, FunnelFilterConfig, FunnelStepData, FunnelData, ChannelFunnelData }
 
 /**
  * エントリーフォームファネルデータを取得
@@ -32,7 +34,8 @@ export async function fetchEntryFormFunnelData(
     filterConfig: FunnelFilterConfig | null,
     startDate: string,
     endDate: string,
-    accessToken?: string
+    accessToken?: string,
+    options?: { channelBreakdown?: boolean }
 ): Promise<FunnelData> {
     const funnelData: FunnelData = {
         steps: [],
@@ -59,7 +62,8 @@ export async function fetchEntryFormFunnelData(
         }
         : undefined
 
-    const [clickReport, viewReport] = await Promise.all([
+    const withChannel = options?.channelBreakdown === true
+    const [clickReport, viewReport, clickChannelReport, viewChannelReport] = await Promise.all([
         fetchGA4Data(
             { ...baseRequest, dimensions: ['customEvent:click_label'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
             token
@@ -68,6 +72,18 @@ export async function fetchEntryFormFunnelData(
             { ...baseRequest, dimensions: ['customEvent:view_label'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
             token
         ).catch(() => null),
+        withChannel
+            ? fetchGA4Data(
+                { ...baseRequest, dimensions: ['customEvent:click_label', 'sessionDefaultChannelGroup'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
+                token
+            ).catch(() => null)
+            : Promise.resolve(null),
+        withChannel
+            ? fetchGA4Data(
+                { ...baseRequest, dimensions: ['customEvent:view_label', 'sessionDefaultChannelGroup'], ...(pageFilter ? { dimensionFilter: pageFilter } : {}) },
+                token
+            ).catch(() => null)
+            : Promise.resolve(null),
     ])
 
     // ラベル → totalUsers のマップを構築
@@ -132,6 +148,59 @@ export async function fetchEntryFormFunnelData(
             step.dropoffRate = 0
         }
     })
+
+    // ── チャネル別内訳（sessionDefaultChannelGroup クロス）──
+    if (withChannel && (clickChannelReport || viewChannelReport)) {
+        const clickChMap = new Map<string, number>()
+        const viewChMap = new Map<string, number>()
+        const channelSet = new Set<string>()
+
+        const collect = (report: typeof clickChannelReport, map: Map<string, number>) => {
+            for (const row of report?.rows ?? []) {
+                const label = row.dimensionValues?.[0]?.value ?? ''
+                const channel = channelLabel(row.dimensionValues?.[1]?.value ?? '')
+                const users = parseInt(row.metricValues[0]?.value || '0', 10)
+                const key = `${channel}|||${label}`
+                map.set(key, (map.get(key) ?? 0) + users)
+                channelSet.add(channel)
+            }
+        }
+        collect(clickChannelReport, clickChMap)
+        collect(viewChannelReport, viewChMap)
+
+        const sumChUsers = (map: Map<string, number>, channel: string, labels: string[]) =>
+            labels.reduce((sum, label) => sum + (map.get(`${channel}|||${label}`) ?? 0), 0)
+
+        const breakdown: ChannelFunnelData[] = []
+        for (const channel of channelSet) {
+            const chSteps: FunnelStepData[] = funnelConfig.steps.map((step) => {
+                const labels = parseLabels(step.customEventLabel)
+                const clickUsers = sumChUsers(clickChMap, channel, labels)
+                const viewUsers = sumChUsers(viewChMap, channel, labels)
+                return {
+                    stepName: step.stepName,
+                    customEventLabel: step.customEventLabel,
+                    users: Math.max(clickUsers, viewUsers),
+                    clickUsers,
+                    viewUsers,
+                    conversionRate: 0,
+                    dropoffRate: 0,
+                }
+            })
+            const chTotal = chSteps[0]?.users ?? 0
+            if (chTotal === 0) continue
+            chSteps.forEach((step, index) => {
+                step.conversionRate = chTotal > 0 ? step.users / chTotal : 0
+                if (index > 0 && chSteps[index - 1].users > 0) {
+                    step.dropoffRate = Math.max(0, (chSteps[index - 1].users - step.users) / chSteps[index - 1].users)
+                }
+            })
+            breakdown.push({ channel, totalUsers: chTotal, steps: chSteps })
+        }
+
+        breakdown.sort((a, b) => b.totalUsers - a.totalUsers)
+        funnelData.channelBreakdown = breakdown
+    }
 
     return funnelData
 }

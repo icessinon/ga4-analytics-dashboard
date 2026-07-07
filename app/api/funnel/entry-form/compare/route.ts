@@ -38,7 +38,8 @@ export async function POST(request: Request) {
                     filterConfig,
                     period.startDate,
                     period.endDate,
-                    accessToken
+                    accessToken,
+                    { channelBreakdown: true }
                 )
                 const label = period.label || `${parsedStartDate} - ${parsedEndDate}`
                 return { label, startDate: parsedStartDate, endDate: parsedEndDate, data: funnelData }

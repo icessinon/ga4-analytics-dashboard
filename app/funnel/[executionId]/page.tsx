@@ -9,7 +9,9 @@ import FunnelChart from '@/components/funnel/FunnelChart'
 import ConversionRateChart from '@/components/funnel/ConversionRateChart'
 import DropoffRateChart from '@/components/funnel/DropoffRateChart'
 import ComparisonCharts from '@/components/funnel/ComparisonCharts'
+import ChannelBreakdownTable from '@/components/funnel/ChannelBreakdownTable'
 import ComparisonTable from '@/components/funnel/ComparisonTable'
+import ChannelComparisonTable from '@/components/funnel/ChannelComparisonTable'
 import ViewModeTabs from './components/ViewModeTabs'
 import PeriodSelector from './components/PeriodSelector'
 import ComparisonSummary from './components/ComparisonSummary'
@@ -226,6 +228,13 @@ export default function FunnelExecutionDetailPage() {
                         />
                     </div>
 
+                    {periods.some((p) => (p.data.channelBreakdown?.length ?? 0) > 0) && (
+                        <div className={styles.card}>
+                            <h2 className={styles.cardTitle}>チャネル別CVR変化</h2>
+                            <ChannelComparisonTable periods={periods} />
+                        </div>
+                    )}
+
                     {(comparisonData.geminiEvaluation || execution.geminiEvaluation) && (
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>AI評価（期間比較分析）</h2>
@@ -297,6 +306,16 @@ export default function FunnelExecutionDetailPage() {
                                     <h2 className={styles.cardTitle}>ドロップオフ率グラフ</h2>
                                     <DropoffRateChart data={displaySingleData.steps} />
                                 </div>
+
+                                {(displaySingleData.channelBreakdown?.length ?? 0) > 0 && (
+                                    <div className={styles.card}>
+                                        <h2 className={styles.cardTitle}>チャネル別ファネル</h2>
+                                        <ChannelBreakdownTable
+                                            breakdown={displaySingleData.channelBreakdown!}
+                                            overallSteps={displaySingleData.steps}
+                                        />
+                                    </div>
+                                )}
 
                                 {(displaySingleData.geminiEvaluation || execution.geminiEvaluation) && (
                                     <div className={styles.card}>

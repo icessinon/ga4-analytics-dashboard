@@ -44,7 +44,8 @@ export async function POST(request: Request) {
             filterConfig,
             startDate || '28daysAgo',
             endDate || 'yesterday',
-            accessToken
+            accessToken,
+            { channelBreakdown: true }
         )
 
         let geminiEvaluation = null

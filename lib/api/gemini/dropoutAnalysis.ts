@@ -1,6 +1,15 @@
 import { callGemini } from './callGemini'
 
-export interface DropoutPath { channel: string; n2: string; n1: string; dropout: number; ratio: number }
+export interface DropoutPath {
+    channel: string
+    n2: string
+    n1: string
+    dropout: number
+    ratio: number
+    avgEngagementSec?: number
+    scrollRate?: number
+    engagementRate?: number
+}
 export interface DropoutAnalysisRequest {
     paths: DropoutPath[]
     totalUsers: number
@@ -9,10 +18,19 @@ export interface DropoutAnalysisRequest {
     endDate: string
 }
 
+function signalText(p: DropoutPath): string {
+    if (p.avgEngagementSec == null && p.scrollRate == null && p.engagementRate == null) return ''
+    const parts = []
+    if (p.avgEngagementSec != null) parts.push(`平均滞在${Math.round(p.avgEngagementSec)}秒`)
+    if (p.scrollRate != null) parts.push(`スクロール到達率(90%)${(p.scrollRate * 100).toFixed(0)}%`)
+    if (p.engagementRate != null) parts.push(`エンゲージメント率${(p.engagementRate * 100).toFixed(0)}%`)
+    return `\n   離脱ページ(${p.n1})の行動シグナル: ${parts.join(' / ')}`
+}
+
 export async function analyzeDropoutPathsWithGemini(req: DropoutAnalysisRequest): Promise<string | null> {
     const top = req.paths.slice(0, 20)
     const pathLines = top.map((p, i) =>
-        `${i + 1}. チャネル:${p.channel} → ${p.n2} → ${p.n1} → 離脱   件数:${p.dropout} (全体比:${(p.ratio * 100).toFixed(1)}%)`
+        `${i + 1}. チャネル:${p.channel} → ${p.n2} → ${p.n1} → 離脱   件数:${p.dropout} (全体比:${(p.ratio * 100).toFixed(1)}%)${signalText(p)}`
     ).join('\n')
 
     const dropoutUsers = req.totalUsers - req.goalUsers
@@ -31,9 +49,10 @@ ${pathLines}
 
 上記データについて以下を分析してください:
 1. **主要な離脱ポイント** — どのチャネル・ページで特に多く離脱しているか
-2. **パターン別の考察** — 求人転職サービスとして、各離脱パターンの背景にある行動心理
-3. **改善提案（上位3点）** — 離脱率を下げるための具体的なUX/コンテンツ施策
-4. **優先対応すべき経路** — 影響が大きく、改善インパクトが期待できる経路
+2. **離脱の質の判定** — 行動シグナルがある場合は活用すること。滞在が短くスクロールも浅い＝即離脱（期待とのミスマッチ・第一印象の問題）、滞在が長くスクロールも深いのに離脱＝読了後離脱（内容は見たが行動に至らない：訴求・導線・条件の問題）として区別する
+3. **パターン別の考察** — 求人転職サービスとして、各離脱パターンの背景にある行動心理
+4. **改善提案（上位3点）** — 離脱率を下げるための具体的なUX/コンテンツ施策
+5. **優先対応すべき経路** — 影響が大きく、改善インパクトが期待できる経路
 
 600文字程度で、箇条書きと短い段落を使って読みやすくまとめてください。`
 

@@ -25,9 +25,16 @@ export interface FunnelStepData {
     dropoffRate: number
 }
 
+export interface ChannelFunnelData {
+    channel: string
+    totalUsers: number
+    steps: FunnelStepData[]
+}
+
 export interface FunnelData {
     steps: FunnelStepData[]
     totalUsers: number
+    channelBreakdown?: ChannelFunnelData[]
     geminiEvaluation?: string
 }
 

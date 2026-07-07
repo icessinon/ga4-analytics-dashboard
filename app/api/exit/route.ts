@@ -99,12 +99,18 @@ export async function POST(request: Request) {
             }, accessToken)
         })
 
-        // ページ別バウンス率取得（exits は GA4 API 非対応のため代替）
+        // ページ別バウンス率取得（exits は GA4 API 非対応のため代替）＋行動シグナル
         const exitQuery = fetchGA4Data({
             propertyId,
             dateRanges,
             dimensions: [{ name: 'pagePath' }],
-            metrics: [{ name: 'screenPageViews' }, { name: 'bounceRate' }],
+            metrics: [
+                { name: 'screenPageViews' },
+                { name: 'bounceRate' },
+                { name: 'activeUsers' },
+                { name: 'scrolledUsers' },
+                { name: 'userEngagementDuration' },
+            ],
             ...(devFilter && { dimensionFilter: devFilter }),
             limit: 5000,
         }, accessToken)
@@ -136,19 +142,25 @@ export async function POST(request: Request) {
         // 離脱ページ集計（カテゴリ別）
         // exitRate = 1 - engagementRate（低エンゲージ = 離脱しやすい）
         // estimatedExits = screenPageViews × (1 - engagementRate)
-        const exitMap = new Map<string, { pageViews: number; bounceWeightedSum: number }>()
+        const exitMap = new Map<string, { pageViews: number; bounceWeightedSum: number; users: number; scrolled: number; engagementSec: number }>()
         for (const row of exitReport.rows ?? []) {
             const path = row.dimensionValues[0]?.value ?? ''
             const pageViews = parseInt(row.metricValues[0]?.value ?? '0') || 0
             const bounceRate = parseFloat(row.metricValues[1]?.value ?? '0') || 0
+            const users = parseInt(row.metricValues[2]?.value ?? '0') || 0
+            const scrolled = parseInt(row.metricValues[3]?.value ?? '0') || 0
+            const engagementSec = parseFloat(row.metricValues[4]?.value ?? '0') || 0
 
             if (pageViews === 0) continue
             const cat = categorizePath(path)
             if (cat === 'その他') continue
-            const existing = exitMap.get(cat) || { pageViews: 0, bounceWeightedSum: 0 }
+            const existing = exitMap.get(cat) || { pageViews: 0, bounceWeightedSum: 0, users: 0, scrolled: 0, engagementSec: 0 }
             exitMap.set(cat, {
                 pageViews: existing.pageViews + pageViews,
                 bounceWeightedSum: existing.bounceWeightedSum + bounceRate * pageViews,
+                users: existing.users + users,
+                scrolled: existing.scrolled + scrolled,
+                engagementSec: existing.engagementSec + engagementSec,
             })
         }
 
@@ -157,7 +169,9 @@ export async function POST(request: Request) {
                 const exitRate = d.pageViews > 0 ? d.bounceWeightedSum / d.pageViews : 0
                 const engagementRate = 1 - exitRate
                 const exits = Math.round(exitRate * d.pageViews)
-                return { page, exits, pageViews: d.pageViews, exitRate, engagementRate }
+                const avgEngagementSec = d.users > 0 ? d.engagementSec / d.users : 0
+                const scrollRate = d.users > 0 ? Math.min(1, d.scrolled / d.users) : 0
+                return { page, exits, pageViews: d.pageViews, exitRate, engagementRate, avgEngagementSec, scrollRate }
             })
             .filter(d => d.pageViews >= 50)
             .sort((a, b) => b.exits - a.exits)
