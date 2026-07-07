@@ -9,6 +9,7 @@ export interface GA4ReportRequest {
     dimensions?: string[] | Array<{ name: string }>;
     metrics: string[] | Array<{ name: string }>;
     dimensionFilter?: Record<string, unknown>;
+    orderBys?: Array<Record<string, unknown>>;
     limit?: number;
 }
 
@@ -62,6 +63,7 @@ export async function fetchGA4Data(
     const body: {
         dateRanges: typeof request.dateRanges
         dimensionFilter?: typeof request.dimensionFilter
+        orderBys?: typeof request.orderBys
         limit: number
         dimensions?: Array<{ name: string }>
         metrics: Array<{ name: string }>
@@ -70,6 +72,10 @@ export async function fetchGA4Data(
         dimensionFilter: request.dimensionFilter,
         limit: request.limit || 10000,
         metrics: [],
+    }
+
+    if (request.orderBys && request.orderBys.length > 0) {
+        body.orderBys = request.orderBys
     }
 
     // dimensionsが存在する場合のみ追加
