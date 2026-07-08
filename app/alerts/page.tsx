@@ -80,7 +80,7 @@ export default function AlertSettingsPage() {
                 <div>
                     <h1 className={styles.title}>CV急落アラート設定</h1>
                     <p className={styles.subtitle}>
-                        毎日 09:30 JST に前日の指標を過去4週の同一曜日の中央値と比較し、しきい値以上下落した場合に Slack に通知します。
+                        毎日 09:30 JST に前日の指標を過去8週の同一曜日の中央値と比較し、しきい値以上下落した場合に Slack に通知します。
                     </p>
                 </div>
                 <BackLink href="/">ダッシュボード</BackLink>

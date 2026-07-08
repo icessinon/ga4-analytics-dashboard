@@ -19,9 +19,13 @@ export const METRIC_LABELS: Record<string, string> = {
     cvr: '全体CVR（CV合計÷セッション）',
 }
 
-// 前日値がベースライン（過去4週の同一曜日の中央値）からこれ以上下落したら通知
-// 求人サービスは曜日変動が大きいため、直近7日平均ではなく同一曜日で比較する
+// 前日値がベースライン（過去8週の同一曜日の中央値）からこれ以上下落したら通知
+// 求人サービスは曜日変動が大きいため、直近7日平均ではなく同一曜日で比較する。
+// 4週だとキャンペーン等のスパイクが2週あるだけで中央値が歪むため8週とる
 const DROP_THRESHOLD = Number(process.env.CV_DROP_ALERT_THRESHOLD || '') || 0.3
+const BASELINE_WEEKS = 8
+// 8週ぶんの同一曜日 + 前日 を含む範囲（8*7+1 = 57日前〜昨日）
+const FETCH_START_DATE = `${BASELINE_WEEKS * 7 + 1}daysAgo`
 // ノイズ除去: ベースライン平均がこの値未満の指標は判定しない
 const MIN_BASELINE = { sessions: 100, cv: 5, cvr: 0.001 } as const
 
@@ -39,6 +43,7 @@ export interface ProductAlertResult {
     propertyId: string
     targetDate: string
     dropThreshold: number
+    baselineDates: string[]
     alerts: CvDropAlert[]
     drilldowns?: DropDrilldown[]
     aiHypothesis?: string | null
@@ -51,7 +56,7 @@ interface DailyMetrics {
 }
 
 async function fetchDailyMetrics(propertyId: string, accessToken: string): Promise<DailyMetrics[]> {
-    const dateRanges = [{ startDate: '29daysAgo', endDate: 'yesterday' }]
+    const dateRanges = [{ startDate: FETCH_START_DATE, endDate: 'yesterday' }]
     const [sessionsReport, cvReport] = await Promise.all([
         fetchGA4Data({
             propertyId, dateRanges,
@@ -128,8 +133,8 @@ function detectDrops(days: DailyMetrics[], config: AlertConfigValues): { targetD
     if (days.length < 8) return null
     const yesterday = days[days.length - 1]
     const targetWeekday = weekday(yesterday.date)
-    // ベースライン: 過去4週の同一曜日
-    const baseline = days.slice(0, -1).filter((d) => weekday(d.date) === targetWeekday).slice(-4)
+    // ベースライン: 過去8週の同一曜日
+    const baseline = days.slice(0, -1).filter((d) => weekday(d.date) === targetWeekday).slice(-BASELINE_WEEKS)
     if (baseline.length < 2) return null // 比較に足るサンプルがない
 
     const totalCv = (d: DailyMetrics) => d.cv.applyCv + d.cv.lpApplyCv + d.cv.signupCv
@@ -163,7 +168,7 @@ function detectDrops(days: DailyMetrics[], config: AlertConfigValues): { targetD
 
 // ── アラート発火時の原因ドリルダウン ──
 
-/** date × セグメント の GA4 レポートから、セグメント別の「前日 vs 同曜日中央値」下落幅を集計 */
+/** date × セグメント の GA4 レポートから、セグメント別の「前日 vs 過去8週同曜日中央値」下落幅を集計 */
 function buildSegmentDrops(
     rows: Array<{ dimensionValues: Array<{ value?: string }>; metricValues: Array<{ value?: string }> }>,
     targetDate: string,
@@ -196,7 +201,7 @@ async function fetchDrilldowns(
     baselineDates: string[],
     alerts: CvDropAlert[]
 ): Promise<DropDrilldown[]> {
-    const dateRanges = [{ startDate: '29daysAgo', endDate: 'yesterday' }]
+    const dateRanges = [{ startDate: FETCH_START_DATE, endDate: 'yesterday' }]
     const alertedMetrics = new Set(alerts.map((a) => a.metric))
     // CVR急落はセッション・CV両方の内訳で説明できるため、全CV種別を対象にする
     const cvKeys = (Object.keys(CV_PAGE_PREFIXES) as CvKey[])
@@ -261,29 +266,42 @@ function formatValue(metric: string, v: number): string {
     return metric === 'cvr' ? `${(v * 100).toFixed(2)}%` : Math.round(v).toLocaleString()
 }
 
+function fmtDate(dateStr: string): string {
+    return `${parseInt(dateStr.slice(4, 6), 10)}/${parseInt(dateStr.slice(6, 8), 10)}`
+}
+
+// Slack の section text は 3,000 文字上限。超えると途中で切断され文字化けするため安全にトリムする
+const SLACK_SECTION_MAX = 2900
+function trimForSlack(text: string): string {
+    return text.length > SLACK_SECTION_MAX ? `${text.slice(0, SLACK_SECTION_MAX)}\n…(以下省略)` : text
+}
+
 function buildSlackBlocks(result: ProductAlertResult): SlackBlock[] {
     const date = `${result.targetDate.slice(0, 4)}-${result.targetDate.slice(4, 6)}-${result.targetDate.slice(6, 8)}`
+    const baselineNote = result.baselineDates.length > 0
+        ? `\nベースライン: 過去${result.baselineDates.length}週の同一曜日（${result.baselineDates.map(fmtDate).join(', ')}）の中央値`
+        : ''
     const lines = result.alerts.map((a) =>
-        `• *${a.label}*: ${formatValue(a.metric, a.yesterday)}（過去4週の同曜日中央値 ${formatValue(a.metric, a.baselineAvg)} から *-${(a.dropRate * 100).toFixed(1)}%*）`
+        `• *${a.label}*: ${formatValue(a.metric, a.yesterday)}（同曜日中央値 ${formatValue(a.metric, a.baselineAvg)} から *-${(a.dropRate * 100).toFixed(1)}%*）`
     ).join('\n')
     const blocks: SlackBlock[] = [
         { type: 'header', text: { type: 'plain_text', text: `🚨 CV急落アラート: ${result.productName}` } },
-        { type: 'section', text: { type: 'mrkdwn', text: `対象日: *${date}*（前日）\n以下の指標が過去4週の同一曜日の中央値から${Math.round(result.dropThreshold * 100)}%以上下落しています。`} },
-        { type: 'section', text: { type: 'mrkdwn', text: lines } },
+        { type: 'section', text: { type: 'mrkdwn', text: trimForSlack(`対象日: *${date}*（前日）\n以下の指標が同一曜日の中央値から${Math.round(result.dropThreshold * 100)}%以上下落しています。${baselineNote}`) } },
+        { type: 'section', text: { type: 'mrkdwn', text: trimForSlack(lines) } },
     ]
     if (result.drilldowns && result.drilldowns.length > 0) {
-        const drilldownText = result.drilldowns.map((d) => {
+        blocks.push({ type: 'divider' })
+        // 1セクションにまとめると3,000文字を超えて切断されるため、次元ごとにセクションを分ける
+        for (const d of result.drilldowns) {
             const segLines = d.segments.map((s) =>
                 `　• ${s.segment}: ${Math.round(s.yesterday).toLocaleString()}（中央値 ${Math.round(s.baselineMedian).toLocaleString()}、-${Math.round(s.diff).toLocaleString()}）`
             ).join('\n')
-            return `*${d.label}（下落幅上位）*\n${segLines}`
-        }).join('\n')
-        blocks.push({ type: 'divider' })
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: drilldownText } })
+            blocks.push({ type: 'section', text: { type: 'mrkdwn', text: trimForSlack(`*${d.label}（下落幅上位）*\n${segLines}`) } })
+        }
     }
     if (result.aiHypothesis) {
         blocks.push({ type: 'divider' })
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `🤖 *AI原因仮説*\n${result.aiHypothesis}` } })
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: trimForSlack(`🤖 *AI原因仮説*\n${result.aiHypothesis}`) } })
     }
     blocks.push({ type: 'divider' })
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: '計測タグの欠落・サイト障害・流入急減の可能性を確認してください。' } })
@@ -291,7 +309,7 @@ function buildSlackBlocks(result: ProductAlertResult): SlackBlock[] {
 }
 
 /**
- * 全プロダクトの前日CV・CVRを過去4週の同一曜日の中央値と比較し、
+ * 全プロダクトの前日CV・CVRを過去8週の同一曜日の中央値と比較し、
  * しきい値以上の下落があれば Slack に通知する。
  */
 export async function checkCvDropAndNotify(): Promise<ProductAlertResult[]> {
@@ -325,6 +343,7 @@ export async function checkCvDropAndNotify(): Promise<ProductAlertResult[]> {
                 propertyId: product.ga4PropertyId as string,
                 targetDate: detected.targetDate,
                 dropThreshold: config.dropThreshold,
+                baselineDates: detected.baselineDates,
                 alerts: detected.alerts,
             }
             if (detected.alerts.length > 0) {

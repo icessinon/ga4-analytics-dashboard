@@ -49,7 +49,7 @@ export async function generateCvDropCauseHypothesis(
 - 主要な流入チャネル: Direct（LINE内ブラウザのリファラー欠落を含む）、LINE(social)、Google organic/cpc、スカウトSMS
 - CVはサンクスページ到達で計測（応募CV=/entry/thanks、LP応募CV=/lp-thanks、会員登録CV=/members/signup/thanks）。計測はGTM経由
 
-【急落した指標】対象日: ${req.targetDate}（${req.weekdayLabel}曜日）／ ベースラインは過去4週の同一曜日の中央値
+【急落した指標】対象日: ${req.targetDate}（${req.weekdayLabel}曜日）／ ベースラインは過去8週の同一曜日の中央値
 ${alertLines}
 
 【セグメント別内訳（下落幅の大きい順）】

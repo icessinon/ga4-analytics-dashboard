@@ -574,7 +574,7 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 path: '/api/alerts/cv-drop',
                 method: 'POST',
                 name: 'CV急落チェック',
-                description: '全プロダクトの前日セッション数・応募CV・LP応募CV・会員登録CV・全体CVRを過去4週の同一曜日の中央値と比較し、しきい値（デフォルト30%）以上下落した指標があればSlackに通知します。発火時はチャネル別・デバイス別・ページ別の下落内訳を自動集計し、AIの原因仮説を添付します。スケジューラが毎日09:30 JSTに実行します（x-internal-secret ヘッダーで認証）。',
+                description: '全プロダクトの前日セッション数・応募CV・LP応募CV・会員登録CV・全体CVRを過去8週の同一曜日の中央値と比較し、しきい値（デフォルト30%）以上下落した指標があればSlackに通知します。発火時はチャネル別・デバイス別・ページ別の下落内訳を自動集計し、AIの原因仮説を添付します。スケジューラが毎日09:30 JSTに実行します（x-internal-secret ヘッダーで認証）。',
                 params: [],
                 responseNote: '{ success: true, results: [{ productId, productName, targetDate, dropThreshold, alerts: [{ metric, label, yesterday, baselineAvg, dropRate }], drilldowns, aiHypothesis }] }',
             },
