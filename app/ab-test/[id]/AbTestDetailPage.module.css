@@ -10,6 +10,7 @@
 
 .headerRow {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
@@ -17,9 +18,11 @@
 
 .headerActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     align-items: center;
-    flex-shrink: 0;
+    /* min-width: 0 がないと flex アイテムが中身の1行ぶんの幅以下に縮まず、wrap が発火しない */
+    min-width: 0;
 }
 
 .segmentButton {
@@ -83,6 +86,10 @@
     font-weight: 700;
     margin: 0;
     color: #f3f4f6;
+    /* 幅が足りないときはタイトルが1文字ずつ縦に潰れず、ボタン行が下に折り返すようにする */
+    flex: 1 1 20rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .subtitle {

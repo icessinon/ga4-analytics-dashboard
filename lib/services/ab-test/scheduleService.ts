@@ -111,8 +111,11 @@ export function calculateNextExecutionDate(
             return scheduled
 
         case 'recurring': {
-            if (now < startDate) return null
-            if (endDate && now > endDate) return null
+            // endDate はDATE型（UTC 0時 = JST 9:00）のため時刻で比較すると最終日の 9:00 JST 以降が
+            // 期間外扱いになり、最終日のスロットが実行されない。JST暦日の粒度で判定する
+            const jstNowDayMs = utcDayOnlyMs(shiftToJst(now))
+            if (jstNowDayMs < utcDayOnlyMs(startDate)) return null
+            if (endDate && jstNowDayMs > utcDayOnlyMs(endDate)) return null
             if (!config.recurringPattern) return null
 
             switch (config.recurringPattern.frequency) {
@@ -291,8 +294,11 @@ export async function findAbTestsToExecute(): Promise<number[]> {
         let anchor: Date | null = null
 
         if (config.executionType === 'recurring') {
-            if (now < abTest.startDate) continue
-            if (abTest.endDate && now > abTest.endDate) continue
+            // endDate はDATE型（UTC 0時 = JST 9:00）のため時刻で比較すると最終日の 9:00 JST 以降が
+            // 期間外扱いになり、最終日のスロット（例: 9:00 実行）が漏れる。JST暦日の粒度で判定する
+            const jstNowDayMs = utcDayOnlyMs(shiftToJst(now))
+            if (jstNowDayMs < utcDayOnlyMs(abTest.startDate)) continue
+            if (abTest.endDate && jstNowDayMs > utcDayOnlyMs(abTest.endDate)) continue
             const latestPassed = getLatestPassedRecurringSlot(
                 config,
                 abTest.startDate,

@@ -49,14 +49,19 @@ export async function POST(request: Request) {
         const { abTestId, force } = body
 
         const now = new Date()
-        const where: Prisma.AbTestWhereInput = {
-            status: 'running',
-            autoExecute: true,
-            ga4Config: { not: Prisma.JsonNull },
-            ...(abTestId
-                ? { id: parseInt(abTestId, 10) }
-                : { endDate: { lte: now } }),
-        }
+        // abTestId 指定時は手動実行（詳細画面のボタン等）も想定されるため autoExecute を条件にしない
+        const where: Prisma.AbTestWhereInput = abTestId
+            ? {
+                id: parseInt(abTestId, 10),
+                status: 'running',
+                ga4Config: { not: Prisma.JsonNull },
+            }
+            : {
+                status: 'running',
+                autoExecute: true,
+                ga4Config: { not: Prisma.JsonNull },
+                endDate: { lte: now },
+            }
 
         const abTests = await prisma.abTest.findMany({
             where,

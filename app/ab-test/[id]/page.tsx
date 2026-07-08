@@ -81,6 +81,7 @@ export default function AbTestDetailPage() {
     const [error, setError] = useState<string | null>(null)
     const [nextExecutionDate, setNextExecutionDate] = useState<Date | null>(null)
     const [updatingStatus, setUpdatingStatus] = useState(false)
+    const [executingReport, setExecutingReport] = useState(false)
     const [showCompletionModal, setShowCompletionModal] = useState(false)
     const [currentResult, setCurrentResult] = useState<CurrentResult | null>(null)
     const [currentLoading, setCurrentLoading] = useState(false)
@@ -193,6 +194,36 @@ export default function AbTestDetailPage() {
             setFunnelError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
             setFunnelLoading(false)
+        }
+    }
+
+    async function handleExecuteReport() {
+        if (!abTest || executingReport) return
+        setExecutingReport(true)
+        setError(null)
+        try {
+            const response = await fetch('/api/ab-test/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ abTestId: abTest.id, force: true }),
+            })
+            const data = await parseJsonResponse<{
+                error?: string
+                message?: string
+                results?: Array<{ status: string; errorMessage?: string }>
+            }>(response)
+            if (!response.ok || data.error) {
+                throw new Error(data.message || data.error || 'レポート実行に失敗しました')
+            }
+            const failed = (data.results ?? []).find((r) => r.status === 'failed')
+            if (failed) {
+                throw new Error(failed.errorMessage || 'レポート実行に失敗しました')
+            }
+            await fetchAbTestDetail()
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'レポート実行に失敗しました')
+        } finally {
+            setExecutingReport(false)
         }
     }
 
@@ -716,6 +747,15 @@ export default function AbTestDetailPage() {
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.sectionTitle}>生成されたレポート</h2>
+                    {abTest.status === 'running' && (
+                        <button
+                            className={styles.refreshButton}
+                            onClick={handleExecuteReport}
+                            disabled={executingReport}
+                        >
+                            {executingReport ? 'レポート生成中...' : '今すぐレポート実行'}
+                        </button>
+                    )}
                 </div>
 
                 {reportExecutions.length === 0 ? (
