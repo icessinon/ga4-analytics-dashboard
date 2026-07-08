@@ -45,6 +45,7 @@ interface FunnelStepValue {
 
 interface FunnelResult {
     mode?: 'manual' | 'auto'
+    basis?: 'view' | 'click'
     detectedSuffixes?: string[]
     startDate: string
     endDate: string
@@ -99,6 +100,7 @@ export default function AbTestDetailPage() {
     const [funnelResult, setFunnelResult] = useState<FunnelResult | null>(null)
     const [funnelLoading, setFunnelLoading] = useState(false)
     const [funnelError, setFunnelError] = useState<string | null>(null)
+    const [funnelBasis, setFunnelBasis] = useState<'view' | 'click'>('view')
 
     useEffect(() => {
         if (!abTestId) {
@@ -191,11 +193,12 @@ export default function AbTestDetailPage() {
         }
     }
 
-    async function loadFunnelResult() {
+    async function loadFunnelResult(basis?: 'view' | 'click') {
+        const useBasis = basis ?? funnelBasis
         setFunnelLoading(true)
         setFunnelError(null)
         try {
-            const response = await fetch(`/api/ab-test/${abTestId}/funnel`)
+            const response = await fetch(`/api/ab-test/${abTestId}/funnel?basis=${useBasis}`)
             const data = await parseJsonResponse<FunnelResult & { error?: string; message?: string }>(response)
             if (!response.ok || data.error) {
                 throw new Error(data.message || data.error || 'ファネル集計の取得に失敗しました')
@@ -206,6 +209,12 @@ export default function AbTestDetailPage() {
         } finally {
             setFunnelLoading(false)
         }
+    }
+
+    function handleChangeFunnelBasis(basis: 'view' | 'click') {
+        if (basis === funnelBasis || funnelLoading) return
+        setFunnelBasis(basis)
+        loadFunnelResult(basis)
     }
 
     async function handleExecuteReport() {
@@ -663,15 +672,33 @@ export default function AbTestDetailPage() {
                         <h2 className={styles.sectionTitle}>
                             {abTest.status === 'completed' ? '最終ファネル（バリアント別）' : '途中経過ファネル'}
                         </h2>
-                        {abTest.status !== 'completed' && (
-                            <button
-                                onClick={loadFunnelResult}
-                                disabled={funnelLoading}
-                                className={styles.refreshButton}
-                            >
-                                {funnelLoading ? '集計中...' : '最新に更新'}
-                            </button>
-                        )}
+                        <div className={styles.funnelControls}>
+                            <div className={styles.basisToggle}>
+                                <button
+                                    className={funnelBasis === 'view' ? styles.basisActive : styles.basisButton}
+                                    onClick={() => handleChangeFunnelBasis('view')}
+                                    disabled={funnelLoading}
+                                >
+                                    ビュー基準
+                                </button>
+                                <button
+                                    className={funnelBasis === 'click' ? styles.basisActive : styles.basisButton}
+                                    onClick={() => handleChangeFunnelBasis('click')}
+                                    disabled={funnelLoading}
+                                >
+                                    クリック基準
+                                </button>
+                            </div>
+                            {abTest.status !== 'completed' && (
+                                <button
+                                    onClick={() => loadFunnelResult()}
+                                    disabled={funnelLoading}
+                                    className={styles.refreshButton}
+                                >
+                                    {funnelLoading ? '集計中...' : '最新に更新'}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {funnelError && (
@@ -751,6 +778,9 @@ export default function AbTestDetailPage() {
                             </div>
                             <p className={styles.currentNote}>
                                 ※ ★は同ステップで離脱率が最も低いバリアント。ユーザー数はtotalUsers基準のGA4オンデマンド集計です
+                                {funnelResult.basis === 'click'
+                                    ? '。クリック基準: 各ステップで何か操作（選択肢・次へ・戻る等のタップ）をしたユニークユーザー数。表示時間の条件がないため取りこぼしが少なく、ステップ通過の実数に近い値です'
+                                    : '。ビュー基準: ステップタイトルが50%以上×1秒連続表示されたユニークユーザー数。プリセット流入などで即通過したユーザーは数えられないことがあります（クリック基準との比較で確認できます）'}
                             </p>
                         </div>
                     )}

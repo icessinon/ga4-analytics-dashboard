@@ -187,6 +187,16 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 responseNote: '完了ABテスト一覧',
             },
             {
+                path: '/api/ab-test/[id]/funnel',
+                method: 'GET',
+                name: 'ABテスト途中経過ファネル',
+                description: 'バリアント別のステップファネルをGA4オンデマンド集計で返します。funnelSteps未設定でもCVRラベルのサフィックス（例: __B-1618）からテスト範囲を自動検出します。',
+                params: [
+                    { name: 'basis', type: 'string', required: false, description: 'view（デフォルト。view_label基準＝50%×1秒表示）または click（click_labelのStepN_プレフィックス単位で操作した人数。表示条件がなく取りこぼしが少ない）' },
+                ],
+                responseNote: '{ mode, basis, detectedSuffixes, variants, steps: [{ stepName, values: { A: { users, conversionRate, dropoffRate }, ... } }] }',
+            },
+            {
                 path: '/api/ab-test/advisor',
                 method: 'POST',
                 name: '施策提案AI壁打ち',

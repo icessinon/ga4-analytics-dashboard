@@ -648,3 +648,45 @@
 .aiReportLine strong {
     color: #93c5fd;
 }
+
+.funnelControls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.basisToggle {
+    display: inline-flex;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.basisButton,
+.basisActive {
+    background-color: transparent;
+    color: #9ca3af;
+    border: none;
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.875rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.basisActive {
+    background-color: #2563eb;
+    color: #fff;
+    font-weight: 600;
+}
+
+.basisButton:hover:not(:disabled) {
+    background-color: #374151;
+    color: #e5e7eb;
+}
+
+.basisButton:disabled,
+.basisActive:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
