@@ -35,6 +35,7 @@ export interface AbTest {
     endDate: string | null
     status: string
     winnerVariant?: string | null
+    improvementVsAPercent?: number | string | null
     ga4Config?: {
         dimensions?: string | Array<{ name?: string }>
         filter?: { dimension?: string; operator?: string; expression?: string }

@@ -70,6 +70,16 @@ function canShowFunnel(ga4Config: AbTest['ga4Config']): boolean {
     return false
 }
 
+/** AIレポートの1行をHTML化: エスケープ→**太字**変換。「## 見出し」はマークを外して太字にする */
+function renderAiReportLine(line: string, i: number, className: string) {
+    const headingMatch = line.match(/^\s*#{1,6}\s+(.*)$/)
+    const content = headingMatch ? headingMatch[1] : line
+    const escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    let html = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    if (headingMatch) html = `<strong>${html}</strong>`
+    return <p key={i} className={className} dangerouslySetInnerHTML={{ __html: html }} />
+}
+
 export default function AbTestDetailPage() {
     const router = useRouter()
     const params = useParams()
@@ -107,7 +117,8 @@ export default function AbTestDetailPage() {
     }, [abTest])
 
     useEffect(() => {
-        if (abTest && (abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config) {
+        // completed でも最終結果（期間確定値）として同じ集計を表示する
+        if (abTest && abTest.ga4Config) {
             loadCurrentResult()
             if (canShowFunnel(abTest.ga4Config)) {
                 loadFunnelResult()
@@ -360,6 +371,68 @@ export default function AbTestDetailPage() {
                 </p>
             </div>
 
+            {abTest.status === 'completed' && (
+                <div className={`${styles.section} ${styles.resultSummary}`}>
+                    <h2 className={styles.sectionTitle}>テスト結果サマリー</h2>
+                    <div className={styles.resultSummaryGrid}>
+                        <div className={styles.resultSummaryCard}>
+                            <p className={styles.resultSummaryLabel}>勝者バリアント</p>
+                            <p className={styles.resultSummaryWinner}>
+                                {abTest.winnerVariant ? `🏆 ${abTest.winnerVariant}` : '判定なし'}
+                            </p>
+                        </div>
+                        {abTest.improvementVsAPercent != null && (
+                            <div className={styles.resultSummaryCard}>
+                                <p className={styles.resultSummaryLabel}>A比改善率</p>
+                                <p className={`${styles.resultSummaryValue} ${Number(abTest.improvementVsAPercent) >= 0 ? styles.currentLiftUp : styles.currentLiftDown}`}>
+                                    {Number(abTest.improvementVsAPercent) >= 0 ? '+' : ''}{Number(abTest.improvementVsAPercent).toFixed(1)}%
+                                </p>
+                            </div>
+                        )}
+                        {abTest.expectedImprovement != null && (
+                            <div className={styles.resultSummaryCard}>
+                                <p className={styles.resultSummaryLabel}>期待改善率（計画時）</p>
+                                <p className={styles.resultSummaryValue}>{Number(abTest.expectedImprovement).toFixed(1)}%</p>
+                            </div>
+                        )}
+                        <div className={styles.resultSummaryCard}>
+                            <p className={styles.resultSummaryLabel}>テスト期間</p>
+                            <p className={styles.resultSummaryValue}>
+                                {formatDate(abTest.startDate)} - {abTest.endDate ? formatDate(abTest.endDate) : '-'}
+                            </p>
+                        </div>
+                    </div>
+                    {(abTest.victoryFactors || abTest.defeatFactors) && (
+                        <div className={styles.resultFactors}>
+                            {abTest.victoryFactors && (
+                                <div className={styles.resultFactorItem}>
+                                    <p className={styles.resultSummaryLabel}>勝因メモ</p>
+                                    <p className={styles.resultFactorText}>{abTest.victoryFactors}</p>
+                                </div>
+                            )}
+                            {abTest.defeatFactors && (
+                                <div className={styles.resultFactorItem}>
+                                    <p className={styles.resultSummaryLabel}>敗因メモ</p>
+                                    <p className={styles.resultFactorText}>{abTest.defeatFactors}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {abTest.status === 'completed' && abTest.finalAiReport && (
+                <div className={styles.section}>
+                    <h2 className={styles.sectionTitle}>AI最終レポート</h2>
+                    {abTest.finalAiReportAt && (
+                        <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
+                    )}
+                    <div className={styles.aiReport}>
+                        {abTest.finalAiReport.split('\n').map((line, i) => renderAiReportLine(line, i, styles.aiReportLine))}
+                    </div>
+                </div>
+            )}
+
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>基本情報</h2>
                 <div className={styles.infoGrid}>
@@ -429,33 +502,33 @@ export default function AbTestDetailPage() {
                 </div>
             </div>
 
-            {abTest.finalAiReport && (
+            {abTest.status !== 'completed' && abTest.finalAiReport && (
                 <div className={styles.section}>
                     <h2 className={styles.sectionTitle}>AI最終レポート</h2>
                     {abTest.finalAiReportAt && (
                         <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
                     )}
                     <div className={styles.aiReport}>
-                        {abTest.finalAiReport.split('\n').map((line, i) => {
-                            const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                            const bold = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            return <p key={i} className={styles.aiReportLine} dangerouslySetInnerHTML={{ __html: bold }} />
-                        })}
+                        {abTest.finalAiReport.split('\n').map((line, i) => renderAiReportLine(line, i, styles.aiReportLine))}
                     </div>
                 </div>
             )}
 
-            {(abTest.status === 'running' || abTest.status === 'paused') && abTest.ga4Config && (
+            {abTest.ga4Config && (
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>現在の途中経過</h2>
-                        <button
-                            onClick={loadCurrentResult}
-                            disabled={currentLoading}
-                            className={styles.refreshButton}
-                        >
-                            {currentLoading ? '集計中...' : '最新に更新'}
-                        </button>
+                        <h2 className={styles.sectionTitle}>
+                            {abTest.status === 'completed' ? '最終結果（バリアント別CVR）' : '現在の途中経過'}
+                        </h2>
+                        {abTest.status !== 'completed' && (
+                            <button
+                                onClick={loadCurrentResult}
+                                disabled={currentLoading}
+                                className={styles.refreshButton}
+                            >
+                                {currentLoading ? '集計中...' : '最新に更新'}
+                            </button>
+                        )}
                     </div>
 
                     {currentError && (
@@ -469,12 +542,29 @@ export default function AbTestDetailPage() {
                     {currentResult && (
                         <div className={styles.currentBody}>
                             <p className={styles.currentMeta}>
-                                集計期間: {currentResult.startDate} 〜 {currentResult.endDate}（経過{currentResult.elapsedDays}日 {currentResult.reliability.icon} {currentResult.reliability.level}・{currentResult.reliability.description}）
-                                ／ 集計時刻: {new Date(currentResult.fetchedAt).toLocaleString('ja-JP')}
+                                {abTest.status === 'completed'
+                                    ? `集計期間: ${currentResult.startDate} 〜 ${currentResult.endDate}（テスト期間全体の確定値）`
+                                    : `集計期間: ${currentResult.startDate} 〜 ${currentResult.endDate}（経過${currentResult.elapsedDays}日 ${currentResult.reliability.icon} ${currentResult.reliability.level}・${currentResult.reliability.description}）／ 集計時刻: ${new Date(currentResult.fetchedAt).toLocaleString('ja-JP')}`}
                             </p>
 
                             {(() => {
                                 const { leader, variants, comparisons } = currentResult
+                                if (abTest.status === 'completed') {
+                                    if (!abTest.winnerVariant) {
+                                        return (
+                                            <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
+                                                勝者判定なしで終了しました
+                                            </div>
+                                        )
+                                    }
+                                    const winComp = comparisons.find((c) => c.variant === abTest.winnerVariant)
+                                    return (
+                                        <div className={`${styles.currentCallout} ${styles.currentCalloutWin}`}>
+                                            🏆 勝者: <strong>{abTest.winnerVariant}</strong>
+                                            {winComp && `（有意差${winComp.significance}%）`}
+                                        </div>
+                                    )
+                                }
                                 if (!leader) {
                                     return (
                                         <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
@@ -528,12 +618,15 @@ export default function AbTestDetailPage() {
                                     <tbody>
                                         {currentResult.variants.map((v) => {
                                             const comp = currentResult.comparisons.find((c) => c.variant === v.key)
-                                            const isLeader = currentResult.leader === v.key
+                                            const isCompleted = abTest.status === 'completed'
+                                            const isLeader = isCompleted
+                                                ? abTest.winnerVariant === v.key
+                                                : currentResult.leader === v.key
                                             return (
                                                 <tr key={v.key} className={isLeader ? styles.currentLeaderRow : undefined}>
                                                     <td>
                                                         {v.key}
-                                                        {isLeader && <span className={styles.leaderBadge}>リード中</span>}
+                                                        {isLeader && <span className={styles.leaderBadge}>{isCompleted ? '勝者' : 'リード中'}</span>}
                                                     </td>
                                                     <td>{v.pv.toLocaleString()}</td>
                                                     <td>{v.cv.toLocaleString()}</td>
@@ -555,24 +648,30 @@ export default function AbTestDetailPage() {
                                 </table>
                             </div>
                             <p className={styles.currentNote}>
-                                ※ GA4からのオンデマンド集計です（当日データを含むため、直近の数値は変動する場合があります）
+                                {abTest.status === 'completed'
+                                    ? '※ テスト期間全体をGA4から集計した確定値です'
+                                    : '※ GA4からのオンデマンド集計です（当日データを含むため、直近の数値は変動する場合があります）'}
                             </p>
                         </div>
                     )}
                 </div>
             )}
 
-            {(abTest.status === 'running' || abTest.status === 'paused') && canShowFunnel(abTest.ga4Config) && (
+            {canShowFunnel(abTest.ga4Config) && (
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>途中経過ファネル</h2>
-                        <button
-                            onClick={loadFunnelResult}
-                            disabled={funnelLoading}
-                            className={styles.refreshButton}
-                        >
-                            {funnelLoading ? '集計中...' : '最新に更新'}
-                        </button>
+                        <h2 className={styles.sectionTitle}>
+                            {abTest.status === 'completed' ? '最終ファネル（バリアント別）' : '途中経過ファネル'}
+                        </h2>
+                        {abTest.status !== 'completed' && (
+                            <button
+                                onClick={loadFunnelResult}
+                                disabled={funnelLoading}
+                                className={styles.refreshButton}
+                            >
+                                {funnelLoading ? '集計中...' : '最新に更新'}
+                            </button>
+                        )}
                     </div>
 
                     {funnelError && (
@@ -707,7 +806,7 @@ export default function AbTestDetailPage() {
                 </div>
             )}
 
-            {abTest.scheduleConfig && (
+            {abTest.status !== 'completed' && abTest.scheduleConfig && (
                 <div className={styles.section}>
                     <h2 className={styles.sectionTitle}>スケジュール設定</h2>
                     <div className={styles.scheduleList}>

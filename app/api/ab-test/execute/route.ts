@@ -9,7 +9,7 @@ import { parseDateString } from '@/lib/utils/date'
 import { getGeminiApiKey } from '@/lib/utils/gemini'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
-import { insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { insertAbTestResultLog, insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
 
 interface GA4CvrConfig {
@@ -352,6 +352,55 @@ export async function POST(request: Request) {
                         improvementVsAPercent: improvementVsAPercent != null ? improvementVsAPercent : undefined,
                     } as Prisma.AbTestUpdateInput,
                 })
+
+                // バリアント別の実行結果を ab_test_results に保存し BQ(ab_test_result_log)へ蓄積
+                // （BQでのAB横断分析・施策提案AI壁打ちのコンテキストに使う）
+                try {
+                    const executedAt = new Date()
+                    for (const v of variants) {
+                        const abTestResult = await prisma.abTestResult.create({
+                            data: {
+                                abTestId: abTest.id,
+                                reportExecutionId: reportExecution.id,
+                                variant: v.name.charAt(0),
+                                pageViews: v.data.pv,
+                                conversions: v.data.cv,
+                                conversionRate: v.data.cvr,
+                                statisticalSignificance: abTestEvaluation?.checks?.significance?.value ?? null,
+                                zScore: abTestEvaluation ? parseFloat(abTestEvaluation.checks.significance.zScore) || null : null,
+                                periodDays: abTestEvaluation?.checks?.period?.days ?? null,
+                                recommendation: abTestEvaluation?.recommendation ?? null,
+                            },
+                        })
+                        void insertAbTestResultLog({
+                            result_id:                abTestResult.id,
+                            ab_test_id:               abTest.id,
+                            product_id:               abTest.productId,
+                            ab_test_name:             abTest.name,
+                            variant:                  v.name.charAt(0),
+                            variant_a_name:           abTest.variantAName,
+                            variant_b_name:           abTest.variantBName,
+                            page_views:               v.data.pv,
+                            conversions:              v.data.cv,
+                            conversion_rate:          v.data.cvr,
+                            statistical_significance: abTestEvaluation?.checks?.significance?.value ?? null,
+                            z_score:                  abTestEvaluation ? parseFloat(abTestEvaluation.checks.significance.zScore) || null : null,
+                            period_days:              abTestEvaluation?.checks?.period?.days ?? null,
+                            ai_evaluation:            abTestEvaluation?.aiEvaluation ?? null,
+                            recommendation:           abTestEvaluation?.recommendation ?? null,
+                            winner_variant:           winnerVariant,
+                            improvement_vs_a_pct:     improvementVsAPercent,
+                            ab_test_status:           abTest.status,
+                            start_date:               abTest.startDate.toISOString().split('T')[0],
+                            end_date:                 abTest.endDate ? abTest.endDate.toISOString().split('T')[0] : null,
+                            report_month:             jstReportMonth(executedAt),
+                            report_date:              jstReportDate(executedAt),
+                            synced_at:                nowIso(),
+                        })
+                    }
+                } catch (err) {
+                    console.error(`[abTestExecute] バリアント別結果の保存失敗 (ID: ${abTest.id}):`, err instanceof Error ? err.message : err)
+                }
 
                 try {
                     await notifyAbTestReportCompletion(abTest, abTestReportExecution, {
