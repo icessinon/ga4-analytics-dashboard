@@ -81,6 +81,7 @@ export default function FeatureDocsPage() {
                     <p className={styles.lead}>
                         ダッシュボードの全機能の概要・使い方・使用GA4メトリクスをまとめています。
                         ✦ AI分析 バッジがある機能は、分析結果をもとに AI が自然言語でインサイトを生成します。
+                        なお、海外botトラフィック対策として全GA4集計にデフォルトで国=日本フィルタを適用しています（国別軸の分析を除く）。
                     </p>
                 </div>
                 <div className={styles.headerLinks}>

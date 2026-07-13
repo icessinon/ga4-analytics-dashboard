@@ -93,6 +93,8 @@ export async function POST(request: Request) {
             propertyId,
             dateRanges: [{ startDate, endDate }],
             metrics: baseMetrics,
+            // 条件に国が含まれる場合はデフォルトの country=Japan フィルタと競合させない
+            includeAllCountries: allConds.some((c) => c.dimension === 'country'),
         }
 
         const ga4 = async (extra: Record<string, unknown>, filter?: Record<string, unknown>) =>

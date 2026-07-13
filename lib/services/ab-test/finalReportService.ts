@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/client'
-import { generateAbTestFinalReport, type FinalReportVariant } from '@/lib/api/gemini/abTestFinalReport'
+import { generateAbTestFinalReport, type FinalReportVariant, type FinalReportFunnel } from '@/lib/api/gemini/abTestFinalReport'
+import { computeAbTestFunnel } from '@/lib/services/ab-test/abTestFunnelService'
 import { insertAbTestFinalReportLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 type CvrResult = { pv: number; cv: number; cvr: number }
@@ -63,6 +64,28 @@ export async function generateAndStoreFinalReport(
         const improvementVsA = abTest.improvementVsAPercent != null ? Number(abTest.improvementVsAPercent) : null
         const expectedImprovement = abTest.expectedImprovement != null ? Number(abTest.expectedImprovement) : null
 
+        // ステップファネル（クリック基準優先。取れない設定のテストではビュー基準にフォールバック、それも無理なら省略）
+        let funnel: FinalReportFunnel | null = null
+        for (const basis of ['click', 'view'] as const) {
+            try {
+                const result = await computeAbTestFunnel(abTest, basis)
+                if (result.steps.length > 0) {
+                    funnel = {
+                        basis: result.basis,
+                        variants: result.variants,
+                        steps: result.steps.map((s) => ({
+                            stepName: s.stepName,
+                            users: Object.fromEntries(result.variants.map((v) => [v, s.values[v]?.users ?? null]).filter(([, u]) => u != null)) as Record<string, number>,
+                            dropoffRate: Object.fromEntries(result.variants.map((v) => [v, s.values[v]?.dropoffRate ?? null])),
+                        })),
+                    }
+                    break
+                }
+            } catch (err) {
+                console.warn(`[finalReport] abTest ${abTestId}: ${basis}基準ファネル取得スキップ:`, err instanceof Error ? err.message : err)
+            }
+        }
+
         const report = await generateAbTestFinalReport({
             testName: abTest.name,
             hypothesis: abTest.hypothesis,
@@ -76,6 +99,7 @@ export async function generateAndStoreFinalReport(
             recommendation,
             victoryFactors: abTest.victoryFactors,
             defeatFactors: abTest.defeatFactors,
+            funnel,
         }, abTest.productId)
         if (!report) return null
 

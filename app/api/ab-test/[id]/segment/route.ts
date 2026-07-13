@@ -108,6 +108,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             dimensions: allDimensions,
             metrics,
             limit: ga4Config.limit || 50000,
+            // 国別セグメントの内訳ではデフォルトの country=Japan フィルタを外す（1行になってしまうため）
+            includeAllCountries: segmentDimension === 'country',
         }
 
         const filterDimension = ga4Config.filter?.dimension

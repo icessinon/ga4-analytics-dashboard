@@ -8,6 +8,18 @@ export interface FinalReportVariant {
     cvr: number
 }
 
+export interface FinalReportFunnelStep {
+    stepName: string
+    users: Partial<Record<string, number>>
+    dropoffRate: Partial<Record<string, number | null>>
+}
+
+export interface FinalReportFunnel {
+    basis: 'view' | 'click'
+    variants: string[]
+    steps: FinalReportFunnelStep[]
+}
+
 export interface AbTestFinalReportRequest {
     testName: string
     hypothesis: string | null
@@ -21,6 +33,7 @@ export interface AbTestFinalReportRequest {
     recommendation: string | null
     victoryFactors: string | null
     defeatFactors: string | null
+    funnel?: FinalReportFunnel | null
 }
 
 export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, productId?: number): Promise<string | null> {
@@ -40,6 +53,23 @@ export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, p
         req.defeatFactors ? `【担当者メモ：敗因・課題】\n${req.defeatFactors}` : null,
     ].filter(Boolean).join('\n\n')
 
+    let funnelSection = ''
+    if (req.funnel && req.funnel.steps.length > 0) {
+        const basisNote = req.funnel.basis === 'click'
+            ? 'クリック基準（各ステップで操作したユニークユーザー数。表示時間条件がなく通過実数に近い）'
+            : 'ビュー基準（50%×1秒表示。即通過ユーザーは取りこぼされることがある）'
+        const stepLines = req.funnel.steps.map((s) => {
+            const cells = req.funnel!.variants.map((v) => {
+                const users = s.users[v]
+                if (users == null) return `${v}: -`
+                const drop = s.dropoffRate[v]
+                return `${v}: ${users.toLocaleString()}${drop != null ? `（離脱${(drop * 100).toFixed(1)}%）` : ''}`
+            }).join(' ／ ')
+            return `- ${s.stepName}: ${cells}`
+        }).join('\n')
+        funnelSection = `\n【ステップファネル】※${basisNote}\n${stepLines}\n`
+    }
+
     const prompt = `あなたはWebマーケティング・CRO（コンバージョン率最適化）の専門家です。以下は求人転職サービス(x-work.jp)で実施したABテストの終了時データです。最終レポートを作成してください。
 
 【テスト概要】
@@ -53,11 +83,11 @@ ${variantLines}
 
 【判定】
 ${resultLines}
-${memoLines ? `\n${memoLines}\n` : ''}
+${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}
 以下の構成で最終レポートを作成してください:
 1. **結果サマリー** — 数値ベースで結果を簡潔にまとめる
 2. **仮説検証** — 事前仮説と期待改善率に対して結果はどうだったか（仮説が未記入の場合はテスト名から推測される意図に対して評価）
-3. **勝因・敗因分析** — なぜこの結果になったのか。統計的有意差・サンプルサイズも踏まえた確度の評価を含める。担当者メモがあれば内容を統合する
+3. **勝因・敗因分析** — なぜこの結果になったのか。ステップファネルがある場合は「どのステップで差がついたか」を離脱率の数字で具体的に指摘する。統計的有意差・サンプルサイズも踏まえた確度の評価を含める。担当者メモがあれば内容を統合する
 4. **学び（今後に活かせる知見）** — 求人転職サービスの改善に汎用的に使える教訓を抽出する
 5. **次のアクション** — このテスト結果を受けて次に試すべき施策を具体的に2〜3個提案する
 

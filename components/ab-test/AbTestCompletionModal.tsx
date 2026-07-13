@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import AISpinner from '@/components/AISpinner/AISpinner'
 import styles from './AbTestCompletionModal.module.css'
 
 export interface AbTestCompletionModalProps {
@@ -85,6 +86,11 @@ export default function AbTestCompletionModal({
                             />
                         </div>
                     )}
+                    {submitting && (
+                        <p className={styles.generatingNote}>
+                            <AISpinner /> ファネル集計とAI最終レポートを生成しています（1分ほどかかることがあります）...
+                        </p>
+                    )}
                     <div className={styles.actions}>
                         <button
                             type="button"
@@ -95,7 +101,7 @@ export default function AbTestCompletionModal({
                             キャンセル
                         </button>
                         <button type="submit" className={styles.submitButton} disabled={submitting}>
-                            {submitting ? '更新中...' : '完了する'}
+                            {submitting ? <span className={styles.submitInner}><AISpinner /> 完了処理中...</span> : '完了する'}
                         </button>
                     </div>
                 </form>

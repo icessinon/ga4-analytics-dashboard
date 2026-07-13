@@ -11,7 +11,19 @@ export interface GA4ReportRequest {
     dimensionFilter?: Record<string, unknown>;
     orderBys?: Array<Record<string, unknown>>;
     limit?: number;
+    /**
+     * true にすると国フィルタ（country=Japan）を適用しない。
+     * 国別軸の分析や、リクエスト側で国を明示的にフィルタする場合に指定する。
+     */
+    includeAllCountries?: boolean;
 }
+
+// 海外botトラフィック対策: 全レポートにデフォルトで country=Japan を適用する。
+// 2026年6月にシンガポール発のbot（desktop/Chrome/Direct）が日本と同規模のセッションを
+// 発生させたため（CVは0件）、国内向けサービスの分析ではJapanのみを対象とする。
+const JAPAN_ONLY_FILTER = {
+    filter: { fieldName: 'country', stringFilter: { matchType: 'EXACT', value: 'Japan' } },
+} as const
 
 export interface GA4ReportResponse {
     dimensionHeaders: Array<{ name: string }>;
@@ -72,6 +84,13 @@ export async function fetchGA4Data(
         dimensionFilter: request.dimensionFilter,
         limit: request.limit || 10000,
         metrics: [],
+    }
+
+    // 海外bot対策のデフォルト国フィルタ（includeAllCountries 指定時はスキップ）
+    if (!request.includeAllCountries) {
+        body.dimensionFilter = request.dimensionFilter
+            ? { andGroup: { expressions: [request.dimensionFilter, JAPAN_ONLY_FILTER] } }
+            : JAPAN_ONLY_FILTER
     }
 
     if (request.orderBys && request.orderBys.length > 0) {

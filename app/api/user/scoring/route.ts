@@ -79,6 +79,8 @@ export async function POST(request: Request) {
             dimensions: [{ name: segmentDimension }],
             metrics: METRICS,
             limit: 50,
+            // 国別軸の分析ではデフォルトの country=Japan フィルタを外す（1行になってしまうため）
+            includeAllCountries: segmentDimension === 'country',
         }
 
         // 全期間と直近7日を並行取得

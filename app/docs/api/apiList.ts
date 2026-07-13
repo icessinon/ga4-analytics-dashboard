@@ -124,7 +124,7 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 path: '/api/ab-test/[id]/status',
                 method: 'PATCH',
                 name: 'ABテストステータス変更',
-                description: 'running / paused / completed などのステータスを変更します。completed に変更すると AI 最終レポートを自動生成し、DB と BigQuery（ab_test_final_report_log）に保存します。',
+                description: 'running / paused / completed などのステータスを変更します。completed に変更すると、ステップファネル（クリック基準優先）を集計したうえで AI 最終レポートを自動生成し、DB と BigQuery（ab_test_final_report_log）に保存します。',
                 params: [],
                 responseNote: '更新後の AbTest（finalAiReport 含む）',
             },

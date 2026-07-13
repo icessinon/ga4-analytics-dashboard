@@ -56,6 +56,8 @@ export async function POST(request: Request) {
                 dimensions: ['date', 'hour', 'eventName', 'pagePath', 'pageTitle', 'sessionSource', 'deviceCategory'],
                 metrics: ['eventCount', 'activeUsers'],
                 ...(dimensionFilter ? { dimensionFilter } : {}),
+                // 国を明示指定してセグメントを絞る場合はデフォルトの country=Japan フィルタと競合させない
+                includeAllCountries: Boolean(country && country !== '(not set)'),
                 limit: 10000,
             },
             accessToken

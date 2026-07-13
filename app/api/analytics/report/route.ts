@@ -51,6 +51,10 @@ export async function POST(request: Request) {
             dimensions: dimensions || [],
             metrics: metrics || [],
             limit,
+            // 国ディメンションを扱うクエリではデフォルトの country=Japan フィルタを外す
+            includeAllCountries:
+                (dimensions || []).some((d: unknown) => (typeof d === 'string' ? d : (d as { name?: string })?.name) === 'country') ||
+                filter?.dimension === 'country',
         }
 
         if (filter?.dimension && filter?.operator && filter?.expression) {

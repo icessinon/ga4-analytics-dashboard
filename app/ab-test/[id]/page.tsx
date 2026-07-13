@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { useParams, useRouter } from 'next/navigation'
+import AISpinner from '@/components/AISpinner/AISpinner'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
 import Loader from '@/components/Loader'
@@ -619,7 +620,7 @@ export default function AbTestDetailPage() {
                                             <th>PV（分母）</th>
                                             <th>CV（分子）</th>
                                             <th>CVR</th>
-                                            <th>Aとの差</th>
+                                            <th>Aとの差（絶対 / 相対）</th>
                                             <th>有意差(vs A)</th>
                                             <th>判定</th>
                                         </tr>
@@ -644,9 +645,15 @@ export default function AbTestDetailPage() {
                                                         comp?.liftVsA == null ? undefined
                                                             : comp.liftVsA >= 0 ? styles.currentLiftUp : styles.currentLiftDown
                                                     }>
-                                                        {comp?.liftVsA == null
-                                                            ? '-'
-                                                            : `${comp.liftVsA >= 0 ? '+' : ''}${(comp.liftVsA * 100).toFixed(1)}%`}
+                                                        {(() => {
+                                                            if (comp?.liftVsA == null) return '-'
+                                                            const aCvr = currentResult.variants.find((x) => x.key === 'A')?.cvr
+                                                            const absPt = aCvr != null ? (v.cvr - aCvr) * 100 : null
+                                                            const rel = `${comp.liftVsA >= 0 ? '+' : ''}${(comp.liftVsA * 100).toFixed(1)}%`
+                                                            return absPt != null
+                                                                ? `${absPt >= 0 ? '+' : ''}${absPt.toFixed(2)}pt ／ ${rel}`
+                                                                : rel
+                                                        })()}
                                                     </td>
                                                     <td>{comp ? `${comp.significance}%（必要${comp.requiredSignificance}%）` : '-'}</td>
                                                     <td>{comp ? (comp.isSufficient ? '✅ 有意差あり' : '⏳ 判定中') : '-'}</td>
@@ -760,19 +767,53 @@ export default function AbTestDetailPage() {
                                                 </tr>
                                             )
                                         })}
-                                        {funnelResult.steps.length > 1 && (
-                                            <tr className={styles.funnelTotalRow}>
-                                                <td>全体到達率（①→最終）</td>
-                                                {funnelResult.variants.map((v) => {
-                                                    const last = funnelResult.steps[funnelResult.steps.length - 1].values[v]
-                                                    return (
-                                                        <td key={v} className={styles.currentCvr}>
-                                                            {last?.conversionRate != null ? `${(last.conversionRate * 100).toFixed(2)}%` : '-'}
-                                                        </td>
-                                                    )
-                                                })}
-                                            </tr>
-                                        )}
+                                        {funnelResult.steps.length > 1 && (() => {
+                                            // 起点: 全バリアントにユーザーがいる最初のステップ（Step0のような片側計測ステップを起点にすると到達率が歪むため）
+                                            const steps = funnelResult.steps
+                                            const baselineIndex = steps.findIndex((s) =>
+                                                funnelResult.variants.every((v) => (s.values[v]?.users ?? 0) > 0)
+                                            )
+                                            if (baselineIndex < 0 || baselineIndex >= steps.length - 1) return null
+                                            const baseStep = steps[baselineIndex]
+                                            const lastStep = steps[steps.length - 1]
+                                            const reach: Record<string, number | null> = {}
+                                            for (const v of funnelResult.variants) {
+                                                const base = baseStep.values[v]?.users ?? 0
+                                                const last = lastStep.values[v]?.users
+                                                reach[v] = base > 0 && last != null ? last / base : null
+                                            }
+                                            const reachA = reach['A']
+                                            return (
+                                                <>
+                                                    <tr className={styles.funnelTotalRow}>
+                                                        <td>全体到達率（{baseStep.stepName.split('_')[0]}→最終）</td>
+                                                        {funnelResult.variants.map((v) => (
+                                                            <td key={v} className={styles.currentCvr}>
+                                                                {reach[v] != null ? `${(reach[v]! * 100).toFixed(2)}%` : '-'}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                    {reachA != null && reachA > 0 && funnelResult.variants.length > 1 && (
+                                                        <tr className={styles.funnelTotalRow}>
+                                                            <td>Aとの差（絶対 / 相対）</td>
+                                                            {funnelResult.variants.map((v) => {
+                                                                if (v === 'A') return <td key={v} className={styles.currentCvr}>-（基準）</td>
+                                                                const r = reach[v]
+                                                                if (r == null) return <td key={v}>-</td>
+                                                                const absPt = (r - reachA) * 100
+                                                                const rel = ((r - reachA) / reachA) * 100
+                                                                const up = absPt >= 0
+                                                                return (
+                                                                    <td key={v} className={up ? styles.currentLiftUp : styles.currentLiftDown}>
+                                                                        {`${up ? '+' : ''}${absPt.toFixed(1)}pt ／ ${up ? '+' : ''}${rel.toFixed(1)}%`}
+                                                                    </td>
+                                                                )
+                                                            })}
+                                                        </tr>
+                                                    )}
+                                                </>
+                                            )
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
@@ -882,7 +923,7 @@ export default function AbTestDetailPage() {
                             onClick={handleExecuteReport}
                             disabled={executingReport}
                         >
-                            {executingReport ? 'レポート生成中...' : '今すぐレポート実行'}
+                            {executingReport ? <span className={styles.buttonInner}><AISpinner /> レポート生成中...</span> : '今すぐレポート実行'}
                         </button>
                     )}
                 </div>
