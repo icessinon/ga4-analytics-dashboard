@@ -554,6 +554,19 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 responseNote: '{ pages: [{ path, exitCount, exitRate, sessions, avgEngagementSec, scrollRate }], funnel: [...] }',
             },
             {
+                path: '/api/pageflow',
+                method: 'POST',
+                name: 'ページフロー分析',
+                description: '指定ページの「直前に見ていたページ」（pageReferrer集計）と「直後に見たページ」（対象ページをリファラーとするpagePath集計）を両方向で返します。',
+                params: [
+                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
+                    { name: 'pagePath', type: 'string', required: true, description: 'Body JSON。対象ページパス（/始まり、前方一致）' },
+                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
+                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
+                ],
+                responseNote: '{ pagePath, targetUsers, prevPages: [{ page, users }], prevNoReferrer, nextPages: [{ page, users }] }',
+            },
+            {
                 path: '/api/exit/gemini',
                 method: 'POST',
                 name: '離脱分析 AI考察',

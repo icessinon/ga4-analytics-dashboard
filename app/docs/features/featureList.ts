@@ -131,6 +131,22 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/exit, POST /api/exit/gemini',
     },
 
+    {
+        name: 'ページフロー分析',
+        href: '/pageflow',
+        category: '経路・離脱分析',
+        description: '指定したページの「直前に見ていたページ」と「直後に見たページ」を両方向で集計します。サンクスページ後の誘導効果測定（例: LP応募→クロスワーク本体への遷移率）や、任意ページの導線実態の確認に使います。',
+        capabilities: [
+            'ページパス前方一致での対象指定（例: /lp-thanks で全事業のLP応募サンクスをまとめて分析）',
+            '直前ページ TOP20（サイト内はパス正規化、外部流入はドメインでまとめて表示）',
+            '直後ページ TOP20（対象ページをリファラーとする遷移先）',
+            '対象ページ到達ユーザー数に対する構成比・リファラーなし数の表示',
+            '期間切り替え（7 / 14 / 30 / 90日）',
+        ],
+        metrics: ['totalUsers', 'pageReferrer', 'pagePath'],
+        apiRoute: 'POST /api/pageflow',
+    },
+
     // ── コンバージョン・ファネル ──
     {
         name: 'エントリーフォームファネル',
