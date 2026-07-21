@@ -123,6 +123,95 @@ export async function fetchGA4Data(
     return response.json();
 }
 
+// ============================================================
+//  順序付きファネル（GA4 Data API v1alpha runFunnelReport）
+// ============================================================
+
+export interface GA4FunnelStepInput {
+    /** ステップの表示名 */
+    name: string
+    /** page = ページ閲覧（unifiedPagePathScreen）、click = クリックタグ（data_click_label の click_label） */
+    type: 'page' | 'click'
+    matchType: 'EXACT' | 'BEGINS_WITH' | 'CONTAINS' | 'PARTIAL_REGEXP' | 'FULL_REGEXP'
+    value: string
+}
+
+export interface GA4FunnelStepResult {
+    name: string
+    users: number
+    /** 次ステップへの通過率（最終ステップは null） */
+    completionRate: number | null
+    abandonments: number
+}
+
+/**
+ * GA4 の順序付きクローズドファネルを実行する。
+ * ステップは「ページ閲覧」と「クリックタグ」を自由に混在できる。
+ * 注: v1alpha のためグローバルな dimensionFilter は使えない（国フィルタ等は適用されない）
+ */
+export async function runGA4FunnelReport(
+    propertyId: string,
+    dateRanges: Array<{ startDate: string; endDate: string }>,
+    steps: GA4FunnelStepInput[],
+    accessToken: string
+): Promise<GA4FunnelStepResult[]> {
+    const funnelSteps = steps.map((s) => ({
+        name: s.name,
+        filterExpression: s.type === 'page'
+            ? {
+                funnelFieldFilter: {
+                    fieldName: 'unifiedPagePathScreen',
+                    stringFilter: { matchType: s.matchType, value: s.value },
+                },
+            }
+            : {
+                andGroup: {
+                    expressions: [
+                        { funnelEventFilter: { eventName: 'data_click_label' } },
+                        {
+                            funnelFieldFilter: {
+                                fieldName: 'customEvent:click_label',
+                                stringFilter: { matchType: s.matchType, value: s.value },
+                            },
+                        },
+                    ],
+                },
+            },
+    }))
+
+    const response = await fetch(
+        `https://analyticsdata.googleapis.com/v1alpha/properties/${propertyId}:runFunnelReport`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                dateRanges,
+                funnelVisualizationType: 'STANDARD_FUNNEL',
+                funnel: { isOpenFunnel: false, steps: funnelSteps },
+            }),
+        }
+    )
+    if (!response.ok) {
+        const error = await response.json()
+        throw new Error(`GA4 Funnel API Error: ${error.error?.message || response.statusText}`)
+    }
+    const data = await response.json() as {
+        funnelTable?: { rows?: Array<{ dimensionValues: Array<{ value?: string }>; metricValues: Array<{ value?: string }> }> }
+    }
+
+    // funnelTable.rows: dimension=ステップ名、metrics=[activeUsers, 通過率, 離脱数, 離脱率]
+    const rows = data.funnelTable?.rows ?? []
+    return rows.map((row, i) => ({
+        name: row.dimensionValues[0]?.value ?? steps[i]?.name ?? `Step ${i + 1}`,
+        users: parseInt(row.metricValues[0]?.value ?? '0', 10),
+        completionRate: i < rows.length - 1 ? parseFloat(row.metricValues[1]?.value ?? '0') : null,
+        abandonments: parseInt(row.metricValues[2]?.value ?? '0', 10),
+    }))
+}
+
 /**
  * GA4 API認証（OAuth2）
  * GASコードのAnalyticsDataサービスと同じように動作するように実装

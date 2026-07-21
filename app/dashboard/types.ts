@@ -124,6 +124,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'ABテスト', subtitle: 'ABテスト結果の分析と評価', getHref: (id) => id ? `/ab-test?productId=${id}` : '/ab-test', productPrefix: true },
             { title: '施策提案AI壁打ち', subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価', getHref: () => '/ab-test/advisor', productPrefix: true },
             { title: '職種別CV分析', subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV', getHref: () => '/occupation', productPrefix: true },
+            { title: '求人種別CV分析', subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較', getHref: () => '/cv-types', productPrefix: true },
             { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
         ],
     },
@@ -132,6 +133,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         items: [
             { title: 'エントリーフォームファネル', subtitle: 'フォーム完了までの導線分析', getHref: (id) => id ? `/funnel?productId=${id}` : '/funnel', productPrefix: true },
             { title: 'エンゲージメント', subtitle: 'エンゲージメントファネル分析', getHref: (id) => id ? `/funnel/engagement?productId=${id}` : '/funnel/engagement', productPrefix: true },
+            { title: '経路ファネルビルダー', subtitle: 'ページ・クリックタグを組み合わせた順序付きファネルを自由に作成', getHref: () => '/funnel/path', productPrefix: true },
         ],
     },
     {

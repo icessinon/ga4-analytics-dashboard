@@ -322,6 +322,19 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 responseNote: '{ success, comparison: { periods, periodA, periodB, geminiEvaluation }, executionId }。各 period に channelBreakdown を含む',
             },
             {
+                path: '/api/funnel/path',
+                method: 'POST',
+                name: '経路ファネル実行',
+                description: 'ページ閲覧・クリックタグを混在させたステップ定義から、GA4の順序付きクローズドファネル（Data API v1alpha runFunnelReport）を実行します。',
+                params: [
+                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
+                    { name: 'steps', type: 'array', required: true, description: 'Body JSON。{ name, type: "page"|"click", matchType, value } の配列（2〜10個）' },
+                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
+                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
+                ],
+                responseNote: '{ steps: [{ name, users, completionRate, abandonments }] }',
+            },
+            {
                 path: '/api/funnel/executions',
                 method: 'GET',
                 name: 'ファネル実行一覧',
@@ -666,6 +679,23 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                     { name: 'noOccSignupCv', type: 'number', required: false, description: 'Body JSON。職種指定なしの会員登録CV' },
                 ],
                 responseNote: '{ analysis: string }（AIによる自然言語分析）',
+            },
+        ],
+    },
+    {
+        category: '求人種別CV分析',
+        endpoints: [
+            {
+                path: '/api/cv-types',
+                method: 'POST',
+                name: '求人種別CV集計',
+                description: '応募CVをGTMビューラベル（DL__Media__Area__Job* / EF__Job*__Area__Header / EF__ThxJob*）で人材紹介・求人広告・ハローワークに分解し、求人種別ファネルと日別推移、会員登録（ページベース）を返します。',
+                params: [
+                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
+                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
+                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
+                ],
+                responseNote: '{ jobTypes: [{ key, label, detailViews, formViews, completed, detailToForm, formToComplete, overallRate }], signup: { formViews, completed, formToComplete }, daily }',
             },
         ],
     },
