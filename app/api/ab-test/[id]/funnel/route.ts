@@ -18,6 +18,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ error: 'AB test not found' }, { status: 404 })
         }
 
+        // 予約作成（開始日が未来）のテストはGA4に問い合わせず「開始前」を返す
+        // サーバーはUTCのため、JST基準の当日で判定する
+        const startDateStr = abTest.startDate.toISOString().split('T')[0]
+        const jstToday = new Date(Date.now() + 9 * 3600 * 1000).toISOString().split('T')[0]
+        if (startDateStr > jstToday) {
+            return NextResponse.json({ notStarted: true, startDate: startDateStr })
+        }
+
         const result = await computeAbTestFunnel(abTest, basis)
 
         return NextResponse.json({

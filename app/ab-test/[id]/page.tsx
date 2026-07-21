@@ -98,6 +98,7 @@ export default function AbTestDetailPage() {
     const [currentResult, setCurrentResult] = useState<CurrentResult | null>(null)
     const [currentLoading, setCurrentLoading] = useState(false)
     const [currentError, setCurrentError] = useState<string | null>(null)
+    const [notStarted, setNotStarted] = useState<string | null>(null)
     const [funnelResult, setFunnelResult] = useState<FunnelResult | null>(null)
     const [funnelLoading, setFunnelLoading] = useState(false)
     const [funnelError, setFunnelError] = useState<string | null>(null)
@@ -182,10 +183,16 @@ export default function AbTestDetailPage() {
         setCurrentError(null)
         try {
             const response = await fetch(`/api/ab-test/${abTestId}/current`)
-            const data = await parseJsonResponse<CurrentResult & { error?: string; message?: string }>(response)
+            const data = await parseJsonResponse<CurrentResult & { error?: string; message?: string; notStarted?: boolean; startDate?: string }>(response)
             if (!response.ok || data.error) {
                 throw new Error(data.message || data.error || '途中経過の取得に失敗しました')
             }
+            if (data.notStarted) {
+                setNotStarted(data.startDate ?? null)
+                setCurrentResult(null)
+                return
+            }
+            setNotStarted(null)
             setCurrentResult(data)
         } catch (err) {
             setCurrentError(err instanceof Error ? err.message : 'エラーが発生しました')
@@ -200,9 +207,14 @@ export default function AbTestDetailPage() {
         setFunnelError(null)
         try {
             const response = await fetch(`/api/ab-test/${abTestId}/funnel?basis=${useBasis}`)
-            const data = await parseJsonResponse<FunnelResult & { error?: string; message?: string }>(response)
+            const data = await parseJsonResponse<FunnelResult & { error?: string; message?: string; notStarted?: boolean }>(response)
             if (!response.ok || data.error) {
                 throw new Error(data.message || data.error || 'ファネル集計の取得に失敗しました')
+            }
+            if (data.notStarted) {
+                setNotStarted((prev) => prev ?? (data as { startDate?: string }).startDate ?? null)
+                setFunnelResult(null)
+                return
             }
             setFunnelResult(data)
         } catch (err) {
@@ -541,6 +553,12 @@ export default function AbTestDetailPage() {
                         )}
                     </div>
 
+                    {notStarted && (
+                        <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
+                            このテストはまだ開始前です（開始日: {formatDate(notStarted)}）。開始後にここに途中経過が表示されます。
+                        </div>
+                    )}
+
                     {currentError && (
                         <p className={styles.currentError}>途中経過の取得に失敗しました: {currentError}</p>
                     )}
@@ -707,6 +725,12 @@ export default function AbTestDetailPage() {
                             )}
                         </div>
                     </div>
+
+                    {notStarted && (
+                        <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
+                            このテストはまだ開始前です（開始日: {formatDate(notStarted)}）。開始後にここにファネルが表示されます。
+                        </div>
+                    )}
 
                     {funnelError && (
                         <p className={styles.currentError}>ファネル集計の取得に失敗しました: {funnelError}</p>

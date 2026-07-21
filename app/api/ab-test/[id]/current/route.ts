@@ -78,6 +78,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         const testEnd = abTest.endDate ? abTest.endDate.toISOString().split('T')[0] : null
         const endDate = testEnd && testEnd < today ? testEnd : today
 
+        // 予約作成（開始日が未来）のテストはGA4に問い合わせず「開始前」を返す
+        // サーバーはUTCのため、JST基準の当日で判定する
+        const jstToday = new Date(Date.now() + 9 * 3600 * 1000).toISOString().split('T')[0]
+        if (startDate > jstToday) {
+            return NextResponse.json({ notStarted: true, startDate })
+        }
+
         const dimensions: Array<{ name: string }> = Array.isArray(ga4Config.dimensions)
             ? ga4Config.dimensions
             : typeof ga4Config.dimensions === 'string'
