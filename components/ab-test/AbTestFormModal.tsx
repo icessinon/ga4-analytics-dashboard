@@ -1082,6 +1082,11 @@ export default function AbTestFormModal({
                             <p className={styles.helpText}>
                                 CVに至るまでのステップを上から順に定義すると、詳細画面でバリアント別のファネル・離脱率を比較できます。ラベルはカンマ区切りで複数指定可。バリアント共通のステップは同じラベルを入れてください。
                             </p>
+                            <p className={styles.helpText}>
+                                ※ CVRラベルにバリアントサフィックス（例: __B-1741）が付いているテストは<strong>未設定のままが推奨</strong>です。
+                                GA4の実ラベルからステップを自動検出し、クリック基準切り替え・ステップ削減テスト対応も効きます。
+                                ここに手動で設定すると自動検出を上書きし、ビュー基準固定になります。
+                            </p>
                             {funnelSteps.map((step, i) => (
                                 <div key={i} className={styles.funnelStepRow}>
                                     <span className={styles.funnelStepIndex}>{i + 1}.</span>

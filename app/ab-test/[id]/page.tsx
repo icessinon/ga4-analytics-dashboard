@@ -732,9 +732,10 @@ export default function AbTestDetailPage() {
                                         className={funnelExclude ? styles.basisActive : styles.basisButton}
                                         onClick={handleToggleFunnelExclude}
                                         disabled={funnelLoading}
+                                        aria-pressed={funnelExclude}
                                         title="テストの除外フィルタ設定（例: pageLocation に userId= を含むLP経由イベント）を適用します"
                                     >
-                                        LP経由を除く
+                                        {funnelExclude ? '✓ ' : ''}LP経由を除く
                                     </button>
                                 </div>
                             )}
@@ -760,12 +761,14 @@ export default function AbTestDetailPage() {
                         <p className={styles.currentError}>ファネル集計の取得に失敗しました: {funnelError}</p>
                     )}
 
-                    {funnelLoading && !funnelResult && (
-                        <p className={styles.currentMeta}>GA4からリアルタイム集計中です...</p>
+                    {funnelLoading && (
+                        <p className={styles.currentMeta}>
+                            GA4からリアルタイム集計中です...{funnelResult ? '（下の表は前回の集計結果です）' : ''}
+                        </p>
                     )}
 
                     {funnelResult && (
-                        <div className={styles.currentBody}>
+                        <div className={styles.currentBody} style={funnelLoading ? { opacity: 0.45, pointerEvents: 'none' } : undefined}>
                             <p className={styles.currentMeta}>
                                 集計期間: {funnelResult.startDate} 〜 {funnelResult.endDate}
                                 ／ 集計時刻: {new Date(funnelResult.fetchedAt).toLocaleString('ja-JP')}

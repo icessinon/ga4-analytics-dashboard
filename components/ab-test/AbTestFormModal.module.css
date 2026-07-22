@@ -163,11 +163,25 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
 }
 
 .funnelStepRow .input {
     flex: 1;
     min-width: 0;
+}
+
+/* CustomSelect のルート（width:100%のinline-block）が行を占有しないように幅を制御する */
+.funnelStepRow > input[type='text'] {
+    flex: 3 1 140px;
+    min-width: 0;
+}
+
+.funnelStepRow > div {
+    flex: 2 1 150px;
+    min-width: 0;
+    width: auto;
 }
 
 .funnelStepIndex {
