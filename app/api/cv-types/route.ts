@@ -14,7 +14,11 @@ const JOB_TYPES = [
     { key: 'JobH', label: 'ハローワーク' },
 ] as const
 
-const thanksLabel = (key: string) => `EF__Thx${key}__Area__お問い合わせが完了しました`
+// 完了 = 応募フォームの送信ボタンクリック（クリック基準）。
+// 送信ボタンは入力完了までdisabledのため「クリック=応募実行」であり、
+// DynamoDBの実応募数と一致することを確認済み（2026-07-22、求人広告54件で完全一致）。
+// 視認条件がなくbotの影響も受けない。
+const completeClickLabel = (key: string) => `EF__${key}__Btn__${key === 'JobA' ? '応募する' : '話を聞いてみる'}`
 const formLabel = (key: string) => `EF__${key}__Area__Header`
 const detailLabel = (key: string) => `DL__Media__Area__${key}`
 
@@ -34,36 +38,45 @@ export async function POST(request: Request) {
         const accessToken = await getGA4AccessToken(customToken)
         const dateRanges = [{ startDate, endDate }]
 
-        const allLabels = JOB_TYPES.flatMap((t) => [thanksLabel(t.key), formLabel(t.key), detailLabel(t.key)])
-        const labelFilter = {
+        const viewLabels = JOB_TYPES.flatMap((t) => [formLabel(t.key), detailLabel(t.key)])
+        const viewLabelFilter = {
             orGroup: {
-                expressions: allLabels.map((v) => ({
+                expressions: viewLabels.map((v) => ({
                     filter: { fieldName: 'customEvent:view_label', stringFilter: { matchType: 'EXACT', value: v } },
                 })),
             },
         }
+        const clickLabelFilter = {
+            orGroup: {
+                expressions: JOB_TYPES.map((t) => ({
+                    filter: { fieldName: 'customEvent:click_label', stringFilter: { matchType: 'EXACT', value: completeClickLabel(t.key) } },
+                })),
+            },
+        }
 
-        const [labelReport, labelDaily, signupForm, signupThanks, signupDaily] = await Promise.all([
-            // 種別×ステージのユーザー数（ラベル別）
+        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily] = await Promise.all([
+            // 種別×ステージ（詳細・フォーム）のユーザー数（ビューラベル別）
             fetchGA4Data({
                 propertyId, dateRanges,
                 dimensions: [{ name: 'customEvent:view_label' }],
                 metrics: [{ name: 'totalUsers' }],
-                dimensionFilter: labelFilter,
+                dimensionFilter: viewLabelFilter,
                 limit: 50,
             }, accessToken),
-            // 完了ラベルの日別推移
+            // 完了（送信ボタンクリック）のユーザー数
             fetchGA4Data({
                 propertyId, dateRanges,
-                dimensions: [{ name: 'date' }, { name: 'customEvent:view_label' }],
+                dimensions: [{ name: 'customEvent:click_label' }],
                 metrics: [{ name: 'totalUsers' }],
-                dimensionFilter: {
-                    orGroup: {
-                        expressions: JOB_TYPES.map((t) => ({
-                            filter: { fieldName: 'customEvent:view_label', stringFilter: { matchType: 'EXACT', value: thanksLabel(t.key) } },
-                        })),
-                    },
-                },
+                dimensionFilter: clickLabelFilter,
+                limit: 50,
+            }, accessToken),
+            // 完了クリックの日別推移
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'customEvent:click_label' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: clickLabelFilter,
                 limit: 1000,
             }, accessToken),
             // 会員登録: フォーム到達
@@ -102,11 +115,14 @@ export async function POST(request: Request) {
         for (const r of labelReport.rows ?? []) {
             labelUsers.set(r.dimensionValues[0]?.value ?? '', parseInt(r.metricValues[0]?.value ?? '0', 10))
         }
+        for (const r of clickReport.rows ?? []) {
+            labelUsers.set(r.dimensionValues[0]?.value ?? '', parseInt(r.metricValues[0]?.value ?? '0', 10))
+        }
 
         const jobTypes = JOB_TYPES.map((t) => {
             const detail = labelUsers.get(detailLabel(t.key)) ?? 0
             const form = labelUsers.get(formLabel(t.key)) ?? 0
-            const completed = labelUsers.get(thanksLabel(t.key)) ?? 0
+            const completed = labelUsers.get(completeClickLabel(t.key)) ?? 0
             return {
                 key: t.key,
                 label: t.label,
@@ -119,13 +135,13 @@ export async function POST(request: Request) {
             }
         })
 
-        // 日別推移（種別ごと）
+        // 日別推移（種別ごと・完了クリック）
         const dailyMap = new Map<string, Record<string, number>>()
-        for (const r of labelDaily.rows ?? []) {
+        for (const r of clickDaily.rows ?? []) {
             const date = r.dimensionValues[0]?.value ?? ''
             const label = r.dimensionValues[1]?.value ?? ''
             const users = parseInt(r.metricValues[0]?.value ?? '0', 10)
-            const type = JOB_TYPES.find((t) => label === thanksLabel(t.key))
+            const type = JOB_TYPES.find((t) => label === completeClickLabel(t.key))
             if (!type || !date) continue
             if (!dailyMap.has(date)) dailyMap.set(date, {})
             const entry = dailyMap.get(date) as Record<string, number>

@@ -169,8 +169,10 @@ export default function CvTypesPage() {
                             </table>
                         </div>
                         <p className={styles.tableNote}>
-                            ※ 求人種別の3行はGTMビューラベル（DL__Media / EF__Job* / EF__ThxJob*）ベースのユーザー数です。ビューラベルは「50%表示×1秒」で発火するため、
-                            page_viewベースの応募CVより2割ほど少なく出ます（構成比・種別間比較に使ってください）。<br />
+                            ※ 完了は応募フォームの<strong>送信ボタンクリック</strong>（クリックラベル）ベースのユーザー数です。送信ボタンは入力完了までdisabledのため
+                            「クリック＝応募実行」であり、DBの実応募数と一致することを確認済み（botの影響も受けません）。<br />
+                            ※ 求人詳細・フォームはビューラベル（50%×1秒表示）ベースのため、1〜2割の取りこぼしがあります。<br />
+                            ※ スカウト・featured経由の応募（別フォーム、GTMラベル未実装）はこの表に含まれません。サイト内フォームからの応募のみです。<br />
                             ※ 会員登録はページベース（/members/signup → /members/signup/thanks）。求人広告応募時の自動会員化はここに含まれません。
                         </p>
                     </div>

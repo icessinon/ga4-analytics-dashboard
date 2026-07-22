@@ -689,7 +689,7 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 path: '/api/cv-types',
                 method: 'POST',
                 name: '求人種別CV集計',
-                description: '応募CVをGTMビューラベル（DL__Media__Area__Job* / EF__Job*__Area__Header / EF__ThxJob*）で人材紹介・求人広告・ハローワークに分解し、求人種別ファネルと日別推移、会員登録（ページベース）を返します。',
+                description: '応募CVをGTMラベルで人材紹介・求人広告・ハローワークに分解します。詳細・フォームはビューラベル（DL__Media / EF__Job*__Area__Header）、完了は送信ボタンのクリックラベル（EF__Job*__Btn__応募する/話を聞いてみる。DB実応募数と一致確認済み）。求人種別ファネル・日別推移・会員登録（ページベース）を返します。',
                 params: [
                     { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
                     { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
