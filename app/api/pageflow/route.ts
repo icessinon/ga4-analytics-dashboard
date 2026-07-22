@@ -53,11 +53,11 @@ export async function POST(request: Request) {
                 },
                 limit: 1,
             }, accessToken),
-            // 前: 対象ページに到達した際のリファラー
+            // 前: 対象ページに到達した際のリファラー（ユーザー数と到達PVの両方）
             fetchGA4Data({
                 propertyId, dateRanges,
                 dimensions: [{ name: 'pageReferrer' }],
-                metrics: [{ name: 'totalUsers' }],
+                metrics: [{ name: 'totalUsers' }, { name: 'screenPageViews' }],
                 dimensionFilter: {
                     filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: path } },
                 },
@@ -79,19 +79,58 @@ export async function POST(request: Request) {
 
         const targetUsers = parseInt(targetReport.rows?.[0]?.metricValues[0]?.value ?? '0', 10)
 
-        // 前ページ: リファラーをパス/外部ホストに正規化して集計
-        const prevMap = new Map<string, number>()
+        // 前ページ: リファラーをパス/外部ホストに正規化して集計（ユーザー数＋到達PV）
+        const prevMap = new Map<string, { users: number; pv: number; isExternal: boolean }>()
         let prevNoReferrer = 0
         for (const r of prevReport.rows ?? []) {
             const ref = r.dimensionValues[0]?.value ?? ''
             const users = parseInt(r.metricValues[0]?.value ?? '0', 10)
+            const pv = parseInt(r.metricValues[1]?.value ?? '0', 10)
             if (!ref) { prevNoReferrer += users; continue }
             const norm = normalizeRef(ref)
             if (!norm) { prevNoReferrer += users; continue }
             // 自分自身（対象ページ内の遷移・リロード）は除外
             if (!norm.isExternal && norm.key.startsWith(path)) continue
-            prevMap.set(norm.key, (prevMap.get(norm.key) ?? 0) + users)
+            const cur = prevMap.get(norm.key)
+            if (cur) { cur.users += users; cur.pv += pv }
+            else prevMap.set(norm.key, { users, pv, isExternal: norm.isExternal })
         }
+
+        // 経路（サイト内の直前ページ）自体の表示PVを取得 → 遷移率 = 到達PV / 表示PV
+        const topPrev = [...prevMap.entries()]
+            .sort((a, b) => b[1].pv - a[1].pv)
+            .slice(0, 30)
+        const internalPrevPaths = topPrev.filter(([, v]) => !v.isExternal).map(([p]) => p).slice(0, 30)
+        const sourcePvMap = new Map<string, number>()
+        if (internalPrevPaths.length > 0) {
+            const sourcePvReport = await fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'pagePath' }],
+                metrics: [{ name: 'screenPageViews' }],
+                dimensionFilter: {
+                    orGroup: {
+                        expressions: internalPrevPaths.map((p) => ({
+                            filter: { fieldName: 'pagePath', stringFilter: { matchType: 'EXACT', value: p } },
+                        })),
+                    },
+                },
+                limit: 100,
+            }, accessToken)
+            for (const r of sourcePvReport.rows ?? []) {
+                sourcePvMap.set(r.dimensionValues[0]?.value ?? '', parseInt(r.metricValues[0]?.value ?? '0', 10))
+            }
+        }
+
+        const prevPages = topPrev.slice(0, 20).map(([page, v]) => {
+            const sourcePv = v.isExternal ? null : sourcePvMap.get(page) ?? null
+            return {
+                page,
+                users: v.users,
+                pv: v.pv,
+                sourcePv,
+                transitionRate: sourcePv && sourcePv > 0 ? v.pv / sourcePv : null,
+            }
+        })
 
         // 次ページ: 対象ページ自身は除外
         const nextMap = new Map<string, number>()
@@ -102,18 +141,15 @@ export async function POST(request: Request) {
             nextMap.set(p, (nextMap.get(p) ?? 0) + users)
         }
 
-        const toRows = (m: Map<string, number>) =>
-            [...m.entries()]
-                .map(([page, users]) => ({ page, users }))
-                .sort((a, b) => b.users - a.users)
-                .slice(0, 20)
-
         return NextResponse.json({
             pagePath: path,
             targetUsers,
-            prevPages: toRows(prevMap),
+            prevPages,
             prevNoReferrer,
-            nextPages: toRows(nextMap),
+            nextPages: [...nextMap.entries()]
+                .map(([page, users]) => ({ page, users }))
+                .sort((a, b) => b.users - a.users)
+                .slice(0, 20),
             startDate,
             endDate,
         })

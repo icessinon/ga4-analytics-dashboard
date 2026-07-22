@@ -41,6 +41,7 @@ const DOMAIN_KNOWLEDGE = `
 - マーケ用: GTM-W7NPT5M → 別アカウントのGA4「X-Work - GA4」351088797ほか。page_view/view_job_details_page/契約種別ディメンション等。広告タグ（Criteo・LINE Tag等）も同居
 - 両者の数字は定義が違うため一致しない（イベント発火vs要素視認、国フィルタ有無、featured計測有無）
 - ラベル規則: {Area}__{Section}__{Element}__{Label}。Area: CT=トップ系、SU=会員登録、EF=エントリーフォーム、MW=検索モーダル、HD=ヘッダー、FL=フローティング、FT=フッター、DL=求人詳細
+- 全タグの仕様・実装状況は「GTMタグ管理台帳」スプレッドシートが正（483タグ定義、未対応・対応中も多い）: https://docs.google.com/spreadsheets/d/1MloagdIuwrm5yK_cUZ7aO6e9j6sH6oFgcCXD45woVn4/edit
 - view_label は要素50%×1秒表示で発火 → 15〜20%取りこぼす。click_labelはbot耐性あり
 - ダッシュボードの全GA4集計はデフォルトで国=日本フィルタ（bot対策）。国別分析のみ除外
 - ABテストB/C/D側ラベルは末尾サフィックス（例: __B-1618）

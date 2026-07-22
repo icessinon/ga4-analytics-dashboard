@@ -245,3 +245,10 @@
         padding: 1rem;
     }
 }
+
+.tableHint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-top: 0.625rem;
+}

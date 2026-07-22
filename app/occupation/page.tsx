@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
+import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import AISpinner from '@/components/AISpinner/AISpinner'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './OccupationPage.module.css'
@@ -174,6 +175,8 @@ export default function OccupationPage() {
             {currentProduct && !currentProduct.ga4PropertyId && (
                 <div className={styles.notice}>このプロダクトには GA4 プロパティが設定されていません</div>
             )}
+
+            <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析' }, { href: '/insights', label: '月次インサイト' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>

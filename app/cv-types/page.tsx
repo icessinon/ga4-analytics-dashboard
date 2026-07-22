@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
+import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import CvTypesTrendChart, { type DailyPoint } from '@/components/cv-types/CvTypesTrendChart'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './CvTypesPage.module.css'
@@ -93,6 +94,8 @@ export default function CvTypesPage() {
             </div>
 
             {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
+
+            <RelatedPages pages={[{ href: '/occupation', label: '職種別CV分析' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>

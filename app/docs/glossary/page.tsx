@@ -136,6 +136,11 @@ export default function GlossaryPage() {
                 </p>
                 <h3 className={styles.subTitle}>ラベル規則</h3>
                 <ul className={styles.list}>
+                    <li>
+                        全タグの仕様・実装状況は
+                        <a href="https://docs.google.com/spreadsheets/d/1MloagdIuwrm5yK_cUZ7aO6e9j6sH6oFgcCXD45woVn4/edit" target="_blank" rel="noreferrer" className={styles.extLink}>GTMタグ管理台帳（スプレッドシート）</a>
+                        が正。483タグ定義があり、未対応・対応中のタグも多い（欲しいラベルが無いときはまず台帳を確認）
+                    </li>
                     <li>形式: <code>{'{Area}__{Section}__{Element}__{Label}'}</code>（例: CT__Recruitment__Btn__求人を見る）</li>
                     <li>Area: CT=トップ系（※一覧ページでも使い回しあり）、SU=会員登録、EF=エントリーフォーム、MW=検索モーダル、HD=ヘッダー、FL=フローティング、FT=フッター、DL=求人詳細</li>
                     <li>種別セクション: EF__{'{JobR|JobA|JobH}'}（応募フォーム）、EF__Thx{'{JobR|JobA|JobH}'}（サンクス）、DL__Media__Area__{'{JobX}'}（詳細ページ）</li>

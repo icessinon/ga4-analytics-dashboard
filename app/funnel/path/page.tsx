@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
+import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './PathFunnelPage.module.css'
 
@@ -63,6 +64,14 @@ const PRESETS: SavedFunnel[] = [
             { name: 'トップページ閲覧', type: 'page', matchType: 'EXACT', value: '/' },
             { name: '職種ボタンタップ', type: 'click', matchType: 'BEGINS_WITH', value: 'CT__Occupation__' },
             { name: '職種一覧・検索閲覧', type: 'page', matchType: 'PARTIAL_REGEXP', value: '^/(driver|sekokan|sekkei|soko|shokunin|seibi|hoshu|setsubi-sagyo|keibi|unkan|kojo-sagyo|food|unyu-sagyo|others)' },
+            { name: '求人詳細閲覧', type: 'page', matchType: 'PARTIAL_REGEXP', value: '/media_' },
+            { name: '応募フォーム', type: 'page', matchType: 'BEGINS_WITH', value: '/entry/' },
+        ],
+    },
+    {
+        name: 'キープ経由（キープ一覧→求人詳細→応募。詳細への遷移率が最も高い導線）',
+        steps: [
+            { name: 'キープ・お気に入り閲覧', type: 'page', matchType: 'BEGINS_WITH', value: '/favorite' },
             { name: '求人詳細閲覧', type: 'page', matchType: 'PARTIAL_REGEXP', value: '/media_' },
             { name: '応募フォーム', type: 'page', matchType: 'BEGINS_WITH', value: '/entry/' },
         ],
@@ -224,6 +233,8 @@ export default function PathFunnelPage() {
             </div>
 
             {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
+
+            <RelatedPages pages={[{ href: '/funnel', label: 'エントリーフォームファネル' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/journey', label: 'ユーザー経路分析' }]} />
 
             <div className={styles.presetRow}>
                 <span className={styles.presetLabel}>プリセット:</span>

@@ -155,10 +155,14 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
             {
                 path: '/api/ab-test/test-execute',
                 method: 'POST',
-                name: 'ABテストテスト実行',
-                description: '実行処理のテスト用エンドポイントです。',
-                params: [],
-                responseNote: 'テスト実行結果',
+                name: 'ABテスト設定の検証実行',
+                description: 'ABテスト作成フォームの「テスト実行」ボタンが使用。入力中のGA4設定で実際にCVRを計算して設定ミスがないか確認します（DBには保存しません）。',
+                params: [
+                    { name: 'ga4Config', type: 'object', required: true, description: 'Body JSON。フォーム入力中のGA4設定' },
+                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
+                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
+                ],
+                responseNote: 'バリアント別CVR計算結果（保存なし）',
             },
             {
                 path: '/api/ab-test/evaluate',
@@ -577,7 +581,7 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                     { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
                     { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
                 ],
-                responseNote: '{ pagePath, targetUsers, prevPages: [{ page, users }], prevNoReferrer, nextPages: [{ page, users }] }',
+                responseNote: '{ pagePath, targetUsers, prevPages: [{ page, users, pv, sourcePv, transitionRate }], prevNoReferrer, nextPages: [{ page, users }] }',
             },
             {
                 path: '/api/exit/gemini',
