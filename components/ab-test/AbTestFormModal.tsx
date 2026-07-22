@@ -60,6 +60,9 @@ export default function AbTestFormModal({
         filterDimension: '',
         filterOperator: 'CONTAINS',
         filterExpression: '',
+        excludeFilterDimension: '',
+        excludeFilterOperator: 'CONTAINS',
+        excludeFilterExpression: '',
         limit: 25000,
         cvrA: {
             denominatorDimension: '',
@@ -193,6 +196,9 @@ export default function AbTestFormModal({
                     filterDimension: config.filter?.dimension || '',
                     filterOperator: config.filter?.operator || 'CONTAINS',
                     filterExpression: config.filter?.expression || '',
+                    excludeFilterDimension: config.excludeFilter?.dimension || '',
+                    excludeFilterOperator: config.excludeFilter?.operator || 'CONTAINS',
+                    excludeFilterExpression: config.excludeFilter?.expression || '',
                     limit: config.limit || 25000,
                     cvrA: {
                         denominatorDimension: config.cvrA?.denominatorDimension || '',
@@ -283,6 +289,9 @@ export default function AbTestFormModal({
                 filterDimension: '',
                 filterOperator: 'CONTAINS',
                 filterExpression: '',
+                excludeFilterDimension: '',
+                excludeFilterOperator: 'CONTAINS',
+                excludeFilterExpression: '',
                 limit: 25000,
                 cvrA: {
                     denominatorDimension: '',
@@ -401,6 +410,14 @@ export default function AbTestFormModal({
                 }
             }
 
+            if (ga4Config.excludeFilterDimension && ga4Config.excludeFilterOperator && ga4Config.excludeFilterExpression) {
+                apiGa4Config.excludeFilter = {
+                    dimension: ga4Config.excludeFilterDimension,
+                    operator: ga4Config.excludeFilterOperator,
+                    expression: ga4Config.excludeFilterExpression,
+                }
+            }
+
             const response = await fetch('/api/ab-test/test-execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -452,6 +469,11 @@ export default function AbTestFormModal({
                 dimension: ga4Config.filterDimension,
                 operator: ga4Config.filterOperator,
                 expression: ga4Config.filterExpression,
+            } : undefined,
+            excludeFilter: ga4Config.excludeFilterDimension && ga4Config.excludeFilterExpression ? {
+                dimension: ga4Config.excludeFilterDimension,
+                operator: ga4Config.excludeFilterOperator,
+                expression: ga4Config.excludeFilterExpression,
             } : undefined,
             limit: ga4Config.limit,
             cvrA: {
@@ -704,6 +726,43 @@ export default function AbTestFormModal({
                                     onChange={(e) => setGa4Config({ ...ga4Config, filterExpression: e.target.value })}
                                     className={styles.input}
                                 />
+                            </div>
+                            <div>
+                                <label className={styles.label}>除外フィルタ ディメンション</label>
+                                <CustomSelect
+                                    value={ga4Config.excludeFilterDimension}
+                                    onChange={(v) => setGa4Config({ ...ga4Config, excludeFilterDimension: v })}
+                                    options={GA4_FILTER_DIMENSIONS.map((d) => ({ value: d.value, label: d.label }))}
+                                    triggerClassName={styles.input}
+                                    placeholder="選択してください"
+                                    aria-label="除外フィルタ ディメンション"
+                                />
+                                <p className={styles.helpText}>
+                                    条件に一致するイベントを集計から除外します。例: LP経由を除くなら「閲覧したページのURL」。
+                                </p>
+                            </div>
+                            <div>
+                                <label className={styles.label}>除外フィルタ 演算子</label>
+                                <CustomSelect
+                                    value={ga4Config.excludeFilterOperator}
+                                    onChange={(v) => setGa4Config({ ...ga4Config, excludeFilterOperator: v })}
+                                    options={GA4_FILTER_OPERATORS.map((op) => ({ value: op.value, label: op.label }))}
+                                    triggerClassName={styles.input}
+                                    aria-label="除外フィルタ 演算子"
+                                />
+                            </div>
+                            <div>
+                                <label className={styles.label}>除外フィルタ 式</label>
+                                <input
+                                    type="text"
+                                    value={ga4Config.excludeFilterExpression}
+                                    onChange={(e) => setGa4Config({ ...ga4Config, excludeFilterExpression: e.target.value })}
+                                    className={styles.input}
+                                    placeholder="userId="
+                                />
+                                <p className={styles.helpText}>
+                                    カンマ区切りで複数指定すると、いずれかに一致するものをすべて除外します。
+                                </p>
                             </div>
                         </div>
 

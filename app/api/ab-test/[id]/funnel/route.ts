@@ -11,7 +11,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         }
         // basis=view: view_label（50%×1秒表示。即通過ステップは取りこぼしあり）
         // basis=click: click_label のStepN_プレフィックス単位で「そのステップで何か操作した人」（表示条件なしで確実）
-        const basis = new URL(request.url).searchParams.get('basis') === 'click' ? 'click' : 'view'
+        const searchParams = new URL(request.url).searchParams
+        const basis = searchParams.get('basis') === 'click' ? 'click' : 'view'
+        // excludeFilter=1: ga4Config.excludeFilter（例: LP経由の userId= 除外）を適用
+        const applyExcludeFilter = searchParams.get('excludeFilter') === '1'
 
         const abTest = await prisma.abTest.findUnique({ where: { id: abTestId } })
         if (!abTest) {
@@ -26,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ notStarted: true, startDate: startDateStr })
         }
 
-        const result = await computeAbTestFunnel(abTest, basis)
+        const result = await computeAbTestFunnel(abTest, basis, { applyExcludeFilter })
 
         return NextResponse.json({
             success: true,

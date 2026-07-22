@@ -1,6 +1,7 @@
 import type { AbTest } from '@prisma/client'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { parseDateString } from '@/lib/utils/date'
+import { buildGa4ConfigDimensionFilter, type Ga4ConfigFilterSpec } from '@/lib/services/ab-test/ga4ConfigFilter'
 
 const VARIANT_KEYS = ['A', 'B', 'C', 'D'] as const
 export type VariantKey = (typeof VARIANT_KEYS)[number]
@@ -14,6 +15,10 @@ interface FunnelStepConfig {
     stepName: string
     dimension: string
     labels: Partial<Record<VariantKey, string[] | string>>
+    /** 自動モードでStep番号マッチングした場合のステップ順序 */
+    order?: number | null
+    /** バリアントごとに設問文が違う場合の表示名（例: ステップ削減テスト） */
+    variantStepNames?: Partial<Record<VariantKey, string>>
 }
 
 interface GA4CvrConfig {
@@ -24,6 +29,9 @@ interface GA4CvrConfig {
 export interface AbTestFunnelStep {
     stepName: string
     dimension: string
+    /** バリアントごとに設問文が違う場合のみセット（ステップ削減・設問変更テスト用） */
+    variantStepNames?: Partial<Record<VariantKey, string>>
+    /** そのバリアントにステップ自体が存在しない場合、values にキーが入らない */
     values: Partial<Record<VariantKey, { users: number; conversionRate: number | null; dropoffRate: number | null }>>
 }
 
@@ -35,6 +43,10 @@ export interface AbTestFunnelResult {
     endDate: string
     variants: VariantKey[]
     steps: AbTestFunnelStep[]
+    /** ga4Config.excludeFilter が設定されているか（UIのトグル表示判定用） */
+    excludeFilterAvailable: boolean
+    /** このレスポンスに除外フィルタが適用されているか */
+    excludeApplied: boolean
 }
 
 /** 設定不備など呼び出し側が 400 として扱うべきエラー */
@@ -75,6 +87,18 @@ function clickStepPrefix(baseLabel: string): { prefix: string; stepName: string 
     return { prefix: `${m[1]}_`, stepName: m[2] }
 }
 
+// バリアントサフィックス（__B-1741 等）が付いたラベルか
+const VARIANT_SUFFIX_RE = /__[A-D]-\w+$/
+
+// ビューラベル（例: SU__Driver__Area__Step3_現在のご状況）を Step 番号でマッチングするために分解。
+// ステップ削減・設問変更テストでは同じStep番号でも設問文が違うため、ラベル全文でなくStep番号で対応付ける
+function splitStepLabel(baseLabel: string): { stem: string; order: number; stepName: string } | null {
+    const m = baseLabel.match(/^(.*?)(Step(?:\d+|Last))(?:[_＿]|$)/)
+    if (!m) return null
+    const order = m[2] === 'StepLast' ? Number.MAX_SAFE_INTEGER : parseInt(m[2].slice(4), 10)
+    return { stem: m[1], order, stepName: stepNameFromBaseLabel(baseLabel) }
+}
+
 /** フィルタ条件に合う totalUsers をディメンションなしで取得（複数ラベルをまたいだユニークユーザー数） */
 async function countUsers(
     propertyId: string,
@@ -98,10 +122,15 @@ async function countUsers(
  * - basis=click: click_label のStepN_プレフィックス単位で「そのステップで何か操作した人」（表示条件なしで確実）
  * 設定不備は FunnelConfigError を投げる。
  */
-export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): Promise<AbTestFunnelResult> {
+export async function computeAbTestFunnel(
+    abTest: AbTest,
+    basis: FunnelBasis,
+    options?: { applyExcludeFilter?: boolean }
+): Promise<AbTestFunnelResult> {
     const ga4Config = abTest.ga4Config as unknown as {
         propertyId?: string
         funnelSteps?: FunnelStepConfig[]
+        excludeFilter?: Ga4ConfigFilterSpec
         cvrB?: GA4CvrConfig
         cvrC?: GA4CvrConfig
         cvrD?: GA4CvrConfig
@@ -110,6 +139,17 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
         throw new FunnelConfigError('GA4設定がありません')
     }
     const propertyId = ga4Config.propertyId
+
+    // ga4Config.excludeFilter（例: LP経由の pageLocation CONTAINS userId= 除外）を
+    // 全ステップ集計クエリに適用する（トグルON時のみ）
+    const excludeFilterAvailable = Boolean(
+        ga4Config.excludeFilter?.dimension && ga4Config.excludeFilter?.operator && ga4Config.excludeFilter?.expression
+    )
+    const excludeFilter = options?.applyExcludeFilter && excludeFilterAvailable
+        ? buildGa4ConfigDimensionFilter({ excludeFilter: ga4Config.excludeFilter })
+        : undefined
+    const withExclude = (filter: Record<string, unknown>): Record<string, unknown> =>
+        excludeFilter ? { andGroup: { expressions: [filter, excludeFilter] } } : filter
 
     const accessToken = await getGA4AccessToken()
 
@@ -143,35 +183,69 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
             // クリック基準: サフィックス付き click_label から StepN_ プレフィックスを発見し、
             // ステップ×バリアントごとに「プレフィックスに一致するクリックをした人数」をGA4側の重複排除で数える
             const prefixes = new Map<string, string>() // prefix -> stepName
-            for (const { suffix } of detected) {
+            const prefixVariants = new Map<string, Set<VariantKey>>() // prefix -> 存在するバリアント
+            const markPrefix = (prefix: string, stepName: string, variant: VariantKey) => {
+                prefixes.set(prefix, stepName)
+                const set = prefixVariants.get(prefix) ?? new Set<VariantKey>()
+                set.add(variant)
+                prefixVariants.set(prefix, set)
+            }
+            for (const { variant, suffix } of detected) {
                 detectedSuffixes.push(suffix)
                 const report = await fetchGA4Data({
                     propertyId,
                     dateRanges: [{ startDate, endDate }],
                     dimensions: [{ name: 'customEvent:click_label' }],
                     metrics: [{ name: 'totalUsers' }],
-                    dimensionFilter: {
+                    dimensionFilter: withExclude({
                         filter: { fieldName: 'customEvent:click_label', stringFilter: { matchType: 'ENDS_WITH', value: `__${suffix}` } },
-                    },
+                    }),
                     limit: 10000,
                 }, accessToken)
                 for (const row of report.rows ?? []) {
                     const label = row.dimensionValues?.[0]?.value?.trim() ?? ''
                     if (!label.endsWith(`__${suffix}`)) continue
                     const p = clickStepPrefix(label.slice(0, label.length - suffix.length - 2))
-                    if (p) prefixes.set(p.prefix, p.stepName)
+                    if (p) markPrefix(p.prefix, p.stepName, variant)
                 }
             }
             if (prefixes.size === 0) {
                 throw new FunnelConfigError('サフィックス付きクリックラベルからステップ（StepN_）を検出できませんでした')
             }
 
+            // A側のステップも実ラベルから探索（B側が廃止したステップの消失を防ぐ）
+            const clickStems = new Set(
+                [...prefixes.keys()].map((p) => p.replace(/Step(?:\d+|Last)_$/, ''))
+            )
+            for (const stem of clickStems) {
+                const report = await fetchGA4Data({
+                    propertyId,
+                    dateRanges: [{ startDate, endDate }],
+                    dimensions: [{ name: 'customEvent:click_label' }],
+                    metrics: [{ name: 'totalUsers' }],
+                    dimensionFilter: withExclude({
+                        filter: { fieldName: 'customEvent:click_label', stringFilter: { matchType: 'BEGINS_WITH', value: `${stem}Step` } },
+                    }),
+                    limit: 10000,
+                }, accessToken)
+                for (const row of report.rows ?? []) {
+                    const label = row.dimensionValues?.[0]?.value?.trim() ?? ''
+                    if (!label || VARIANT_SUFFIX_RE.test(label)) continue
+                    const p = clickStepPrefix(label)
+                    if (p && p.prefix.startsWith(stem)) markPrefix(p.prefix, p.stepName, 'A')
+                }
+            }
+
             const variantSuffix = new Map<VariantKey, string>()
             for (const { variant, suffix } of detected) variantSuffix.set(variant, suffix)
             clickVariants = ['A', ...variantSuffix.keys()]
 
+            // 各ステップは「そのバリアントにラベルが存在する」組み合わせのみ集計
+            // （存在しないステップは0でなく欠損として扱い、ステップ削減テストで誤解を生まない）
             const tasks = [...prefixes.entries()].flatMap(([prefix, stepName]) =>
-                (clickVariants as VariantKey[]).map((variant) => ({ prefix, stepName, variant }))
+                (clickVariants as VariantKey[])
+                    .filter((variant) => prefixVariants.get(prefix)?.has(variant))
+                    .map((variant) => ({ prefix, stepName, variant }))
             )
             const counts = new Map<string, number>()
             const chunkSize = 5 // GA4のプロパティ同時リクエスト上限を考慮
@@ -195,7 +269,7 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
                                 ],
                             },
                         }
-                    return countUsers(propertyId, accessToken, [{ startDate, endDate }], dimensionFilter)
+                    return countUsers(propertyId, accessToken, [{ startDate, endDate }], withExclude(dimensionFilter))
                 }))
                 chunk.forEach((t, idx) => counts.set(`${t.prefix}|${t.variant}`, values[idx]))
             }
@@ -203,15 +277,47 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
             clickStepsWithUsers = [...prefixes.entries()].map(([prefix, stepName]) => ({
                 stepName,
                 dimension: 'customEvent:click_label',
+                // ラベルが存在するバリアントのみ値を持たせる（存在しないステップは欠損扱い）
                 users: Object.fromEntries(
-                    (clickVariants as VariantKey[]).map((v) => [v, counts.get(`${prefix}|${v}`) ?? 0])
+                    (clickVariants as VariantKey[])
+                        .filter((v) => prefixVariants.get(prefix)?.has(v))
+                        .map((v) => [v, counts.get(`${prefix}|${v}`) ?? 0])
                 ) as Partial<Record<VariantKey, number>>,
             }))
             mode = 'auto'
         }
 
-        // ベースラベル（サフィックス除去後）→ ステップ設定（ビュー基準のみ）
+        // ビュー基準: Step番号でA/B/C/Dを対応付ける（ステップ削減・設問変更テストでは
+        // 同じStep番号でも設問文が違うため、ラベル全文マッチングだとA=0の行やAだけのステップ消失が起きる）
         const stepsByKey = new Map<string, FunnelStepConfig>()
+        const stems = new Set<string>() // `${dimension}|${stem}`: A側ステップの探索範囲
+        const upsertStep = (
+            dimension: string,
+            variant: VariantKey,
+            label: string,
+            baseLabel: string,
+        ) => {
+            const sp = splitStepLabel(baseLabel)
+            // Step番号を持つラベルはStep番号で、持たないラベルは従来どおりベースラベル全文で対応付け
+            const key = sp ? `${dimension}|#${sp.order}|${sp.stem}` : `${dimension}|${baseLabel}`
+            if (sp) stems.add(`${dimension}|${sp.stem}`)
+            const stepName = stepNameFromBaseLabel(baseLabel)
+            const existing = stepsByKey.get(key)
+            if (existing) {
+                const cur = existing.labels[variant]
+                existing.labels[variant] = [...normalizeLabels(cur), label]
+                existing.variantStepNames = { ...existing.variantStepNames, [variant]: stepName }
+            } else {
+                stepsByKey.set(key, {
+                    stepName,
+                    dimension,
+                    order: sp ? sp.order : null,
+                    // Step番号なしラベルはA側=ベースラベルと推定（従来挙動）。Step番号ありはA側を実ラベルから探索する
+                    labels: sp ? { [variant]: [label] } : { A: [baseLabel], [variant]: [label] },
+                    variantStepNames: { [variant]: stepName },
+                })
+            }
+        }
         for (const { variant, suffix } of clickStepsWithUsers ? [] : detected) {
             detectedSuffixes.push(suffix)
             let found = false
@@ -222,12 +328,12 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
                         dateRanges: [{ startDate, endDate }],
                         dimensions: [{ name: dimension }],
                         metrics: [{ name: 'totalUsers' }],
-                        dimensionFilter: {
+                        dimensionFilter: withExclude({
                             filter: {
                                 fieldName: dimension,
                                 stringFilter: { matchType: 'ENDS_WITH', value: `__${suffix}` },
                             },
-                        },
+                        }),
                         limit: 10000,
                     },
                     accessToken
@@ -239,17 +345,7 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
                     if (!label.endsWith(`__${suffix}`)) continue
                     const baseLabel = label.slice(0, label.length - suffix.length - 2)
                     if (!baseLabel) continue
-                    const key = `${dimension} ${baseLabel}`
-                    const existing = stepsByKey.get(key)
-                    if (existing) {
-                        existing.labels[variant] = [label]
-                    } else {
-                        stepsByKey.set(key, {
-                            stepName: stepNameFromBaseLabel(baseLabel),
-                            dimension,
-                            labels: { A: [baseLabel], [variant]: [label] },
-                        })
-                    }
+                    upsertStep(dimension, variant, label, baseLabel)
                 }
                 found = true
                 break
@@ -259,6 +355,45 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
             }
         }
         if (!clickStepsWithUsers) {
+            // A側のステップを実ラベルから探索（サフィックスなし × 同じstem × Step番号あり）。
+            // これによりB側が廃止したステップ（例: Step0）もAの行として残る
+            for (const stemKey of stems) {
+                const [dimension, stem] = [stemKey.slice(0, stemKey.indexOf('|')), stemKey.slice(stemKey.indexOf('|') + 1)]
+                const report = await fetchGA4Data(
+                    {
+                        propertyId,
+                        dateRanges: [{ startDate, endDate }],
+                        dimensions: [{ name: dimension }],
+                        metrics: [{ name: 'totalUsers' }],
+                        dimensionFilter: withExclude({
+                            filter: { fieldName: dimension, stringFilter: { matchType: 'BEGINS_WITH', value: `${stem}Step` } },
+                        }),
+                        limit: 10000,
+                    },
+                    accessToken
+                )
+                for (const row of report.rows ?? []) {
+                    const label = row.dimensionValues?.[0]?.value?.trim() ?? ''
+                    if (!label || VARIANT_SUFFIX_RE.test(label)) continue
+                    const sp = splitStepLabel(label)
+                    if (!sp || sp.stem !== stem) continue
+                    const key = `${dimension}|#${sp.order}|${sp.stem}`
+                    const existing = stepsByKey.get(key)
+                    if (existing) {
+                        const cur = existing.labels.A
+                        existing.labels.A = [...normalizeLabels(cur), label]
+                        existing.variantStepNames = { ...existing.variantStepNames, A: sp.stepName }
+                    } else {
+                        stepsByKey.set(key, {
+                            stepName: sp.stepName,
+                            dimension,
+                            order: sp.order,
+                            labels: { A: [label] },
+                            variantStepNames: { A: sp.stepName },
+                        })
+                    }
+                }
+            }
             stepConfigs = [...stepsByKey.values()]
             mode = 'auto'
         }
@@ -276,6 +411,7 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
                         dateRanges: [{ startDate, endDate }],
                         dimensions: [{ name: dimension }],
                         metrics: [{ name: 'totalUsers' }],
+                        dimensionFilter: excludeFilter,
                         limit: 100000,
                     },
                     accessToken
@@ -304,18 +440,27 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
             if (labels.length === 0) continue
             users[v] = labels.reduce((sum, label) => sum + (labelMap.get(label) ?? 0), 0)
         }
-        return { stepName: step.stepName, dimension: step.dimension, users }
+        return {
+            stepName: step.variantStepNames?.A ?? step.stepName,
+            dimension: step.dimension,
+            order: step.order ?? null,
+            variantStepNames: step.variantStepNames,
+            users,
+        }
     })
 
     if (mode === 'auto') {
         // GTMのview_labelは「50%以上1秒連続表示」で発火するため、滞在の短いステップは
         // 実際より少なく計測されユーザー数順が崩れることがある（例: Step1 < Step2）。
-        // ラベルにStep番号があればそれを優先し、無ければAユーザー数降順にフォールバック
-        const allHaveOrder = stepsWithUsers.every((s) => stepOrderFromName(s.stepName) !== null)
+        // Step番号（自動検出時は order、なければステップ名から抽出）を優先し、
+        // 無ければAユーザー数降順にフォールバック
+        const orderOf = (s: typeof stepsWithUsers[number]) =>
+            ('order' in s && s.order != null ? s.order : stepOrderFromName(s.stepName))
+        const allHaveOrder = stepsWithUsers.every((s) => orderOf(s) !== null)
         stepsWithUsers = stepsWithUsers
             .sort((a, b) =>
                 allHaveOrder
-                    ? stepOrderFromName(a.stepName)! - stepOrderFromName(b.stepName)!
+                    ? (orderOf(a) as number) - (orderOf(b) as number)
                     : (b.users.A ?? 0) - (a.users.A ?? 0)
             )
             .slice(0, AUTO_MAX_STEPS)
@@ -323,22 +468,35 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
 
     const firstUsers: Partial<Record<VariantKey, number>> = {}
     const prevUsers: Partial<Record<VariantKey, number>> = {}
-    const steps: AbTestFunnelStep[] = stepsWithUsers.map((step, index) => {
+    const steps: AbTestFunnelStep[] = stepsWithUsers.map((step) => {
         const values: AbTestFunnelStep['values'] = {}
         for (const v of activeVariants) {
             const users = step.users[v]
+            // ステップ自体がそのバリアントに存在しない場合はスキップ（ステップ削減テスト対応）
             if (users == null) continue
-            if (index === 0) firstUsers[v] = users
+            // 起点・直前は「そのバリアントが持つ最初のステップ／直前のステップ」基準
+            // （例: BがStep0を廃止した場合、BのファネルはStep1起点で計算する）
+            const isVariantFirst = firstUsers[v] == null
+            if (isVariantFirst) firstUsers[v] = users
             const first = firstUsers[v]
             const prev = prevUsers[v]
             values[v] = {
                 users,
-                conversionRate: index > 0 && first != null && first > 0 ? users / first : null,
-                dropoffRate: index > 0 && prev != null && prev > 0 ? Math.max(0, (prev - users) / prev) : null,
+                conversionRate: !isVariantFirst && first != null && first > 0 ? users / first : null,
+                dropoffRate: !isVariantFirst && prev != null && prev > 0 ? Math.max(0, (prev - users) / prev) : null,
             }
             prevUsers[v] = users
         }
-        return { stepName: step.stepName, dimension: step.dimension, values }
+        // 設問文がバリアント間で異なる場合のみ variantStepNames を出力
+        const names: Partial<Record<VariantKey, string>> | undefined =
+            'variantStepNames' in step ? (step.variantStepNames as Partial<Record<VariantKey, string>> | undefined) : undefined
+        const uniqueNames = names ? new Set(Object.values(names).filter(Boolean)) : new Set()
+        return {
+            stepName: step.stepName,
+            dimension: step.dimension,
+            ...(uniqueNames.size > 1 ? { variantStepNames: names } : {}),
+            values,
+        }
     })
 
     return {
@@ -349,5 +507,7 @@ export async function computeAbTestFunnel(abTest: AbTest, basis: FunnelBasis): P
         endDate,
         variants: activeVariants,
         steps,
+        excludeFilterAvailable,
+        excludeApplied: Boolean(excludeFilter),
     }
 }

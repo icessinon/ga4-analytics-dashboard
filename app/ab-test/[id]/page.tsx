@@ -48,12 +48,15 @@ interface FunnelResult {
     mode?: 'manual' | 'auto'
     basis?: 'view' | 'click'
     detectedSuffixes?: string[]
+    excludeFilterAvailable?: boolean
+    excludeApplied?: boolean
     startDate: string
     endDate: string
     variants: string[]
     steps: Array<{
         stepName: string
         dimension: string
+        variantStepNames?: Record<string, string>
         values: Record<string, FunnelStepValue | undefined>
     }>
     fetchedAt: string
@@ -103,6 +106,7 @@ export default function AbTestDetailPage() {
     const [funnelLoading, setFunnelLoading] = useState(false)
     const [funnelError, setFunnelError] = useState<string | null>(null)
     const [funnelBasis, setFunnelBasis] = useState<'view' | 'click'>('view')
+    const [funnelExclude, setFunnelExclude] = useState(false)
 
     useEffect(() => {
         if (!abTestId) {
@@ -201,12 +205,13 @@ export default function AbTestDetailPage() {
         }
     }
 
-    async function loadFunnelResult(basis?: 'view' | 'click') {
+    async function loadFunnelResult(basis?: 'view' | 'click', exclude?: boolean) {
         const useBasis = basis ?? funnelBasis
+        const useExclude = exclude ?? funnelExclude
         setFunnelLoading(true)
         setFunnelError(null)
         try {
-            const response = await fetch(`/api/ab-test/${abTestId}/funnel?basis=${useBasis}`)
+            const response = await fetch(`/api/ab-test/${abTestId}/funnel?basis=${useBasis}${useExclude ? '&excludeFilter=1' : ''}`)
             const data = await parseJsonResponse<FunnelResult & { error?: string; message?: string; notStarted?: boolean }>(response)
             if (!response.ok || data.error) {
                 throw new Error(data.message || data.error || 'ファネル集計の取得に失敗しました')
@@ -228,6 +233,13 @@ export default function AbTestDetailPage() {
         if (basis === funnelBasis || funnelLoading) return
         setFunnelBasis(basis)
         loadFunnelResult(basis)
+    }
+
+    function handleToggleFunnelExclude() {
+        if (funnelLoading) return
+        const next = !funnelExclude
+        setFunnelExclude(next)
+        loadFunnelResult(undefined, next)
     }
 
     async function handleExecuteReport() {
@@ -714,6 +726,18 @@ export default function AbTestDetailPage() {
                                     クリック基準
                                 </button>
                             </div>
+                            {(funnelResult?.excludeFilterAvailable || funnelExclude) && (
+                                <div className={styles.basisToggle}>
+                                    <button
+                                        className={funnelExclude ? styles.basisActive : styles.basisButton}
+                                        onClick={handleToggleFunnelExclude}
+                                        disabled={funnelLoading}
+                                        title="テストの除外フィルタ設定（例: pageLocation に userId= を含むLP経由イベント）を適用します"
+                                    >
+                                        LP経由を除く
+                                    </button>
+                                </div>
+                            )}
                             {abTest.status !== 'completed' && (
                                 <button
                                     onClick={() => loadFunnelResult()}
@@ -752,6 +776,13 @@ export default function AbTestDetailPage() {
                                         {' '}タグサフィックス「{funnelResult.detectedSuffixes.map((s) => `__${s}`).join(', ')}」からテスト範囲を自動抽出
                                     </>
                                 )}
+                                {funnelResult.excludeApplied && (
+                                    <>
+                                        {' ／ '}
+                                        <span className={styles.leaderBadge}>LP経由を除外中</span>
+                                        {' '}直接流入のみで集計しています
+                                    </>
+                                )}
                             </p>
                             <div className={styles.currentTableWrapper}>
                                 <table className={styles.currentTable}>
@@ -771,7 +802,17 @@ export default function AbTestDetailPage() {
                                             const bestDropoff = dropoffs.length >= 2 ? Math.min(...dropoffs) : null
                                             return (
                                                 <tr key={i}>
-                                                    <td>{i + 1}. {step.stepName}</td>
+                                                    <td>
+                                                        {i + 1}. {step.stepName}
+                                                        {step.variantStepNames && (
+                                                            <span className={styles.funnelVariantNames}>
+                                                                {Object.entries(step.variantStepNames)
+                                                                    .filter(([v]) => v !== 'A')
+                                                                    .map(([v, name]) => `${v}: ${name}`)
+                                                                    .join(' ／ ')}
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                     {funnelResult.variants.map((v) => {
                                                         const val = step.values[v]
                                                         if (!val) return <td key={v}>-</td>
@@ -792,25 +833,30 @@ export default function AbTestDetailPage() {
                                             )
                                         })}
                                         {funnelResult.steps.length > 1 && (() => {
-                                            // 起点: 全バリアントにユーザーがいる最初のステップ（Step0のような片側計測ステップを起点にすると到達率が歪むため）
+                                            // 分母はバリアントごとの「最初に計測があるステップ」（例: 1741ではA=Step0、B=Step1）。
+                                            // Bがステップを削除している場合でも、各バリアントの実際の入口を起点にCVRを比較する
                                             const steps = funnelResult.steps
-                                            const baselineIndex = steps.findIndex((s) =>
-                                                funnelResult.variants.every((v) => (s.values[v]?.users ?? 0) > 0)
-                                            )
-                                            if (baselineIndex < 0 || baselineIndex >= steps.length - 1) return null
-                                            const baseStep = steps[baselineIndex]
                                             const lastStep = steps[steps.length - 1]
                                             const reach: Record<string, number | null> = {}
+                                            const entryNames: string[] = []
                                             for (const v of funnelResult.variants) {
-                                                const base = baseStep.values[v]?.users ?? 0
+                                                const entryIdx = steps.findIndex((s) => (s.values[v]?.users ?? 0) > 0)
+                                                if (entryIdx < 0 || entryIdx >= steps.length - 1) {
+                                                    reach[v] = null
+                                                    continue
+                                                }
+                                                const entryStep = steps[entryIdx]
+                                                entryNames.push(`${v}=${(entryStep.variantStepNames?.[v] ?? entryStep.stepName).split('_')[0]}`)
+                                                const base = entryStep.values[v]?.users ?? 0
                                                 const last = lastStep.values[v]?.users
                                                 reach[v] = base > 0 && last != null ? last / base : null
                                             }
+                                            if (funnelResult.variants.every((v) => reach[v] == null)) return null
                                             const reachA = reach['A']
                                             return (
                                                 <>
                                                     <tr className={styles.funnelTotalRow}>
-                                                        <td>全体到達率（{baseStep.stepName.split('_')[0]}→最終）</td>
+                                                        <td>全体到達率（{entryNames.join('・')} →最終）</td>
                                                         {funnelResult.variants.map((v) => (
                                                             <td key={v} className={styles.currentCvr}>
                                                                 {reach[v] != null ? `${(reach[v]! * 100).toFixed(2)}%` : '-'}
@@ -846,6 +892,7 @@ export default function AbTestDetailPage() {
                                 {funnelResult.basis === 'click'
                                     ? '。クリック基準: 各ステップで何か操作（選択肢・次へ・戻る等のタップ）をしたユニークユーザー数。表示時間の条件がないため取りこぼしが少なく、ステップ通過の実数に近い値です'
                                     : '。ビュー基準: ステップタイトルが50%以上×1秒連続表示されたユニークユーザー数。プリセット流入などで即通過したユーザーは数えられないことがあります（クリック基準との比較で確認できます）'}
+                                。Step0（お気持ち）はLP経由ユーザーが回答済みのためスキップしてStep1から合流します。Step0 &lt; Step1 となるのは仕様です
                             </p>
                         </div>
                     )}

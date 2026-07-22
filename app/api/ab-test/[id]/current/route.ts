@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
 import { calculateCVR, type CvrConfig } from '@/lib/services/analytics/cvrService'
+import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
 import {
     calculateStatisticalSignificance,
     getRequiredSignificanceByHybrid,
@@ -24,6 +25,7 @@ interface GA4Config {
     metrics?: Array<{ name: string }> | string
     limit?: number
     filter?: { dimension?: string; operator?: string; expression?: string }
+    excludeFilter?: { dimension?: string; operator?: string; expression?: string }
     cvrA?: GA4CvrConfig
     cvrB?: GA4CvrConfig
     cvrC?: GA4CvrConfig
@@ -105,31 +107,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             limit: Math.max(ga4Config.limit || 0, 10000),
         }
 
-        const filterDimension = ga4Config.filter?.dimension
-        const filterOperator = ga4Config.filter?.operator
-        const filterExpression = ga4Config.filter?.expression
-        if (filterDimension && filterOperator && filterExpression) {
-            const expressions = filterExpression.split(',').map((s: string) => s.trim()).filter(Boolean)
-            if (expressions.length > 1) {
-                ga4Request.dimensionFilter = {
-                    orGroup: {
-                        expressions: expressions.map((exp: string) => ({
-                            filter: {
-                                fieldName: filterDimension,
-                                stringFilter: { matchType: filterOperator.toUpperCase(), value: exp },
-                            },
-                        })),
-                    },
-                }
-            } else if (expressions.length === 1) {
-                ga4Request.dimensionFilter = {
-                    filter: {
-                        fieldName: filterDimension,
-                        stringFilter: { matchType: filterOperator.toUpperCase(), value: expressions[0] },
-                    },
-                }
-            }
-        }
+        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
 
         const report = await fetchGA4Data(ga4Request, accessToken)
         const dimensionHeaders = report.dimensionHeaders || []

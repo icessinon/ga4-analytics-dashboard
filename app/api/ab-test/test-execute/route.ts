@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { calculateCVR } from '@/lib/services/analytics/cvrService'
+import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
 import { parseDateString } from '@/lib/utils/date'
 
 /**
@@ -63,24 +64,7 @@ export async function POST(request: Request) {
         }
 
         // フィルタを適用（空の場合は適用しない）
-        if (ga4Config.filter?.dimension && ga4Config.filter?.operator && ga4Config.filter?.expression) {
-            const expressions = ga4Config.filter.expression
-                .split(',')
-                .map((e: string) => e.trim())
-                .filter((e: string) => e.length > 0)
-
-            if (expressions.length > 0) {
-                ga4Request.dimensionFilter = {
-                    filter: {
-                        fieldName: ga4Config.filter.dimension,
-                        stringFilter: {
-                            matchType: ga4Config.filter.operator,
-                            value: expressions[0],
-                        },
-                    },
-                }
-            }
-        }
+        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
 
         const ga4Response = await fetchGA4Data(ga4Request, accessToken)
 
