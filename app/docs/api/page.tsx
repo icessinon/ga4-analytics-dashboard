@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import BackLink from '@/components/BackLink'
+import DocsAsk from '@/components/docs/DocsAsk'
 import { API_LIST } from './apiList'
 import type { ApiEndpoint, ApiParam } from './types'
 import styles from './ApiDocs.module.css'
@@ -76,6 +77,9 @@ export default function ApiDocsPage() {
                     <strong>認証:</strong> Basic認証を有効にしている場合、未ログイン時は /login にリダイレクトされます。ログイン成功後はクッキー（ga4_auth）でセッションが維持され、本ドキュメントの API の多くはそのクッキーがある状態で利用します。/api/auth/login と /api/auth/logout は認証不要で呼び出せます。
                 </p>
             </div>
+
+            <DocsAsk />
+
             <nav className={styles.toc}>
                 <h2 className={styles.tocTitle}>カテゴリ</h2>
                 <ul className={styles.tocList}>

@@ -170,6 +170,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         items: [
             { title: 'API ドキュメント', subtitle: 'API エンドポイント一覧と説明', getHref: () => '/docs/api' },
             { title: '機能ドキュメント', subtitle: '全機能の概要・使い方・GA4メトリクス一覧', getHref: () => '/docs/features' },
+            { title: '用語・ドメイン知識', subtitle: '事業用語・CV定義・GTM/GA4計測仕様・データ基盤のリファレンス', getHref: () => '/docs/glossary' },
         ],
     },
 ]

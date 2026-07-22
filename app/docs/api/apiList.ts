@@ -596,6 +596,21 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
         ],
     },
     {
+        category: 'ドキュメント',
+        endpoints: [
+            {
+                path: '/api/docs/ask',
+                method: 'POST',
+                name: 'ドキュメントQ&A',
+                description: '機能一覧・API一覧・ドメイン知識を知識ベースとして、質問にAIが回答します。ドキュメントに記載がない内容は推測せずその旨を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
+                params: [
+                    { name: 'question', type: 'string', required: true, description: 'Body JSON。質問文（1000文字以内）' },
+                ],
+                responseNote: '{ answer: string }（AIによる回答）',
+            },
+        ],
+    },
+    {
         category: 'アラート・定期配信',
         endpoints: [
             {

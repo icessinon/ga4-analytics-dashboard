@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import BackLink from '@/components/BackLink'
+import DocsAsk from '@/components/docs/DocsAsk'
 import { FEATURE_LIST, FEATURE_CATEGORIES } from './featureList'
 import type { FeatureDoc } from './featureList'
 import styles from './FeatureDocs.module.css'
@@ -86,9 +87,12 @@ export default function FeatureDocsPage() {
                 </div>
                 <div className={styles.headerLinks}>
                     <Link href="/docs/api" className={styles.subLink}>API ドキュメント →</Link>
+                    <Link href="/docs/glossary" className={styles.subLink}>用語・ドメイン知識 →</Link>
                     <BackLink href="/">ダッシュボードに戻る</BackLink>
                 </div>
             </div>
+
+            <DocsAsk />
 
             <nav className={styles.toc}>
                 <p className={styles.tocTitle}>カテゴリ</p>
