@@ -65,10 +65,11 @@ export async function generateAndStoreFinalReport(
         const expectedImprovement = abTest.expectedImprovement != null ? Number(abTest.expectedImprovement) : null
 
         // ステップファネル（クリック基準優先。取れない設定のテストではビュー基準にフォールバック、それも無理なら省略）
+        // CVR計算と条件を揃えるため、除外フィルタ（LP経由除外等）が設定されているテストでは適用する
         let funnel: FinalReportFunnel | null = null
         for (const basis of ['click', 'view'] as const) {
             try {
-                const result = await computeAbTestFunnel(abTest, basis)
+                const result = await computeAbTestFunnel(abTest, basis, { applyExcludeFilter: true })
                 if (result.steps.length > 0) {
                     funnel = {
                         basis: result.basis,
