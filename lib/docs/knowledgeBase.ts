@@ -15,6 +15,8 @@ const DOMAIN_KNOWLEDGE = `
 - Direct（求人広告事業）: 企業が広告として直接掲載。応募後は企業と直接やりとり
 - HRS（人材紹介事業）: キャリアアドバイザー（CA）が間に入る紹介事業。成約時に紹介手数料。領域別にDRS=ドライバー、CRS=建設、MRS=製造、SRS=警備系
 - Featured: CRM（スカウトSMS・メール・LINE）経由の既存ユーザー向け特設ページ（/featured）。配信対象は人材紹介求人のみ
+- スカウトの配信フロー: 企業管理画面から送信リクエスト → ScoutHistories(DynamoDB)にattempt(status=requested)記録 → DDB Streams → Lambda → Accrete SMS API でSMS送信（リンクは /scout/{scoutId}）。送信結果のDB書き戻しは未実装で全件requested（2026-07時点、drm-front側で対応予定）
+- スカウト経由の応募: /scout/{scoutId} → /entry/{id}?scoutId= → source=scout_apply(求人広告)/scout_inquiry(人材紹介・HW)。ダッシュボードの「スカウト効果ファネル」(/scout)で送信→閲覧→応募を確認できる
 - Matching: Salesforceのオブジェクト。人材紹介の応募1件=1レコード。種別フィールドに「自然応募」等の経路区分あり
 
 ## 求人の契約種別（contractType）

@@ -253,6 +253,20 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/occupation',
     },
     {
+        name: 'スカウト効果ファネル',
+        href: '/scout',
+        category: 'レポート・データ',
+        description: 'スカウトの送信リクエスト（本体DB: ScoutHistories）→ スカウトページ閲覧（GA4 /scout/）→ 応募（scoutId付きURLでの送信ボタンクリック）を一本のファネルで確認します。企業別内訳と日別推移つき。',
+        capabilities: [
+            '送信リクエスト・送達・閲覧UU・応募のファネルサマリー（送達はdrm-front側のSMS送信結果書き戻し実装後に表示）',
+            '企業別内訳（送信リクエスト / 閲覧UU / 応募 / 閲覧→応募率）。scoutIdで企業に紐付け',
+            '日別推移（送信リクエスト・閲覧・応募の3系列バー）',
+            '期間切り替え（7 / 30 / 90 / 180日）',
+        ],
+        metrics: ['totalUsers', 'pagePath', 'pageLocation', 'customEvent:click_label'],
+        apiRoute: 'POST /api/scout/funnel',
+    },
+    {
         name: '求人種別CV分析',
         href: '/cv-types',
         category: 'レポート・データ',
@@ -260,6 +274,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
         capabilities: [
             '求人種別ごとの応募完了数と構成比（完了は送信ボタンクリック基準。DB実応募数との一致を確認済み・bot耐性あり）',
             '求人種別ファネル: 求人詳細閲覧 → 応募フォーム → 完了（各遷移率つき）',
+            '求人詳細の流入内訳（種別×チャネル: Organic検索/Direct/CRM/広告 と 一覧経由率）。ハロワ=SEO直接着地が大半、人材紹介=Direct/CRM比重が高い等の構造を常設で確認できる',
             '会員登録のフォーム→完了を参考行として併記',
             '完了数の日別推移チャート（4系列）',
             '期間切り替え（7 / 14 / 30 / 90日）',

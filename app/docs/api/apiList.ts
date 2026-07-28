@@ -705,6 +705,18 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
         category: '求人種別CV分析',
         endpoints: [
             {
+                path: '/api/scout/funnel',
+                method: 'POST',
+                name: 'スカウト効果ファネル集計',
+                description: 'スカウトファネルを横断集計します。送信リクエストは本体DynamoDB（ScoutHistories-prd）のattempts、閲覧はGA4の /scout/ ページ（pagePathからscoutIdを抽出して企業に紐付け）、応募はscoutId付きURL（pageLocation CONTAINS scoutId=）でのエントリーフォーム送信ボタンクリックです。送達（sent）はdrm-front側の書き戻し実装後に有効になります。',
+                params: [
+                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
+                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
+                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
+                ],
+                responseNote: '{ summary: { requested, sent, failed, viewedUsers, viewedScoutIds, appliedUsers }, daily: [{date, requested, viewed, applied}], companies: [{companyId, companyName, requested, sent, viewed, applied}] }',
+            },
+            {
                 path: '/api/cv-types',
                 method: 'POST',
                 name: '求人種別CV集計',
