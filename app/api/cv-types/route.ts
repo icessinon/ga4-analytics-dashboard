@@ -22,6 +22,20 @@ const completeClickLabel = (key: string) => `EF__${key}__Btn__${key === 'JobA' ?
 const formLabel = (key: string) => `EF__${key}__Area__Header`
 const detailLabel = (key: string) => `DL__Media__Area__${key}`
 
+// 一覧ページ（検索・大職種一覧）。一覧経由の詳細到達を pageReferrer で近似判定する
+const LIST_PATHS = [
+    'search', 'driver', 'sekokan', 'sekkei', 'soko', 'shokunin', 'seibi', 'hoshu',
+    'setsubi-sagyo', 'keibi', 'unkan', 'kojo-sagyo', 'food', 'unyu-sagyo', 'others',
+]
+// チャネルの表示グルーピング（GA4 sessionDefaultChannelGroup → 表示用キー）
+function channelKey(group: string): 'organic' | 'direct' | 'crm' | 'paid' | 'other' {
+    if (group === 'Organic Search') return 'organic'
+    if (group === 'Direct') return 'direct'
+    if (group === 'SMS' || group === 'Email' || group === 'Mobile Push Notifications') return 'crm'
+    if (group.startsWith('Paid')) return 'paid'
+    return 'other'
+}
+
 export async function POST(request: Request) {
     try {
         const {
@@ -54,7 +68,22 @@ export async function POST(request: Request) {
             },
         }
 
-        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily] = await Promise.all([
+        const detailLabelFilter = {
+            orGroup: {
+                expressions: JOB_TYPES.map((t) => ({
+                    filter: { fieldName: 'customEvent:view_label', stringFilter: { matchType: 'EXACT', value: detailLabel(t.key) } },
+                })),
+            },
+        }
+        const listReferrerFilter = {
+            orGroup: {
+                expressions: LIST_PATHS.map((p) => ({
+                    filter: { fieldName: 'pageReferrer', stringFilter: { matchType: 'CONTAINS', value: `x-work.jp/${p}` } },
+                })),
+            },
+        }
+
+        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily, channelReport, viaListReport, listPagesReport] = await Promise.all([
             // 種別×ステージ（詳細・フォーム）のユーザー数（ビューラベル別）
             fetchGA4Data({
                 propertyId, dateRanges,
@@ -109,6 +138,42 @@ export async function POST(request: Request) {
                 },
                 limit: 200,
             }, accessToken),
+            // 詳細閲覧の流入チャネル内訳（種別×チャネル）
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'customEvent:view_label' }, { name: 'sessionDefaultChannelGroup' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: detailLabelFilter,
+                limit: 200,
+            }, accessToken),
+            // 一覧（検索・職種一覧）経由で詳細に到達したユーザー（referrer近似）
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'customEvent:view_label' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: { andGroup: { expressions: [detailLabelFilter, listReferrerFilter] } },
+                limit: 50,
+            }, accessToken),
+            // 一覧（検索・職種一覧）ページ自体の閲覧UU（詳細/media_を除く）
+            fetchGA4Data({
+                propertyId, dateRanges,
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: {
+                    andGroup: {
+                        expressions: [
+                            {
+                                orGroup: {
+                                    expressions: LIST_PATHS.map((p) => ({
+                                        filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: `/${p}` } },
+                                    })),
+                                },
+                            },
+                            { notExpression: { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'CONTAINS', value: '/media_' } } } },
+                        ],
+                    },
+                },
+                limit: 1,
+            }, accessToken),
         ])
 
         const labelUsers = new Map<string, number>()
@@ -119,10 +184,32 @@ export async function POST(request: Request) {
             labelUsers.set(r.dimensionValues[0]?.value ?? '', parseInt(r.metricValues[0]?.value ?? '0', 10))
         }
 
+        // 種別×チャネル（organic/direct/crm/paid/other）
+        const channelByType = new Map<string, Record<string, number>>()
+        for (const r of channelReport.rows ?? []) {
+            const label = r.dimensionValues[0]?.value ?? ''
+            const group = r.dimensionValues[1]?.value ?? ''
+            const users = parseInt(r.metricValues[0]?.value ?? '0', 10)
+            const type = JOB_TYPES.find((t) => label === detailLabel(t.key))
+            if (!type) continue
+            const entry = channelByType.get(type.key) ?? {}
+            const k = channelKey(group)
+            entry[k] = (entry[k] ?? 0) + users
+            channelByType.set(type.key, entry)
+        }
+        const viaListByType = new Map<string, number>()
+        for (const r of viaListReport.rows ?? []) {
+            const label = r.dimensionValues[0]?.value ?? ''
+            const type = JOB_TYPES.find((t) => label === detailLabel(t.key))
+            if (type) viaListByType.set(type.key, parseInt(r.metricValues[0]?.value ?? '0', 10))
+        }
+
         const jobTypes = JOB_TYPES.map((t) => {
             const detail = labelUsers.get(detailLabel(t.key)) ?? 0
             const form = labelUsers.get(formLabel(t.key)) ?? 0
             const completed = labelUsers.get(completeClickLabel(t.key)) ?? 0
+            const ch = channelByType.get(t.key) ?? {}
+            const viaList = viaListByType.get(t.key) ?? 0
             return {
                 key: t.key,
                 label: t.label,
@@ -132,6 +219,15 @@ export async function POST(request: Request) {
                 detailToForm: detail > 0 ? form / detail : null,
                 formToComplete: form > 0 ? completed / form : null,
                 overallRate: detail > 0 ? completed / detail : null,
+                channels: {
+                    organic: ch.organic ?? 0,
+                    direct: ch.direct ?? 0,
+                    crm: ch.crm ?? 0,
+                    paid: ch.paid ?? 0,
+                    other: ch.other ?? 0,
+                },
+                viaList,
+                viaListRate: detail > 0 ? viaList / detail : null,
             }
         })
 
@@ -161,8 +257,11 @@ export async function POST(request: Request) {
         const signupFormUsers = parseInt(signupForm.rows?.[0]?.metricValues[0]?.value ?? '0', 10)
         const signupCompleted = parseInt(signupThanks.rows?.[0]?.metricValues[0]?.value ?? '0', 10)
 
+        const listViews = parseInt(listPagesReport.rows?.[0]?.metricValues[0]?.value ?? '0', 10)
+
         return NextResponse.json({
             jobTypes,
+            listViews,
             signup: {
                 formViews: signupFormUsers,
                 completed: signupCompleted,

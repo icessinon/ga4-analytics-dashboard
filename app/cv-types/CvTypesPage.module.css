@@ -191,3 +191,8 @@
         flex: 1 1 calc(50% - 1rem);
     }
 }
+
+.chPct {
+    color: #6b7280;
+    font-size: 0.6875rem;
+}

@@ -17,10 +17,14 @@ interface JobTypeRow {
     detailToForm: number | null
     formToComplete: number | null
     overallRate: number | null
+    channels?: { organic: number; direct: number; crm: number; paid: number; other: number }
+    viaList?: number
+    viaListRate?: number | null
 }
 
 interface CvTypesResponse {
     jobTypes: JobTypeRow[]
+    listViews?: number
     signup: { formViews: number; completed: number; formToComplete: number | null }
     daily: DailyPoint[]
     startDate: string
@@ -115,7 +119,7 @@ export default function CvTypesPage() {
                                 <span className={styles.summaryLabel}>{t.label}（応募完了）</span>
                                 <span className={styles.summaryValue}>{t.completed.toLocaleString()}</span>
                                 <span className={styles.summaryHint}>
-                                    応募CV構成比 {totalApply > 0 ? `${((t.completed / totalApply) * 100).toFixed(0)}%` : '－'}
+                                    サイト内フォーム応募の構成比 {totalApply > 0 ? `${((t.completed / totalApply) * 100).toFixed(0)}%` : '－'}
                                 </span>
                             </div>
                         ))}
@@ -177,6 +181,68 @@ export default function CvTypesPage() {
                             ※ 求人詳細・フォームはビューラベル（50%×1秒表示）ベースのため、1〜2割の取りこぼしがあります。<br />
                             ※ スカウト・featured経由の応募（別フォーム、GTMラベル未実装）はこの表に含まれません。サイト内フォームからの応募のみです。<br />
                             ※ 会員登録はページベース（/members/signup → /members/signup/thanks）。求人広告応募時の自動会員化はここに含まれません。
+                        </p>
+                    </div>
+
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>求人詳細の流入内訳（チャネル × 一覧経由）</h2>
+                        {data.listViews != null && (
+                            <p className={styles.periodNote}>
+                                一覧ページ（検索・職種一覧）の閲覧: {data.listViews.toLocaleString()} ユーザー
+                                ／ うち詳細へ進んだ人数は下表の「一覧経由」列
+                            </p>
+                        )}
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>種別</th>
+                                        <th className={styles.num}>詳細閲覧</th>
+                                        <th className={styles.num}>SEO（自然検索）</th>
+                                        <th className={styles.num}>Direct</th>
+                                        <th className={styles.num}>CRM(SMS/メール)</th>
+                                        <th className={styles.num}>広告</th>
+                                        <th className={styles.num}>その他</th>
+                                        <th className={styles.num}>一覧経由</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.jobTypes.map((t) => {
+                                        const ch = t.channels
+                                        const chTotal = ch ? ch.organic + ch.direct + ch.crm + ch.paid + ch.other : 0
+                                        const cell = (v: number) => (
+                                            <>
+                                                {v.toLocaleString()}
+                                                <span className={styles.chPct}>{chTotal > 0 ? ` (${((v / chTotal) * 100).toFixed(0)}%)` : ''}</span>
+                                            </>
+                                        )
+                                        return (
+                                            <tr key={t.key}>
+                                                <td>
+                                                    <span className={styles.typeDot} style={{ background: TYPE_COLORS[t.key] }} />
+                                                    {t.label}
+                                                </td>
+                                                <td className={styles.num}>{t.detailViews.toLocaleString()}</td>
+                                                <td className={styles.num}>{ch ? cell(ch.organic) : '－'}</td>
+                                                <td className={styles.num}>{ch ? cell(ch.direct) : '－'}</td>
+                                                <td className={styles.num}>{ch ? cell(ch.crm) : '－'}</td>
+                                                <td className={styles.num}>{ch ? cell(ch.paid) : '－'}</td>
+                                                <td className={styles.num}>{ch ? cell(ch.other) : '－'}</td>
+                                                <td className={`${styles.num} ${styles.strong}`}>
+                                                    {(t.viaList ?? 0).toLocaleString()}
+                                                    <span className={styles.chPct}>{t.viaListRate != null ? ` (${(t.viaListRate * 100).toFixed(0)}%)` : ''}</span>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className={styles.tableNote}>
+                            ※ SEO（自然検索）= GA4のOrganic Search（Google/Yahoo等の検索結果からの流入。広告=Paid検索とは別）。CRM = SMS + Email + Push。<br />
+                            ※ チャネル5列（SEO/Direct/CRM/広告/その他）は「サイトに来たきっかけ」で、合計が詳細閲覧と一致します。Direct = 参照元不明（URL直打ち・ブックマーク・アプリ内ブラウザ等でreferrer欠落）、その他 = Referral（他サイトのリンク）・Organic Social・Unassigned等。<br />
+                            ※ <strong>「一覧経由」はチャネルとは別軸で重複します</strong>（サイト内で直前に検索・職種一覧ページを見ていた人。例: SEOで一覧に着地→詳細の人はSEOにも一覧経由にも入る）。横に足せるのはチャネル5列まで。リファラー近似のため、間に別ページを挟んだ遷移は含まれません。<br />
+                            ※ ハローワークはSEO直接着地が大半・人材紹介はDirect/CRM比重が高い、といった「詳細への来方」の違いを見るための表です。
                         </p>
                     </div>
 
