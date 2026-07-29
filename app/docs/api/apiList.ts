@@ -717,6 +717,18 @@ export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
                 responseNote: '{ summary: { requested, sent, failed, viewedUsers, viewedScoutIds, appliedUsers }, daily: [{date, requested, viewed, applied}], companies: [{companyId, companyName, requested, sent, viewed, applied}] }',
             },
             {
+                path: '/api/applications/actual',
+                method: 'POST',
+                name: '応募の全体像（DB実数）',
+                description: '本体DynamoDB（JobApplication-prd + GuestJobApplication-prd）から期間内の実応募を集計し、種別（人材紹介/求人広告/ハローワーク）×流入レイヤー（自然/featured=CRM配信/CA紹介/スカウト）×会員/ゲストで返します。あわせて会員登録の内訳（登録のみ=GA4 thanks到達、応募と同時=応募時刻とユーザー作成時刻が10分以内）を判定します。フルスキャンのため応答に十数秒かかります。',
+                params: [
+                    { name: 'propertyId', type: 'string', required: false, description: 'Body JSON。指定時は「登録のみ」をGA4から取得' },
+                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
+                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
+                ],
+                responseNote: '{ types: [{label, layers: {natural|featured|scout|caReferral|other: {member, guest}}, total}], grandTotal, memberTotal, guestTotal, signup: {standalone, withApplication, withApplicationByType} }',
+            },
+            {
                 path: '/api/cv-types',
                 method: 'POST',
                 name: '求人種別CV集計',

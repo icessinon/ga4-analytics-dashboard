@@ -20,6 +20,23 @@ interface JobTypeRow {
     channels?: { organic: number; direct: number; crm: number; paid: number; other: number }
     viaList?: number
     viaListRate?: number | null
+    fields?: Array<{ name: string; users: number }>
+}
+
+interface ActualCell { member: number; guest: number }
+interface ActualTypeRow {
+    label: string
+    layers: { natural: ActualCell; featured: ActualCell; scout: ActualCell; caReferral: ActualCell; other: ActualCell }
+    total: number
+}
+interface ActualResponse {
+    startDate: string
+    endDate: string
+    types: ActualTypeRow[]
+    grandTotal: number
+    memberTotal: number
+    guestTotal: number
+    signup: { withApplication: number; withApplicationByType: Record<string, number>; standalone: number | null; unknownUserApps: number }
 }
 
 interface CvTypesResponse {
@@ -53,6 +70,8 @@ export default function CvTypesPage() {
     const { currentProduct } = useProduct()
     const [period, setPeriod] = useState('30daysAgo')
     const [data, setData] = useState<CvTypesResponse | null>(null)
+    const [actual, setActual] = useState<ActualResponse | null>(null)
+    const [actualLoading, setActualLoading] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -73,6 +92,16 @@ export default function CvTypesPage() {
             const json = await parseJsonResponse<CvTypesResponse & { error?: string }>(res)
             if (!res.ok) throw new Error(json.error || '取得に失敗しました')
             setData(json)
+            // DB実数（重めなので別リクエスト・失敗してもページ全体は落とさない）
+            setActualLoading(true)
+            fetch('/api/applications/actual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+            })
+                .then((r) => parseJsonResponse<ActualResponse & { error?: string }>(r).then((j) => { if (r.ok) setActual(j); else setActual(null) }))
+                .catch(() => setActual(null))
+                .finally(() => setActualLoading(false))
         } catch (e) {
             setError(e instanceof Error ? e.message : '取得に失敗しました')
             setData(null)
@@ -244,6 +273,144 @@ export default function CvTypesPage() {
                             ※ <strong>「一覧経由」はチャネルとは別軸で重複します</strong>（サイト内で直前に検索・職種一覧ページを見ていた人。例: SEOで一覧に着地→詳細の人はSEOにも一覧経由にも入る）。横に足せるのはチャネル5列まで。リファラー近似のため、間に別ページを挟んだ遷移は含まれません。<br />
                             ※ ハローワークはSEO直接着地が大半・人材紹介はDirect/CRM比重が高い、といった「詳細への来方」の違いを見るための表です。
                         </p>
+                    </div>
+
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>応募フォームの項目別ファネル（どこで手が止まるか）</h2>
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>ステップ</th>
+                                        {data.jobTypes.map((t) => (
+                                            <th key={t.key} className={styles.num}>{t.label}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className={styles.strong}>フォーム表示</td>
+                                        {data.jobTypes.map((t) => (
+                                            <td key={t.key} className={`${styles.num} ${styles.strong}`}>{t.formViews.toLocaleString()}</td>
+                                        ))}
+                                    </tr>
+                                    {(data.jobTypes[0]?.fields ?? []).map((_, fi) => {
+                                        const name = data.jobTypes[0].fields![fi].name
+                                        const anyValue = data.jobTypes.some((t) => (t.fields?.[fi]?.users ?? 0) > 0)
+                                        if (!anyValue) return null
+                                        return (
+                                            <tr key={name}>
+                                                <td>{name}</td>
+                                                {data.jobTypes.map((t) => {
+                                                    const u = t.fields?.[fi]?.users ?? 0
+                                                    return (
+                                                        <td key={t.key} className={styles.num}>
+                                                            {u > 0 ? (
+                                                                <>
+                                                                    {u.toLocaleString()}
+                                                                    <span className={styles.chPct}>{t.formViews > 0 ? ` (${((u / t.formViews) * 100).toFixed(0)}%)` : ''}</span>
+                                                                </>
+                                                            ) : '－'}
+                                                        </td>
+                                                    )
+                                                })}
+                                            </tr>
+                                        )
+                                    })}
+                                    <tr>
+                                        <td className={styles.strong}>送信（応募完了）</td>
+                                        {data.jobTypes.map((t) => (
+                                            <td key={t.key} className={`${styles.num} ${styles.strong}`}>
+                                                {t.completed.toLocaleString()}
+                                                <span className={styles.chPct}>{t.formViews > 0 ? ` (${((t.completed / t.formViews) * 100).toFixed(0)}%)` : ''}</span>
+                                            </td>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className={styles.tableNote}>
+                            ※ 各項目は「タップ（着手）したユニークユーザー」。%はフォーム表示に対する割合。項目はフォーム内の並び順。<br />
+                            ※ <strong>2026-07-28以降のデータのみ</strong>（それ以前はGTM設定によりテキスト入力が未計測。期間を広げても増えません）。<br />
+                            ※ 会員はプロフィール自動入力のため項目に触らず送信します。項目の数字は実質<strong>ゲスト応募の行動</strong>です。「－」はその種別のフォームに項目がないか、期間内に操作がなかったもの。
+                        </p>
+                    </div>
+
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>応募の全体像（DB実数・featured/CRM配信を含む）</h2>
+                        {actualLoading && <p className={styles.loading}>本体DBから集計中...（十数秒かかります）</p>}
+                        {!actualLoading && !actual && <p className={styles.loading}>DB実数を取得できませんでした</p>}
+                        {actual && !actualLoading && (
+                            <>
+                                <div className={styles.tableWrapper}>
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>種別</th>
+                                                <th className={styles.num}>自然応募（サイト内）</th>
+                                                <th className={styles.num}>featured（CRM配信）</th>
+                                                <th className={styles.num}>CA紹介</th>
+                                                <th className={styles.num}>スカウト</th>
+                                                <th className={styles.num}>合計</th>
+                                                <th className={styles.num}>構成比</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {actual.types.map((t) => {
+                                                const cell = (c: ActualCell) => {
+                                                    const total = c.member + c.guest
+                                                    if (total === 0) return <>－</>
+                                                    return (
+                                                        <>
+                                                            {total.toLocaleString()}
+                                                            <span className={styles.chPct}>{` (会${c.member}/ゲ${c.guest})`}</span>
+                                                        </>
+                                                    )
+                                                }
+                                                return (
+                                                    <tr key={t.label}>
+                                                        <td>
+                                                            <span className={styles.typeDot} style={{ background: TYPE_COLORS[t.label === '人材紹介' ? 'JobR' : t.label === '求人広告' ? 'JobA' : t.label === 'ハローワーク' ? 'JobH' : 'signup'] }} />
+                                                            {t.label}
+                                                        </td>
+                                                        <td className={styles.num}>{cell(t.layers.natural)}</td>
+                                                        <td className={styles.num}>{cell(t.layers.featured)}</td>
+                                                        <td className={styles.num}>{cell(t.layers.caReferral)}</td>
+                                                        <td className={styles.num}>{cell(t.layers.scout)}</td>
+                                                        <td className={`${styles.num} ${styles.strong}`}>{t.total.toLocaleString()}</td>
+                                                        <td className={styles.num}>{actual.grandTotal > 0 ? `${((t.total / actual.grandTotal) * 100).toFixed(1)}%` : '－'}</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className={styles.tableNote}>
+                                    ※ 本体DynamoDB（会員応募 {actual.memberTotal.toLocaleString()} 件 + ゲスト応募 {actual.guestTotal.toLocaleString()} 件）の実数。上のGA4基準の表と違い、featured/CRM配信・CA紹介・スカウト経由をすべて含みます。<br />
+                                    ※ セル内の（会/ゲ）は会員応募/ゲスト応募の内訳。「自然応募」= sourceなし（サイト内フォームからの応募）。
+                                </p>
+
+                                <h2 className={styles.sectionTitle} style={{ marginTop: '1.5rem' }}>会員登録の内訳（登録のみ vs 応募と同時）</h2>
+                                <div className={styles.summaryRow}>
+                                    <div className={styles.summaryCard} style={{ borderTopColor: TYPE_COLORS.signup }}>
+                                        <span className={styles.summaryLabel}>登録のみ（単独登録）</span>
+                                        <span className={styles.summaryValue}>{actual.signup.standalone != null ? actual.signup.standalone.toLocaleString() : '－'}</span>
+                                        <span className={styles.summaryHint}>会員登録フォーム完了（GA4 thanks到達）</span>
+                                    </div>
+                                    <div className={styles.summaryCard} style={{ borderTopColor: '#f87171' }}>
+                                        <span className={styles.summaryLabel}>応募と同時の登録</span>
+                                        <span className={styles.summaryValue}>{actual.signup.withApplication.toLocaleString()}</span>
+                                        <span className={styles.summaryHint}>
+                                            {Object.entries(actual.signup.withApplicationByType).map(([k, v]) => `${k} ${v}`).join(' ／ ') || '－'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className={styles.tableNote}>
+                                    ※ 応募と同時の登録 = 会員応募のうち、応募時刻とユーザー作成時刻の差が10分以内のユーザー数（DB判定・同一ユーザーは1回）。応募フォーム内で会員登録した人はこちらに入り、GA4のthanks到達（登録のみ）には含まれません。<br />
+                                    ※ userId欠落等で判定できない応募が {actual.signup.unknownUserApps.toLocaleString()} 件あります（CA紹介などシステム起票の応募が中心）。
+                                </p>
+                            </>
+                        )}
                     </div>
 
                     <div className={styles.card}>

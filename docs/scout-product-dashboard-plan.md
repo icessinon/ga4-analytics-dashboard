@@ -49,7 +49,7 @@
 - 閲覧率 = 閲覧UU / sent（A-3まではrequested分母の暫定値と明記）
 - 応募率 = scout経由応募 / 閲覧UU
 - 成約率 = 成約 / scout経由応募
-- 分解軸: 企業（ScoutHistories.companyId）／チャネル（GA4 `ch=` param）／契約種別（scout_apply=求人広告, scout_inquiry=人材紹介・HW）
+- 分解軸: 企業（ScoutHistories.companyId）／チャネル（GA4 utm_source=sms 等）／契約種別（scout_apply=求人広告, scout_inquiry=人材紹介・HW）
 
 ### 未決事項（要確認）
 
@@ -149,11 +149,11 @@
 - やること: featuredページ群の応募ボタン（通常・ワンクリック両方）に `data-click-label` を付与（命名は既存EF規則に準拠、Area=featured用に新設可）。配信リンクへの `?ch=mail|line` 付与もあわせて
 - 受け入れ条件: featured経由の応募クリックがGA4で種別・チャネル別に集計できる
 
-### C-6. SMSリンクのチャネルパラメータ（A-2）
+### C-6. SMSリンクのチャネルパラメータ（A-2）→ **リリース済み（ch=案からUTM方式に変更）**
 
-- 対象: 同 `ScoutSmsNotificationFunction/handler.ts` のメッセージ組み立て行
-  `${SITE_BASE_URL}/scout/${scoutId}` → `${SITE_BASE_URL}/scout/${scoutId}?ch=sms`
-- 将来メール等の別チャネルを追加する際も同様に `?ch=` を付与
+- 実装: `${SITE_BASE_URL}/scout/${scoutId}?utm_source=sms&utm_medium=scout`（origin/master確認済み）
+- ch=独自パラメータでなくUTMにしたことで、①GA4のチャネルグループに自動帰属（utm_source=sms→SMSチャネル）②webの setUtmParamsToCookie → 応募レコードのutm（Zapier/BQまで）に帰属が繋がる、の二重取り
+- ダッシュボード側のチャネル分解は `pageLocation CONTAINS utm_source=sms` または sessionDefaultChannelGroup=SMS を使う（ch=前提の記述は無効）
 
 ---
 

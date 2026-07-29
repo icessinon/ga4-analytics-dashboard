@@ -11,6 +11,8 @@ export const DDB_TABLES = {
     scoutHistories: 'ScoutHistories-prd',
     jobApplications: 'JobApplication-prd',
     guestJobApplications: 'GuestJobApplication-prd',
+    jobDescriptions: 'JobDescriptions-prd',
+    memberUsers: 'MemberUsers-prd',
 } as const
 
 let docClient: DynamoDBDocumentClient | null = null

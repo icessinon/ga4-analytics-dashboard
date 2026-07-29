@@ -22,6 +22,11 @@ const completeClickLabel = (key: string) => `EF__${key}__Btn__${key === 'JobA' ?
 const formLabel = (key: string) => `EF__${key}__Area__Header`
 const detailLabel = (key: string) => `DL__Media__Area__${key}`
 
+// 応募フォームの入力項目（フォーム内の並び順）。項目タップ=着手のファネルに使う。
+// 種別によって項目構成が異なる（ゲスト可の人材紹介/HWはパスワード等なし）
+const FORM_FIELDS = ['氏名', 'フリガナ', '生まれ年', '郵便番号', '電話番号', 'メールアドレス', 'パスワード', '保有免許・資格']
+const fieldLabel = (key: string, field: string) => `EF__${key}__Field__${field}`
+
 // 一覧ページ（検索・大職種一覧）。一覧経由の詳細到達を pageReferrer で近似判定する
 const LIST_PATHS = [
     'search', 'driver', 'sekokan', 'sekkei', 'soko', 'shokunin', 'seibi', 'hoshu',
@@ -83,7 +88,7 @@ export async function POST(request: Request) {
             },
         }
 
-        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily, channelReport, viaListReport, listPagesReport] = await Promise.all([
+        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily, channelReport, viaListReport, listPagesReport, fieldReport] = await Promise.all([
             // 種別×ステージ（詳細・フォーム）のユーザー数（ビューラベル別）
             fetchGA4Data({
                 propertyId, dateRanges,
@@ -174,6 +179,21 @@ export async function POST(request: Request) {
                 },
                 limit: 1,
             }, accessToken),
+            // 応募フォームの項目別タップ（EF__{key}__Field__{項目}）
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'customEvent:click_label' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: {
+                    andGroup: {
+                        expressions: [
+                            { filter: { fieldName: 'customEvent:click_label', stringFilter: { matchType: 'BEGINS_WITH', value: 'EF__' } } },
+                            { filter: { fieldName: 'customEvent:click_label', stringFilter: { matchType: 'CONTAINS', value: '__Field__' } } },
+                        ],
+                    },
+                },
+                limit: 200,
+            }, accessToken),
         ])
 
         const labelUsers = new Map<string, number>()
@@ -204,10 +224,16 @@ export async function POST(request: Request) {
             if (type) viaListByType.set(type.key, parseInt(r.metricValues[0]?.value ?? '0', 10))
         }
 
+        const fieldUsers = new Map<string, number>()
+        for (const r of fieldReport.rows ?? []) {
+            fieldUsers.set(r.dimensionValues[0]?.value ?? '', parseInt(r.metricValues[0]?.value ?? '0', 10))
+        }
+
         const jobTypes = JOB_TYPES.map((t) => {
             const detail = labelUsers.get(detailLabel(t.key)) ?? 0
             const form = labelUsers.get(formLabel(t.key)) ?? 0
             const completed = labelUsers.get(completeClickLabel(t.key)) ?? 0
+            const fields = FORM_FIELDS.map((f) => ({ name: f, users: fieldUsers.get(fieldLabel(t.key, f)) ?? 0 }))
             const ch = channelByType.get(t.key) ?? {}
             const viaList = viaListByType.get(t.key) ?? 0
             return {
@@ -228,6 +254,7 @@ export async function POST(request: Request) {
                 },
                 viaList,
                 viaListRate: detail > 0 ? viaList / detail : null,
+                fields,
             }
         })
 
