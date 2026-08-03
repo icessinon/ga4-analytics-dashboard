@@ -39,6 +39,16 @@ interface ActualResponse {
     signup: { withApplication: number; withApplicationByType: Record<string, number>; standalone: number | null; unknownUserApps: number }
 }
 
+interface RouteFunnelSide { detail: number; form: number; complete: number }
+interface RouteFunnelType { key: string; label: string; viaList: RouteFunnelSide; direct: RouteFunnelSide }
+interface RouteFunnelResponse {
+    startDate: string
+    endDate: string
+    listUsers: number
+    types: RouteFunnelType[]
+    totals: { viaList: RouteFunnelSide; direct: RouteFunnelSide }
+}
+
 interface CvTypesResponse {
     jobTypes: JobTypeRow[]
     listViews?: number
@@ -72,6 +82,8 @@ export default function CvTypesPage() {
     const [data, setData] = useState<CvTypesResponse | null>(null)
     const [actual, setActual] = useState<ActualResponse | null>(null)
     const [actualLoading, setActualLoading] = useState(false)
+    const [routeFunnel, setRouteFunnel] = useState<RouteFunnelResponse | null>(null)
+    const [routeLoading, setRouteLoading] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -102,6 +114,16 @@ export default function CvTypesPage() {
                 .then((r) => parseJsonResponse<ActualResponse & { error?: string }>(r).then((j) => { if (r.ok) setActual(j); else setActual(null) }))
                 .catch(() => setActual(null))
                 .finally(() => setActualLoading(false))
+            // 経路別ファネル（GA4ファネルAPI・遅め）
+            setRouteLoading(true)
+            fetch('/api/cv-types/route-funnel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+            })
+                .then((r) => parseJsonResponse<RouteFunnelResponse & { error?: string }>(r).then((j) => { if (r.ok) setRouteFunnel(j); else setRouteFunnel(null) }))
+                .catch(() => setRouteFunnel(null))
+                .finally(() => setRouteLoading(false))
         } catch (e) {
             setError(e instanceof Error ? e.message : '取得に失敗しました')
             setData(null)
@@ -233,6 +255,7 @@ export default function CvTypesPage() {
                                         <th className={styles.num}>広告</th>
                                         <th className={styles.num}>その他</th>
                                         <th className={styles.num}>一覧経由</th>
+                                        <th className={styles.num}>直接着地</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -261,6 +284,10 @@ export default function CvTypesPage() {
                                                     {(t.viaList ?? 0).toLocaleString()}
                                                     <span className={styles.chPct}>{t.viaListRate != null ? ` (${(t.viaListRate * 100).toFixed(0)}%)` : ''}</span>
                                                 </td>
+                                                <td className={styles.num}>
+                                                    {Math.max(0, t.detailViews - (t.viaList ?? 0)).toLocaleString()}
+                                                    <span className={styles.chPct}>{t.detailViews > 0 ? ` (${(((t.detailViews - (t.viaList ?? 0)) / t.detailViews) * 100).toFixed(0)}%)` : ''}</span>
+                                                </td>
                                             </tr>
                                         )
                                     })}
@@ -271,8 +298,66 @@ export default function CvTypesPage() {
                             ※ SEO（自然検索）= GA4のOrganic Search（Google/Yahoo等の検索結果からの流入。広告=Paid検索とは別）。CRM = SMS + Email + Push。<br />
                             ※ チャネル5列（SEO/Direct/CRM/広告/その他）は「サイトに来たきっかけ」で、合計が詳細閲覧と一致します。Direct = 参照元不明（URL直打ち・ブックマーク・アプリ内ブラウザ等でreferrer欠落）、その他 = Referral（他サイトのリンク）・Organic Social・Unassigned等。<br />
                             ※ <strong>「一覧経由」はチャネルとは別軸で重複します</strong>（サイト内で直前に検索・職種一覧ページを見ていた人。例: SEOで一覧に着地→詳細の人はSEOにも一覧経由にも入る）。横に足せるのはチャネル5列まで。リファラー近似のため、間に別ページを挟んだ遷移は含まれません。<br />
-                            ※ ハローワークはSEO直接着地が大半・人材紹介はDirect/CRM比重が高い、といった「詳細への来方」の違いを見るための表です。
+                            ※ 直接着地 = 詳細閲覧 −一覧経由（一覧を通らずに詳細へ来た人。SEO・Direct・CRM等）。ハローワークは直接着地が約8割＝SEOで1ページだけ見に来る層が主体、人材紹介・求人広告はサイト内回遊（一覧経由）が約4割、といった「詳細への来方」の違いを見るための表です。
                         </p>
+                    </div>
+
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>経路別ファネル（一覧経由 vs 直接着地）</h2>
+                        {routeLoading && <p className={styles.loading}>GA4ファネルAPIで集計中...</p>}
+                        {!routeLoading && !routeFunnel && <p className={styles.loading}>経路別ファネルを取得できませんでした</p>}
+                        {routeFunnel && !routeLoading && (() => {
+                            const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toFixed(1)}%` : '－')
+                            const row = (label: string, side: RouteFunnelSide, colorKey?: string, strong?: boolean) => (
+                                <tr key={label} className={strong ? styles.signupRow : undefined}>
+                                    <td>
+                                        {colorKey && <span className={styles.typeDot} style={{ background: TYPE_COLORS[colorKey] }} />}
+                                        {label}
+                                    </td>
+                                    <td className={styles.num}>{side.detail.toLocaleString()}</td>
+                                    <td className={styles.num}>{side.form.toLocaleString()}</td>
+                                    <td className={styles.num}>{side.complete.toLocaleString()}</td>
+                                    <td className={`${styles.num} ${styles.strong}`}>{pct(side.form, side.detail)}</td>
+                                    <td className={styles.num}>{pct(side.complete, side.form)}</td>
+                                    <td className={`${styles.num} ${styles.strong}`}>{pct(side.complete, side.detail)}</td>
+                                </tr>
+                            )
+                            return (
+                                <>
+                                    <p className={styles.periodNote}>
+                                        一覧（検索・職種一覧）閲覧: {routeFunnel.listUsers.toLocaleString()} ユーザー。ここから各種別の詳細へ進んだのが「一覧経由」。
+                                    </p>
+                                    <div className={styles.tableWrapper}>
+                                        <table className={styles.table}>
+                                            <thead>
+                                                <tr>
+                                                    <th>種別 × 経路</th>
+                                                    <th className={styles.num}>求人詳細</th>
+                                                    <th className={styles.num}>→ フォーム</th>
+                                                    <th className={styles.num}>→ 完了</th>
+                                                    <th className={styles.num}>詳細→フォーム</th>
+                                                    <th className={styles.num}>フォーム→完了</th>
+                                                    <th className={styles.num}>詳細→完了</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {routeFunnel.types.flatMap((t) => [
+                                                    row(`${t.label}・一覧経由`, t.viaList, t.key),
+                                                    row(`${t.label}・直接着地`, t.direct, t.key),
+                                                ])}
+                                                {row('合計・一覧経由', routeFunnel.totals.viaList, undefined, true)}
+                                                {row('合計・直接着地', routeFunnel.totals.direct, undefined, true)}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className={styles.tableNote}>
+                                        ※ GA4クローズドファネル（順序付き・country=Japan適用）。詳細=DL__Media__Area__種別、フォーム=EF__種別__Area__Header（ビューラベル基準のため上の求人種別ファネルと同じ定義・視認条件で少なめに出ます）。<br />
+                                        ※ 「直接着地」= 全体 − 一覧経由 の差分推定（両経路を踏んだ人は一覧経由側に計上）。<br />
+                                        ※ 一覧経由（サイト内で比較検討した人）は直接着地よりフォーム遷移率が数倍高い「濃い経路」。直接着地層はその場の応募より会員化（モザイク施策等）が向く、という判断材料になります。
+                                    </p>
+                                </>
+                            )
+                        })()}
                     </div>
 
                     <div className={styles.card}>
