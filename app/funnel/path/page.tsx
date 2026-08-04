@@ -344,7 +344,7 @@ export default function PathFunnelPage() {
                             placeholder="このファネルを保存（名前を入力）"
                             value={saveName}
                             onChange={(e) => setSaveName(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') saveFunnel() }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveFunnel() }}
                         />
                         <button className={styles.addButton} onClick={saveFunnel} disabled={!saveName.trim()}>保存</button>
                         <span className={styles.saveHint}>保存はこのブラウザ内（localStorage）に保持されます</span>

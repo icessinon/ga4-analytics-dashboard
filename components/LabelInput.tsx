@@ -52,7 +52,7 @@ export default function LabelInput({ value, onChange, placeholder, className, re
         } else if (e.key === 'ArrowUp') {
             e.preventDefault()
             setHighlighted((h) => Math.max(h - 1, 0))
-        } else if (e.key === 'Enter' && highlighted >= 0) {
+        } else if (e.key === 'Enter' && highlighted >= 0 && !e.nativeEvent.isComposing) {
             e.preventDefault()
             select(filtered[highlighted])
         } else if (e.key === 'Escape') {

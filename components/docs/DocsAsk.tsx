@@ -60,7 +60,7 @@ export default function DocsAsk() {
                     placeholder="ドキュメントについて質問する（例: 応募CVの定義は？）"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') ask() }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) ask() }}
                     disabled={loading}
                 />
                 <button className={styles.askButton} onClick={() => ask()} disabled={loading || !question.trim()}>

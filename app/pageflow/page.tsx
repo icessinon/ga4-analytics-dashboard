@@ -184,7 +184,7 @@ export default function PageFlowPage() {
                     placeholder="ページパス（前方一致。例: /lp-thanks）"
                     value={pagePath}
                     onChange={(e) => setPagePath(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') analyze() }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) analyze() }}
                 />
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
                     {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
