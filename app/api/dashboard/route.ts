@@ -33,10 +33,15 @@ export async function GET(request: Request) {
             startDate: { lte: monthEnd },
             OR: [{ endDate: null }, { endDate: { gte: monthStart } }],
         }
+        // 完了テストの月次帰属はテスト期間の終了日（endDate）基準。
+        // updatedAt基準だと過去テストを編集しただけで編集月の完了数・勝利数に化ける
         const completedInMonthWhere = {
             ...abTestBaseWhere,
             status: 'completed',
-            updatedAt: { gte: monthStart, lte: monthEnd },
+            OR: [
+                { endDate: { gte: monthStart, lte: monthEnd } },
+                { endDate: null, updatedAt: { gte: monthStart, lte: monthEnd } },
+            ],
         }
 
         const [abTestRunning, abTestPaused, abTestCompleted, abTestVictoryCount, abTestDefeatCount, abTestAddedThisMonth] = await Promise.all([
