@@ -150,6 +150,22 @@ export const FEATURE_LIST: FeatureDoc[] = [
 
     // ── コンバージョン・ファネル ──
     {
+        name: '会員登録フォームファネル',
+        href: '/signup-funnel',
+        category: 'コンバージョン・ファネル',
+        description: '会員登録フォーム（職種選択→各質問→登録完了）の質問別通過状況を view（画面を見た人）と click（回答して進んだ人）の両方で常設表示します。期間内に実際に発火した SU__ ラベルから質問構造を自動復元するため、ABテストのサフィックス（__B-xxxx）やステップ番号の振り直し・質問文変更があってもコード変更なしで追従します。',
+        capabilities: [
+            '職種フォーム別のタブ切り替え（Driver / Soko など、期間内にデータがあるフォームを自動検出）',
+            '質問ごとの view / click / 起点比 / ステップ離脱率（職種選択クリック起点）',
+            'ABテスト変種を質問文ベースで自動統合（変種間でステップ番号がズレていても正しく合算）',
+            '離脱率の色分け（15%以上=赤 / 10%以上=黄）と残存バー',
+            '完走率サマリー（職種選択→登録完了）',
+            '期間切り替え（7 / 14 / 30 / 90日・今月・前月）',
+        ],
+        metrics: ['totalUsers', 'customEvent:view_label', 'customEvent:click_label'],
+        apiRoute: 'POST /api/signup-funnel',
+    },
+    {
         name: 'エントリーフォームファネル',
         href: '/funnel',
         category: 'コンバージョン・ファネル',

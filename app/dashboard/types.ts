@@ -132,6 +132,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
     {
         label: 'ファネル',
         items: [
+            { title: '会員登録フォームファネル', subtitle: '職種選択→各質問→登録完了の通過状況（ラベル変更に自動追従）', getHref: () => '/signup-funnel', productPrefix: true },
             { title: 'エントリーフォームファネル', subtitle: 'フォーム完了までの導線分析', getHref: (id) => id ? `/funnel?productId=${id}` : '/funnel', productPrefix: true },
             { title: 'エンゲージメント', subtitle: 'エンゲージメントファネル分析', getHref: (id) => id ? `/funnel/engagement?productId=${id}` : '/funnel/engagement', productPrefix: true },
             { title: '経路ファネルビルダー', subtitle: 'ページ・クリックタグを組み合わせた順序付きファネルを自由に作成', getHref: () => '/funnel/path', productPrefix: true },
