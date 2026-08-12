@@ -108,6 +108,19 @@
     color: #6b7280;
 }
 
+.summaryYen {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4ade80;
+}
+
+.yenNote {
+    margin: -0.5rem 0 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
 .card {
     background-color: #1f2937;
     border: 1px solid #374151;

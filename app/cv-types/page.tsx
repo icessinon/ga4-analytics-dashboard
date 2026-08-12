@@ -6,6 +6,7 @@ import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import CvTypesTrendChart, { type DailyPoint } from '@/components/cv-types/CvTypesTrendChart'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './CvTypesPage.module.css'
 
 interface JobTypeRow {
@@ -150,7 +151,7 @@ export default function CvTypesPage() {
 
             {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
 
-            <RelatedPages pages={[{ href: '/occupation', label: '職種別CV分析' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
+            <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
@@ -169,6 +170,7 @@ export default function CvTypesPage() {
                             <div key={t.key} className={styles.summaryCard} style={{ borderTopColor: TYPE_COLORS[t.key] }}>
                                 <span className={styles.summaryLabel}>{t.label}（応募完了）</span>
                                 <span className={styles.summaryValue}>{t.completed.toLocaleString()}</span>
+                                <span className={styles.summaryYen}>{formatYenApprox(cvValueYen(t.key, t.completed) ?? 0)}</span>
                                 <span className={styles.summaryHint}>
                                     サイト内フォーム応募の構成比 {totalApply > 0 ? `${((t.completed / totalApply) * 100).toFixed(0)}%` : '－'}
                                 </span>
@@ -177,9 +179,15 @@ export default function CvTypesPage() {
                         <div className={styles.summaryCard} style={{ borderTopColor: TYPE_COLORS.signup }}>
                             <span className={styles.summaryLabel}>会員登録（完了）</span>
                             <span className={styles.summaryValue}>{data.signup.completed.toLocaleString()}</span>
+                            <span className={styles.summaryYen}>{formatYenApprox(cvValueYen('signup', data.signup.completed) ?? 0)}</span>
                             <span className={styles.summaryHint}>フォーム→完了 {pct(data.signup.formToComplete)}</span>
                         </div>
                     </div>
+                    <p className={styles.yenNote}>
+                        ※ 金額 = 期待売上換算（入社済の受注額−返金想定。Salesforce {CV_UNIT_VALUE_ASOF} 算出の係数）:
+                        人材紹介 約5,300円/応募・求人広告 約7,800円/応募（紹介パスアップ成約分のみ、掲載課金は含まず）・ハローワーク 約2,800円/応募・
+                        会員登録 約1.8万円/登録（応募を伴わない単独登録。登録者の2.3%がその後入社）。1件の価値比較用の概算です。
+                    </p>
 
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>求人種別ファネル（求人詳細 → 応募フォーム → 完了）</h2>
@@ -480,6 +488,9 @@ export default function CvTypesPage() {
                                     <div className={styles.summaryCard} style={{ borderTopColor: TYPE_COLORS.signup }}>
                                         <span className={styles.summaryLabel}>登録のみ（単独登録）</span>
                                         <span className={styles.summaryValue}>{actual.signup.standalone != null ? actual.signup.standalone.toLocaleString() : '－'}</span>
+                                        {actual.signup.standalone != null && (
+                                            <span className={styles.summaryYen}>{formatYenApprox(cvValueYen('signup', actual.signup.standalone) ?? 0)}</span>
+                                        )}
                                         <span className={styles.summaryHint}>会員登録フォーム完了（GA4 thanks到達）</span>
                                     </div>
                                     <div className={styles.summaryCard} style={{ borderTopColor: '#f87171' }}>

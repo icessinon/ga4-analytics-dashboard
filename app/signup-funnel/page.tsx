@@ -5,6 +5,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './SignupFunnelPage.module.css'
 
 interface QuestionRow {
@@ -113,7 +114,7 @@ export default function SignupFunnelPage() {
 
             {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
 
-            <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析（応募ファネル）' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/journey', label: 'ユーザー経路分析' }]} />
+            <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/cv-types', label: '求人種別CV分析（応募ファネル）' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/journey', label: 'ユーザー経路分析' }]} />
 
             <div className={styles.controls}>
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
@@ -152,7 +153,10 @@ export default function SignupFunnelPage() {
                         <div className={styles.summaryCard}>
                             <span className={styles.summaryLabel}>登録完了</span>
                             <span className={styles.summaryValue}>{completed.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>最終ステップの完了クリック</span>
+                            <span className={styles.summaryYen}>{formatYenApprox(cvValueYen('signup', completed) ?? 0)}</span>
+                            <span className={styles.summaryHint}>
+                                最終ステップの完了クリック／金額は期待売上換算（約1.8万円/登録、SF {CV_UNIT_VALUE_ASOF} 算出）
+                            </span>
                         </div>
                         <div className={styles.summaryCard}>
                             <span className={styles.summaryLabel}>完走率</span>
