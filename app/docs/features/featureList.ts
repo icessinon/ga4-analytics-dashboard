@@ -333,6 +333,21 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/line-report',
     },
     {
+        name: 'SEOモニタ',
+        href: '/seo-report',
+        category: 'レポート・データ',
+        description: 'Search Console（sc-domain:x-work.jp）の掲載順位・表示回数・CTR・クリックをページカテゴリ別に常時監視。施策（モザイク・モーダル・FV変更等）のSEO影響を「対象カテゴリ vs 非対象カテゴリの前後比較（DiD）」で判定するための基盤。',
+        capabilities: [
+            '全体サマリー（クリック・表示回数・CTR・平均順位）と前期間比',
+            'ページカテゴリ別（求人詳細/検索・一覧/資格条件/TOP/コラム）の前期間比較。施策を当てたカテゴリだけ悪化→施策影響、全カテゴリ一斉変動→アルゴリズム更新、の切り分けができる',
+            '日別推移（クリックバー・表示回数・平均順位）と上位検索クエリ',
+            'GSCデータの2〜3日ラグを考慮した期間設計（終端は3日前）。SEO反映は2〜6週かかる旨の注意書きつき',
+            'SA（ai-product-dashboard@hrs-div）をSearch Consoleにユーザー追加して接続（2026-08-12設定）',
+        ],
+        metrics: ['clicks', 'impressions', 'ctr', 'position'],
+        apiRoute: 'POST /api/seo-report',
+    },
+    {
         name: '月次インサイトレポート',
         href: '/insights',
         category: 'レポート・データ',

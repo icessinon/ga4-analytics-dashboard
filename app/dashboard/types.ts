@@ -127,6 +127,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: '求人種別CV分析', subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較', getHref: () => '/cv-types', productPrefix: true },
             { title: 'CV単価・お金まわり', subtitle: '応募・会員登録1件の期待売上と期間CVの金額換算（施策の価値比較用）', getHref: () => '/cv-value', productPrefix: true },
             { title: 'LINE配信レポート', subtitle: 'LINE経由の再訪・CV・円換算と週次おすすめ配信の実績', getHref: () => '/line-report', productPrefix: true },
+            { title: 'SEOモニタ', subtitle: 'Search Consoleの順位・表示回数・CTRをページカテゴリ別に監視（施策のSEO影響判定）', getHref: () => '/seo-report' },
             { title: 'スカウト効果ファネル', subtitle: 'スカウト送信→閲覧→応募のファネルと企業別内訳', getHref: () => '/scout', productPrefix: true },
             { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
         ],
