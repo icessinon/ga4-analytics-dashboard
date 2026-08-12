@@ -19,7 +19,8 @@ interface LineReportResponse {
     daily: DailyRow[]
     cv: { applyCv: number; lpApplyCv: number; signupCv: number }
     deliveries: DeliveryRow[] | null
-    deliveryAccess: boolean
+    deliverySource: 'live' | 'snapshot'
+    snapshotAsOf: string
 }
 
 const PERIOD_OPTIONS = [
@@ -113,7 +114,9 @@ export default function LineReportPage() {
                         <div className={styles.summaryCard}>
                             <span className={styles.summaryLabel}>LINE連携者（最新配信時点）</span>
                             <span className={styles.summaryValue}>{latestDelivery ? latestDelivery.linked.toLocaleString() : '－'}</span>
-                            <span className={styles.summaryHint}>{latestDelivery ? `配信成功 ${latestDelivery.success.toLocaleString()}人` : 'BQ権限付与後に表示'}</span>
+                            <span className={styles.summaryHint}>
+                                {latestDelivery ? `配信成功 ${latestDelivery.success.toLocaleString()}人${data.deliverySource === 'snapshot' ? `（${data.snapshotAsOf}時点）` : ''}` : '－'}
+                            </span>
                         </div>
                         <div className={styles.summaryCard}>
                             <span className={styles.summaryLabel}>LINE経由の再訪ユーザー</span>
@@ -160,11 +163,10 @@ export default function LineReportPage() {
 
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>おすすめ求人LINE配信の実績（週次・BQ）</h2>
-                        {!data.deliveryAccess && (
+                        {data.deliverySource === 'snapshot' && (
                             <div className={styles.notice}>
-                                BQテーブル <code>xmile-drm.xwork.line_job_recommendation_unit_stats</code> への閲覧権限がありません。<br />
-                                サービスアカウント <strong>ai-product-dashboard@hrs-div.iam.gserviceaccount.com</strong> に
-                                xmile-drm プロジェクトの xwork データセットの「BigQuery データ閲覧者」を付与すると、このセクションに配信実績（連携者数の推移・配信成功・スキップ内訳）が表示されます。
+                                {data.snapshotAsOf} 時点のスナップショット表示です（配信は毎週火曜のため次回配信まで最新）。
+                                SA（ai-product-dashboard@hrs-div.iam.gserviceaccount.com）に xmile-drm の xwork データセット閲覧権限が付与されると、自動でライブ表示に切り替わります。
                             </div>
                         )}
                         {data.deliveries && (

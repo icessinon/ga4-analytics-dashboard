@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { bqListExternalTableRows } from '@/lib/bq/client'
+import { LINE_DELIVERY_SNAPSHOT, LINE_DELIVERY_SNAPSHOT_ASOF } from '@/lib/constants/lineDeliverySnapshot'
 import { parseDateString } from '@/lib/utils/date'
 
 /**
@@ -85,9 +86,9 @@ export async function POST(request: Request) {
             }
         }
 
-        // 配信実績（週次）。権限がなければ null（UI側で案内表示）
+        // 配信実績（週次）。BQ権限がない間はスナップショット（nitta権限のMCP経由で取得した静的データ）にフォールバック
         const deliveryRows = await bqListExternalTableRows('xmile-drm', 'xwork', 'line_job_recommendation_unit_stats', 500)
-        const deliveries = deliveryRows
+        const live = deliveryRows
             ?.map((r) => ({
                 unit: r.unit ?? '',
                 date: (r.unit ?? '').replace('job_recommendation_', ''),
@@ -98,6 +99,12 @@ export async function POST(request: Request) {
                 error: parseInt(r.error_user_count ?? '0', 10),
             }))
             .sort((a, b) => b.date.localeCompare(a.date)) ?? null
+        const snapshot = LINE_DELIVERY_SNAPSHOT
+            .map(([date, linked, optOut, noJobs, success, error]) => ({
+                unit: `job_recommendation_${date}`, date, linked, success, optOut, noJobs, error,
+            }))
+            .sort((a, b) => b.date.localeCompare(a.date))
+        const deliveries = live ?? snapshot
 
         return NextResponse.json({
             success: true,
@@ -107,7 +114,8 @@ export async function POST(request: Request) {
             daily: dailyRows,
             cv,
             deliveries,
-            deliveryAccess: deliveries != null,
+            deliverySource: live ? 'live' : 'snapshot',
+            snapshotAsOf: LINE_DELIVERY_SNAPSHOT_ASOF,
             fetchedAt: new Date().toISOString(),
         })
     } catch (error) {
