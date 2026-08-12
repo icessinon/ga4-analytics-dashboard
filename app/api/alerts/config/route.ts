@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/client'
 import { DEFAULT_ALERT_CONFIG } from '@/lib/services/alerts/cvDropAlertService'
 
-const VALID_METRICS = ['sessions', 'applyCv', 'lpApplyCv', 'signupCv', 'cvr']
+const VALID_METRICS = ['sessions', 'applyCv', 'lpApplyCv', 'signupCv', 'cvr', 'pageSegments', 'cvChannelSegments']
 
 /** 全プロダクトのアラート設定を返す（未設定のプロダクトはデフォルト値） */
 export async function GET() {

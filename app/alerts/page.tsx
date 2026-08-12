@@ -21,6 +21,8 @@ const METRIC_OPTIONS: Array<{ key: string; label: string }> = [
     { key: 'lpApplyCv', label: 'LP応募CV' },
     { key: 'signupCv', label: '会員登録CV' },
     { key: 'cvr', label: '全体CVR' },
+    { key: 'pageSegments', label: 'ページカテゴリ別の急増・急落（求人詳細・検索/一覧・TOP・コラム・各フォーム）' },
+    { key: 'cvChannelSegments', label: 'CV種別×チャネル別の急増・急落（例: 会員登録CV×Organic Search）' },
 ]
 const ALL_METRIC_KEYS = METRIC_OPTIONS.map((m) => m.key)
 
@@ -81,6 +83,8 @@ export default function AlertSettingsPage() {
                     <h1 className={styles.title}>CV急落アラート設定</h1>
                     <p className={styles.subtitle}>
                         毎日 09:30 JST に前日の指標を過去8週の同一曜日の中央値と比較し、しきい値以上下落した場合に Slack に通知します。
+                        セグメント監視（ページカテゴリ別・CV×チャネル別）は下落に加えて急増（+50%以上、環境変数 CV_SPIKE_ALERT_THRESHOLD で変更可）も通知します。
+                        %しきい値に加えて統計ガード（中央値からポアソン3σ以上の乖離）を必須にしているため、件数が小さい指標・セグメントの日次ゆらぎでは発火しません。
                     </p>
                 </div>
                 <BackLink href="/">ダッシュボード</BackLink>

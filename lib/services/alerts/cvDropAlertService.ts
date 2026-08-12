@@ -2,6 +2,10 @@ import { prisma } from '@/lib/db/client'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { generateCvDropCauseHypothesis, type DropDrilldown, type DropSegment } from '@/lib/api/gemini/cvDropCause'
+import {
+    detectSegmentAnomalies, buildSegmentAnomalyBlocks, SPIKE_THRESHOLD,
+    type SegmentAnomaly, type SegmentAnomalyConfig,
+} from './segmentAnomalyService'
 
 // x-work.jpのサンクスページ定義（insights と同じ）: 応募CV / LP応募CV / 会員登録CV
 export const CV_PAGE_PREFIXES = {
@@ -18,6 +22,9 @@ export const METRIC_LABELS: Record<string, string> = {
     signupCv: '会員登録CV',
     cvr: '全体CVR（CV合計÷セッション）',
 }
+
+// セグメント監視の擬似指標キー（AlertConfig.metrics のトグルで使う。全体指標のdetectDropsでは判定しない）
+export const SEGMENT_METRIC_KEYS = ['pageSegments', 'cvChannelSegments'] as const
 
 // 前日値がベースライン（過去8週の同一曜日の中央値）からこれ以上下落したら通知
 // 求人サービスは曜日変動が大きいため、直近7日平均ではなく同一曜日で比較する。
@@ -47,6 +54,8 @@ export interface ProductAlertResult {
     alerts: CvDropAlert[]
     drilldowns?: DropDrilldown[]
     aiHypothesis?: string | null
+    /** セグメント別（ページカテゴリ・CV×チャネル）の急増・急落 */
+    segmentAnomalies?: SegmentAnomaly[]
 }
 
 interface DailyMetrics {
@@ -140,18 +149,26 @@ function detectDrops(days: DailyMetrics[], config: AlertConfigValues): { targetD
     const totalCv = (d: DailyMetrics) => d.cv.applyCv + d.cv.lpApplyCv + d.cv.signupCv
     const cvr = (d: DailyMetrics) => (d.sessions > 0 ? totalCv(d) / d.sessions : 0)
 
-    const checks: Array<{ metric: string; yesterday: number; baselineAvg: number; minBaseline: number }> = [
-        { metric: 'sessions', yesterday: yesterday.sessions, baselineAvg: median(baseline.map((d) => d.sessions)), minBaseline: config.minSessions },
-        { metric: 'applyCv', yesterday: yesterday.cv.applyCv, baselineAvg: median(baseline.map((d) => d.cv.applyCv)), minBaseline: config.minCv },
-        { metric: 'lpApplyCv', yesterday: yesterday.cv.lpApplyCv, baselineAvg: median(baseline.map((d) => d.cv.lpApplyCv)), minBaseline: config.minCv },
-        { metric: 'signupCv', yesterday: yesterday.cv.signupCv, baselineAvg: median(baseline.map((d) => d.cv.signupCv)), minBaseline: config.minCv },
-        { metric: 'cvr', yesterday: cvr(yesterday), baselineAvg: median(baseline.map(cvr)), minBaseline: MIN_BASELINE.cvr },
+    // 統計ガード: 件数データの日次ゆらぎは±√n程度あり、%しきい値だけだと中央値が小さい指標
+    // （例: 応募CVは日次十数件）がノイズで発火し続ける。ポアソン近似で3σ以上の乖離を必須にする。
+    // CVR（比率）は「昨日のセッション数×ベースラインCVRから期待されるCV数」と実CV数の乖離で判定する
+    const sigmaOk = (yesterdayCount: number, expectedCount: number) =>
+        expectedCount <= 0 || Math.abs(yesterdayCount - expectedCount) >= 3 * Math.sqrt(expectedCount)
+
+    const baselineCvr = median(baseline.map(cvr))
+    const checks: Array<{ metric: string; yesterday: number; baselineAvg: number; minBaseline: number; passesSigma: boolean }> = [
+        { metric: 'sessions', yesterday: yesterday.sessions, baselineAvg: median(baseline.map((d) => d.sessions)), minBaseline: config.minSessions, passesSigma: sigmaOk(yesterday.sessions, median(baseline.map((d) => d.sessions))) },
+        { metric: 'applyCv', yesterday: yesterday.cv.applyCv, baselineAvg: median(baseline.map((d) => d.cv.applyCv)), minBaseline: config.minCv, passesSigma: sigmaOk(yesterday.cv.applyCv, median(baseline.map((d) => d.cv.applyCv))) },
+        { metric: 'lpApplyCv', yesterday: yesterday.cv.lpApplyCv, baselineAvg: median(baseline.map((d) => d.cv.lpApplyCv)), minBaseline: config.minCv, passesSigma: sigmaOk(yesterday.cv.lpApplyCv, median(baseline.map((d) => d.cv.lpApplyCv))) },
+        { metric: 'signupCv', yesterday: yesterday.cv.signupCv, baselineAvg: median(baseline.map((d) => d.cv.signupCv)), minBaseline: config.minCv, passesSigma: sigmaOk(yesterday.cv.signupCv, median(baseline.map((d) => d.cv.signupCv))) },
+        { metric: 'cvr', yesterday: cvr(yesterday), baselineAvg: baselineCvr, minBaseline: MIN_BASELINE.cvr, passesSigma: sigmaOk(totalCv(yesterday), baselineCvr * yesterday.sessions) },
     ]
 
     const alerts: CvDropAlert[] = []
     for (const c of checks) {
         if (config.metrics && !config.metrics.includes(c.metric)) continue
         if (c.baselineAvg < c.minBaseline) continue
+        if (!c.passesSigma) continue
         const dropRate = (c.baselineAvg - c.yesterday) / c.baselineAvg
         if (dropRate >= config.dropThreshold) {
             alerts.push({
@@ -363,6 +380,31 @@ export async function checkCvDropAndNotify(): Promise<ProductAlertResult[]> {
                 } catch (err) {
                     console.error(`[cvDropAlert] product ${product.id} ドリルダウン失敗:`, err instanceof Error ? err.message : err)
                 }
+            }
+            // セグメント別（ページカテゴリ・CV×チャネル）の急増・急落。全体指標とは独立に判定・通知する
+            try {
+                const segConfig: SegmentAnomalyConfig = {
+                    dropThreshold: config.dropThreshold,
+                    spikeThreshold: SPIKE_THRESHOLD,
+                    minPageUsers: config.minSessions,
+                    minCv: config.minCv,
+                    checkPageSegments: !config.metrics || config.metrics.includes('pageSegments'),
+                    checkCvChannels: !config.metrics || config.metrics.includes('cvChannelSegments'),
+                }
+                if (segConfig.checkPageSegments || segConfig.checkCvChannels) {
+                    const seg = await detectSegmentAnomalies(product.ga4PropertyId as string, accessToken, segConfig)
+                    if (seg && seg.anomalies.length > 0) {
+                        result.segmentAnomalies = seg.anomalies
+                        if (webhookUrl) {
+                            await sendSlackNotification(
+                                [webhookUrl],
+                                buildSegmentAnomalyBlocks(product.name, seg.targetDate, seg.baselineDates.length, seg.anomalies, segConfig)
+                            )
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(`[cvDropAlert] product ${product.id} セグメント検知失敗:`, err instanceof Error ? err.message : err)
             }
             results.push(result)
             if (detected.alerts.length > 0 && webhookUrl) {
