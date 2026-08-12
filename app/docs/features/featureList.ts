@@ -318,6 +318,21 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/cv-types, POST /api/applications/actual（既存APIを再利用）',
     },
     {
+        name: 'LINE配信レポート',
+        href: '/line-report',
+        category: 'レポート・データ',
+        description: 'LINE経由（utm_medium=line）の再訪・CV・期待売上換算と、おすすめ求人LINE配信（毎週火曜・連携者向けFlexカルーセル）の週次実績を常設表示。LINE施策（配信頻度AB・連携率改善等）の判定基盤。',
+        capabilities: [
+            'LINE経由の再訪ユーザー・セッション・CV（応募/LP応募/会員登録）と円換算（CV単価係数）',
+            'utm_source別内訳（product=週次おすすめ配信 / ca / scout 等）',
+            '週次配信実績（BQ xmile-drm.xwork.line_job_recommendation_unit_stats）: 連携者数の推移・配信成功・受取拒否率・求人マッチなし。※write SAにxmile-drmの閲覧権限が必要（未付与時は付与手順を画面に表示）',
+            '日別再訪の簡易バーチャート（火曜配信ピークの確認・配信頻度ABの健全性監視用）',
+            'クリック統計（LINE Insight）はdrm-front側でBQ未連携のため未対応（連携後に追加予定）',
+        ],
+        metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium'],
+        apiRoute: 'POST /api/line-report',
+    },
+    {
         name: '月次インサイトレポート',
         href: '/insights',
         category: 'レポート・データ',

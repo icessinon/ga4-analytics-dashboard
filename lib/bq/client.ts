@@ -79,6 +79,46 @@ export async function bqListTableRows(
   return rows
 }
 
+/**
+ * 他プロジェクトのBQテーブルを読む（write SAに対象データセットの閲覧権限が必要）。
+ * 権限がない場合は null を返す（呼び出し側でグレースフルに扱う）。
+ */
+export async function bqListExternalTableRows(
+  projectId: string,
+  datasetId: string,
+  tableId: string,
+  maxRows = 1000,
+): Promise<Record<string, string | null>[] | null> {
+  const client = await getWriteAuth().getClient()
+  const bq = google.bigquery({ version: 'v2', auth: client as never })
+  try {
+    const table = await bq.tables.get({ projectId, datasetId, tableId })
+    const fields = table.data.schema?.fields ?? []
+    const rows: Record<string, string | null>[] = []
+    let pageToken: string | undefined
+    while (rows.length < maxRows) {
+      const res = await bq.tabledata.list({
+        projectId, datasetId, tableId,
+        maxResults: Math.min(500, maxRows - rows.length),
+        ...(pageToken && { pageToken }),
+      })
+      for (const row of res.data.rows ?? []) {
+        const obj: Record<string, string | null> = {}
+        row.f?.forEach((cell, i) => {
+          obj[fields[i]?.name ?? `col${i}`] = cell.v != null ? String(cell.v) : null
+        })
+        rows.push(obj)
+      }
+      pageToken = res.data.pageToken ?? undefined
+      if (!pageToken) break
+    }
+    return rows
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes('Access Denied') || err.message.includes('Permission'))) return null
+    throw err
+  }
+}
+
 export async function bqInsertAll(
   tableId: string,
   rows: { insertId: string; json: object }[],
