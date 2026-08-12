@@ -118,6 +118,8 @@ export default function AbTestFormModal({
     const [baselineCvr, setBaselineCvr] = useState('')
     const [dailyPv, setDailyPv] = useState('')
     const [funnelSteps, setFunnelSteps] = useState<FunnelStepForm[]>([])
+    // SEO監視対象パス（カンマ区切りの正規表現）。ga4Config.seoWatchPaths に string[] で保存
+    const [seoWatchPaths, setSeoWatchPaths] = useState('')
 
     const updateFunnelStep = (index: number, patch: Partial<FunnelStepForm>) => {
         setFunnelSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -248,8 +250,10 @@ export default function AbTestFormModal({
                     labelsC: joinFunnelLabels(s.labels?.C),
                     labelsD: joinFunnelLabels(s.labels?.D),
                 })))
+                setSeoWatchPaths(((config.seoWatchPaths as string[]) ?? []).join(', '))
             } else {
                 setFunnelSteps([])
+                setSeoWatchPaths('')
             }
 
             if (editingTest.scheduleConfig) {
@@ -277,6 +281,7 @@ export default function AbTestFormModal({
             setTestError(null)
             setTesting(false)
             setFunnelSteps([])
+            setSeoWatchPaths('')
             setScheduleConfig({
                 enabled: true,
                 executionType: 'on_end',
@@ -522,6 +527,10 @@ export default function AbTestFormModal({
             })(),
             abTestEvaluationConfig: ga4Config.abTestEvaluationConfig,
             geminiConfig: ga4Config.geminiConfig,
+            seoWatchPaths: (() => {
+                const paths = seoWatchPaths.split(',').map((s) => s.trim()).filter(Boolean)
+                return paths.length > 0 ? paths : undefined
+            })(),
         }
 
             await onSubmit({
@@ -762,6 +771,20 @@ export default function AbTestFormModal({
                                 />
                                 <p className={styles.helpText}>
                                     カンマ区切りで複数指定すると、いずれかに一致するものをすべて除外します。
+                                </p>
+                            </div>
+                            <div>
+                                <label className={styles.label}>SEO監視対象パス（任意・正規表現）</label>
+                                <input
+                                    type="text"
+                                    value={seoWatchPaths}
+                                    onChange={(e) => setSeoWatchPaths(e.target.value)}
+                                    className={styles.input}
+                                    placeholder="/(driver|sekokan)/media_.*, /search"
+                                />
+                                <p className={styles.helpText}>
+                                    テスト対象ページのパス（カンマ区切り・正規表現可）。指定するとテスト期間中、Search Consoleで対象ページの順位・クリックを毎日監視し、
+                                    非対象ページと比べて悪化した場合にSlack通知します（毎週月曜は異常なしでもサマリー配信）。
                                 </p>
                             </div>
                         </div>

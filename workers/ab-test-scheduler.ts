@@ -85,6 +85,31 @@ cron.schedule('0 30 9 * * *', async () => {
     timezone: 'Asia/Tokyo',
 })
 
+// ABテストSEO監視: 毎日 10:00 JST に実行中テストの対象ページ（ga4Config.seoWatchPaths）の
+// GSC実績をサイト全体と対照比較（DiD）。悪化検知時は即日通知、月曜は異常なしでも週次サマリーを配信
+cron.schedule('0 0 10 * * *', async () => {
+    try {
+        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (process.env.INTERNAL_API_SECRET) headers['x-internal-secret'] = process.env.INTERNAL_API_SECRET
+        const weekly = new Date().getDay() === 1 // 月曜
+        const response = await fetch(`${appUrl}/api/alerts/seo-watch`, {
+            method: 'POST', headers, body: JSON.stringify({ weekly }),
+        })
+        if (!response.ok) {
+            console.error(`[SEO Watch] HTTPエラー: ${response.status} ${response.statusText}`)
+            return
+        }
+        const data = await response.json() as { results?: Array<{ status: string }> }
+        const alerts = (data.results ?? []).filter((r) => r.status === 'alert').length
+        console.log(`[SEO Watch] ${new Date().toISOString()} チェック完了: 対象${(data.results ?? []).length}件 / アラート${alerts}件`)
+    } catch (error) {
+        console.error('[SEO Watch] 実行エラー:', error)
+    }
+}, {
+    timezone: 'Asia/Tokyo',
+})
+
 // 週次AIサマリー: 毎週月曜 09:00 JST に先週KPI・チャネル変動・ABテスト途中経過をSlack配信
 cron.schedule('0 0 9 * * 1', async () => {
     try {

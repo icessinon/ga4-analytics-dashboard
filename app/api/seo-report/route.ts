@@ -59,8 +59,12 @@ interface CategoryStat {
 
 export async function POST(request: Request) {
     try {
-        const { days = 28 } = await request.json().catch(() => ({}))
+        const { days = 28, pathFilter = '' } = await request.json().catch(() => ({})) as { days?: number; pathFilter?: string }
         const nDays = Math.min(180, Math.max(7, Number(days) || 28))
+        // 任意のパス正規表現でURL群を絞り込む（例: /(driver)/media_.* や /search）。全体サマリー・日別・クエリ・URL表に適用
+        const pathFilters: GscFilter[] = pathFilter && typeof pathFilter === 'string' && pathFilter.trim()
+            ? [{ dimension: 'page', operator: 'includingRegex', expression: `^https://x-work\\.jp(${pathFilter.trim()})` }]
+            : []
         // GSCは2〜3日ラグがあるため3日前を終端に
         const end = new Date()
         end.setDate(end.getDate() - 3)
@@ -75,17 +79,36 @@ export async function POST(request: Request) {
         const range = { startDate: fmt(start), endDate: fmt(end) }
         const prevRange = { startDate: fmt(prevStart), endDate: fmt(prevEnd) }
 
-        // 全体日別 + 上位クエリ + カテゴリ別（当期・前期）を並列取得
-        const [daily, topQueries, totalNow, totalPrev, ...catResults] = await Promise.all([
-            gscQuery({ ...range, dimensions: ['date'], rowLimit: 200 }),
-            gscQuery({ ...range, dimensions: ['query'], rowLimit: 15 }),
-            gscQuery({ ...range, dimensions: [] }),
-            gscQuery({ ...prevRange, dimensions: [] }),
+        // 全体日別 + 上位クエリ + 上位ページ(当期・前期) + カテゴリ別（当期・前期）を並列取得
+        const [daily, topQueries, topPagesNow, topPagesPrev, totalNow, totalPrev, ...catResults] = await Promise.all([
+            gscQuery({ ...range, dimensions: ['date'], rowLimit: 200, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            gscQuery({ ...range, dimensions: ['query'], rowLimit: 15, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            gscQuery({ ...range, dimensions: ['page'], rowLimit: 20, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            gscQuery({ ...prevRange, dimensions: ['page'], rowLimit: 500, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            gscQuery({ ...range, dimensions: [], ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            gscQuery({ ...prevRange, dimensions: [], ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             ...PAGE_CATEGORIES.flatMap((c) => [
                 gscQuery({ ...range, dimensions: [], filters: c.filters }),
                 gscQuery({ ...prevRange, dimensions: [], filters: c.filters }),
             ]),
         ])
+
+        const prevByPage = new Map<string, { clicks: number; position: number | null }>()
+        for (const r of topPagesPrev) {
+            prevByPage.set(r.keys?.[0] ?? '', { clicks: r.clicks ?? 0, position: r.position ?? null })
+        }
+        const topPages = topPagesNow.map((r) => {
+            const url = r.keys?.[0] ?? ''
+            const prev = prevByPage.get(url)
+            return {
+                path: url.replace(/^https:\/\/[^/]+/, '') || url,
+                clicks: r.clicks ?? 0,
+                impressions: r.impressions ?? 0,
+                position: r.position ?? null,
+                prevClicks: prev?.clicks ?? 0,
+                prevPosition: prev?.position ?? null,
+            }
+        })
 
         const categories: CategoryStat[] = PAGE_CATEGORIES.map((c, i) => {
             const now = catResults[i * 2]?.[0]
@@ -107,6 +130,8 @@ export async function POST(request: Request) {
             success: true,
             range,
             prevRange,
+            pathFilter: pathFilter?.trim() || null,
+            topPages,
             total: {
                 clicks: totalNow[0]?.clicks ?? 0,
                 impressions: totalNow[0]?.impressions ?? 0,

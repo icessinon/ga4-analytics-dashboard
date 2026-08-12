@@ -23,10 +23,13 @@ interface CategoryStat extends TotalStat {
 
 interface DailyRow { date: string; clicks: number; impressions: number; position: number | null }
 interface QueryRow { query: string; clicks: number; impressions: number; position: number | null }
+interface PageRow { path: string; clicks: number; impressions: number; position: number | null; prevClicks: number; prevPosition: number | null }
 
 interface SeoReportResponse {
     range: { startDate: string; endDate: string }
     prevRange: { startDate: string; endDate: string }
+    pathFilter: string | null
+    topPages: PageRow[]
     total: TotalStat
     daily: DailyRow[]
     categories: CategoryStat[]
@@ -54,6 +57,8 @@ function posDiff(now: number | null, prev: number | null): string {
 
 export default function SeoReportPage() {
     const [days, setDays] = useState(28)
+    const [pathInput, setPathInput] = useState('')
+    const [pathFilter, setPathFilter] = useState('')
     const [data, setData] = useState<SeoReportResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -65,7 +70,7 @@ export default function SeoReportPage() {
             const res = await fetch('/api/seo-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ days }),
+                body: JSON.stringify({ days, pathFilter }),
             })
             const json = await parseJsonResponse<SeoReportResponse & { error?: string }>(res)
             if (!res.ok) throw new Error(json.error || '取得に失敗しました')
@@ -76,7 +81,7 @@ export default function SeoReportPage() {
         } finally {
             setLoading(false)
         }
-    }, [days])
+    }, [days, pathFilter])
 
     useEffect(() => { load() }, [load])
 
@@ -101,9 +106,22 @@ export default function SeoReportPage() {
                 <select className={styles.select} value={days} onChange={(e) => setDays(Number(e.target.value))}>
                     {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                <input
+                    type="text"
+                    className={styles.select}
+                    style={{ minWidth: '20rem' }}
+                    value={pathInput}
+                    onChange={(e) => setPathInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setPathFilter(pathInput) }}
+                    placeholder="パスで絞り込み（正規表現可）: /(driver)/media_.* など"
+                    aria-label="パスフィルタ"
+                />
+                <button type="button" className={styles.select} onClick={() => setPathFilter(pathInput)}>適用</button>
+                {pathFilter && <button type="button" className={styles.select} onClick={() => { setPathInput(''); setPathFilter('') }}>解除</button>}
                 {data && (
                     <span className={styles.periodNote}>
-                        集計期間: {data.range.startDate} 〜 {data.range.endDate}（前期間 {data.prevRange.startDate}〜{data.prevRange.endDate} と比較。GSCは2〜3日遅れ）
+                        集計期間: {data.range.startDate} 〜 {data.range.endDate}（前期間比較・GSCは2〜3日遅れ）
+                        {data.pathFilter && <strong>／ フィルタ適用中: {data.pathFilter}</strong>}
                     </span>
                 )}
             </div>
@@ -172,6 +190,42 @@ export default function SeoReportPage() {
                             ※ 順位変化はマイナスが改善（例: -0.5 = 平均0.5位上昇）。<br />
                             ※ 施策のSEO影響判定: 施策を当てたカテゴリだけが悪化し、他カテゴリが横ばいなら施策影響の疑い。全カテゴリ一斉に動いたらアルゴリズム更新・季節要因。<br />
                             ※ SEOの反映はクロール→再評価で2〜6週間かかるため、リリース直後の数日で判断しないこと。
+                        </p>
+                    </div>
+
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>上位ページ（URL別・前期間比つき）</h2>
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>パス</th>
+                                        <th className={styles.num}>クリック</th>
+                                        <th className={styles.num}>前期間</th>
+                                        <th className={styles.num}>変化</th>
+                                        <th className={styles.num}>表示回数</th>
+                                        <th className={styles.num}>平均順位</th>
+                                        <th className={styles.num}>順位変化</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.topPages.map((p) => (
+                                        <tr key={p.path}>
+                                            <td style={{ maxWidth: '24rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.path}</td>
+                                            <td className={`${styles.num} ${styles.strong}`}>{p.clicks.toLocaleString()}</td>
+                                            <td className={styles.num}>{p.prevClicks.toLocaleString()}</td>
+                                            <td className={styles.num}>{diffPct(p.clicks, p.prevClicks)}</td>
+                                            <td className={styles.num}>{p.impressions.toLocaleString()}</td>
+                                            <td className={styles.num}>{p.position != null ? p.position.toFixed(1) : '－'}</td>
+                                            <td className={styles.num}>{posDiff(p.position, p.prevPosition)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className={styles.tableNote}>
+                            ※ 当期クリック上位20URL。パスフィルタを使うと特定の施策対象URL群（例: ABテスト対象の職種詳細だけ）に絞って
+                            サマリー・日別・クエリ・この表すべてが再集計されます。
                         </p>
                     </div>
 
