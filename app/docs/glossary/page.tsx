@@ -206,6 +206,8 @@ export default function GlossaryPage() {
                     <li><strong>2026-06/16〜26 シンガポールbot</strong>: Tencent Cloud SG（ACEVILLE PTE.LTD.）の分散スクレイパーが約28万セッション（日本とほぼ同規模）。CV影響ゼロ。対策として全GA4クエリに国=日本フィルタ導入済み（docs/bot-traffic-analysis-2026-07-13.md）</li>
                     <li><strong>2026-07 応募→Salesforce連携（Zapier）の断続停止</strong>: 新規応募者でOwner Id空→クラッシュ→自動停止が頻発し、「自然応募が急減」に見えるデータ欠落が発生。修正済み。SFの応募数を見るときは連携欠落の可能性を疑うこと</li>
                     <li><strong>GA4のトラフィックデータは2026-05以降のみ</strong>。キーイベント未設定のため、CVはすべてページ/ラベルベースで計測</li>
+                    <li><strong>2026-08-11〜 Unassignedインシデント（調査中）</strong>: セッションの40%超がsource欠落の孤児セッション化（session_startなしでカスタムイベントのみ到達）。GTM変更疑い。解決までチャネル別数値・セッション数は信頼不可</li>
+                    <li><strong>2026-08-13 社内IPの内部トラフィック除外を有効化</strong>: 分析用プロパティ（534098180）にESS・LCD・中野坂上の5 IPを登録しデータフィルタを有効化（それまで社内アクセス＝ページ閲覧の約2%が計測に混入）。マーケ側（351088797）も既存「東京（ESS）」ルールに5 IPを追加。<strong>この日以降PVは約2%減・CVRは微増して見える</strong>（前後比較時は注意）</li>
                 </ul>
             </Section>
 
