@@ -8,11 +8,14 @@ import type { FeatureDoc } from './featureList'
 import styles from './FeatureDocs.module.css'
 
 const CATEGORY_COLORS: Record<string, { border: string; bg: string; label: string }> = {
-    'ユーザー分析':             { border: '#818cf8', bg: 'rgba(99,102,241,0.08)',  label: '#818cf8' },
-    '経路・離脱分析':           { border: '#f87171', bg: 'rgba(248,113,113,0.08)', label: '#f87171' },
-    'コンバージョン・ファネル': { border: '#34d399', bg: 'rgba(52,211,153,0.08)',  label: '#34d399' },
+    'KPI・レポート':            { border: '#60a5fa', bg: 'rgba(96,165,250,0.08)',  label: '#60a5fa' },
+    'CV分析':                   { border: '#4ade80', bg: 'rgba(74,222,128,0.08)',  label: '#4ade80' },
+    'チャネル・集客':           { border: '#22d3ee', bg: 'rgba(34,211,238,0.08)',  label: '#22d3ee' },
     'ABテスト':                 { border: '#fbbf24', bg: 'rgba(251,191,36,0.08)',  label: '#fbbf24' },
-    'レポート・データ':         { border: '#60a5fa', bg: 'rgba(96,165,250,0.08)',  label: '#60a5fa' },
+    'コンバージョン・ファネル': { border: '#34d399', bg: 'rgba(52,211,153,0.08)',  label: '#34d399' },
+    '可視化・経路分析':         { border: '#f87171', bg: 'rgba(248,113,113,0.08)', label: '#f87171' },
+    'ユーザー分析':             { border: '#818cf8', bg: 'rgba(99,102,241,0.08)',  label: '#818cf8' },
+    'データ・ツール':           { border: '#9ca3af', bg: 'rgba(156,163,175,0.08)', label: '#9ca3af' },
 }
 
 function AIBadge() {
@@ -24,7 +27,7 @@ function AIBadge() {
 }
 
 function FeatureCard({ feature }: { feature: FeatureDoc }) {
-    const color = CATEGORY_COLORS[feature.category] ?? CATEGORY_COLORS['レポート・データ']
+    const color = CATEGORY_COLORS[feature.category] ?? CATEGORY_COLORS['KPI・レポート']
     return (
         <div className={styles.card} style={{ borderColor: color.border, background: color.bg }}>
             <div className={styles.cardHeader}>

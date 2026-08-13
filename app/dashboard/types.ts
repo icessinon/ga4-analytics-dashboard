@@ -117,19 +117,33 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         ],
     },
     {
-        label: '分析・レポート',
+        label: 'KPI・レポート',
         items: [
-            { title: 'GA4分析', subtitle: 'GA4データの分析とレポート', getHref: () => '/analytics', productPrefix: true },
             { title: 'トレンド', subtitle: '月次トレンドレポート（PV/CV/CVR推移）', getHref: (id) => id ? `/trend?productId=${id}` : '/trend', productPrefix: true },
+            { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
+            { title: 'CV単価・お金まわり', subtitle: '応募・会員登録1件の期待売上と期間CVの金額換算（施策の価値比較用）', getHref: () => '/cv-value', productPrefix: true },
+        ],
+    },
+    {
+        label: 'CV分析',
+        items: [
+            { title: '求人種別CV分析', subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較。チャネル構成比も', getHref: () => '/cv-types', productPrefix: true },
+            { title: '職種別CV分析', subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV', getHref: () => '/occupation', productPrefix: true },
+        ],
+    },
+    {
+        label: 'チャネル・集客',
+        items: [
+            { title: 'SEOモニタ', subtitle: 'Search Consoleの順位・表示回数・CTRをページカテゴリ別・URL別に監視（施策のSEO影響判定）', getHref: () => '/seo-report' },
+            { title: 'LINE配信レポート', subtitle: 'LINE経由の再訪・CV・円換算と週次おすすめ配信の実績', getHref: () => '/line-report', productPrefix: true },
+        ],
+    },
+    {
+        label: 'ABテスト',
+        items: [
             { title: 'ABテスト', subtitle: 'ABテスト結果の分析と評価', getHref: (id) => id ? `/ab-test?productId=${id}` : '/ab-test', productPrefix: true },
             { title: '施策提案AI壁打ち', subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価', getHref: () => '/ab-test/advisor', productPrefix: true },
-            { title: '職種別CV分析', subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV', getHref: () => '/occupation', productPrefix: true },
-            { title: '求人種別CV分析', subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較', getHref: () => '/cv-types', productPrefix: true },
-            { title: 'CV単価・お金まわり', subtitle: '応募・会員登録1件の期待売上と期間CVの金額換算（施策の価値比較用）', getHref: () => '/cv-value', productPrefix: true },
-            { title: 'LINE配信レポート', subtitle: 'LINE経由の再訪・CV・円換算と週次おすすめ配信の実績', getHref: () => '/line-report', productPrefix: true },
-            { title: 'SEOモニタ', subtitle: 'Search Consoleの順位・表示回数・CTRをページカテゴリ別に監視（施策のSEO影響判定）', getHref: () => '/seo-report' },
-            { title: 'スカウト効果ファネル', subtitle: 'スカウト送信→閲覧→応募のファネルと企業別内訳', getHref: () => '/scout', productPrefix: true },
-            { title: '月次インサイトレポート', subtitle: '今月のKPIサマリーと前月比較・AIインサイト', getHref: () => '/insights', productPrefix: true },
+            { title: 'ABテスト完了一覧', subtitle: '完了したABテストの勝利・負けと改善率', getHref: (id) => id ? `/ab-test/completed?productId=${id}` : '/ab-test/completed', productPrefix: true },
         ],
     },
     {
@@ -137,6 +151,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         items: [
             { title: '会員登録フォームファネル', subtitle: '職種選択→各質問→登録完了の通過状況（ラベル変更に自動追従）', getHref: () => '/signup-funnel', productPrefix: true },
             { title: 'エントリーフォームファネル', subtitle: 'フォーム完了までの導線分析', getHref: (id) => id ? `/funnel?productId=${id}` : '/funnel', productPrefix: true },
+            { title: 'スカウト効果ファネル', subtitle: 'スカウト送信→閲覧→応募のファネルと企業別内訳', getHref: () => '/scout', productPrefix: true },
             { title: 'エンゲージメント', subtitle: 'エンゲージメントファネル分析', getHref: (id) => id ? `/funnel/engagement?productId=${id}` : '/funnel/engagement', productPrefix: true },
             { title: '経路ファネルビルダー', subtitle: 'ページ・クリックタグを組み合わせた順序付きファネルを自由に作成', getHref: () => '/funnel/path', productPrefix: true },
         ],
@@ -161,12 +176,12 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         ],
     },
     {
-        label: 'データ・履歴',
+        label: 'データ・ツール',
         items: [
-            { title: 'ABテスト完了一覧', subtitle: '完了したABテストの勝利・負けと改善率', getHref: (id) => id ? `/ab-test/completed?productId=${id}` : '/ab-test/completed', productPrefix: true },
-            { title: '履歴一覧', subtitle: 'レポートとファネル分析の履歴を確認', getHref: (id) => id ? `/history?productId=${id}` : '/history', productPrefix: true },
+            { title: 'GA4分析', subtitle: 'GA4データの自由分析レポートビルダー', getHref: () => '/analytics', productPrefix: true },
             { title: 'GA4データ閲覧', subtitle: 'GA4の生データを期間別で閲覧', getHref: () => '/data', productPrefix: true },
             { title: 'GA4メタデータ', subtitle: '利用可能なメトリクスとディメンション一覧', getHref: () => '/ga4-metadata', productPrefix: true },
+            { title: '履歴一覧', subtitle: 'レポートとファネル分析の履歴を確認', getHref: (id) => id ? `/history?productId=${id}` : '/history', productPrefix: true },
             { title: 'AI利用状況', subtitle: 'AI API使用量・コスト確認', getHref: () => '/ai-usage' },
         ],
     },

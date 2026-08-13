@@ -11,11 +11,14 @@ export interface FeatureDoc {
 }
 
 export const FEATURE_CATEGORIES = [
-    'ユーザー分析',
-    '経路・離脱分析',
-    'コンバージョン・ファネル',
+    'KPI・レポート',
+    'CV分析',
+    'チャネル・集客',
     'ABテスト',
-    'レポート・データ',
+    'コンバージョン・ファネル',
+    '可視化・経路分析',
+    'ユーザー分析',
+    'データ・ツール',
 ] as const
 
 export const FEATURE_LIST: FeatureDoc[] = [
@@ -100,7 +103,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'ユーザー経路分析',
         href: '/journey',
-        category: '経路・離脱分析',
+        category: '可視化・経路分析',
         description: 'GA4 の pageReferrer × sessionDefaultChannelGroup を使い、訪問からフォーム到達までの遷移フローを Sankey ダイアグラムで可視化します。フォーム到達率・離脱経路パターンも集計します。',
         capabilities: [
             'Sankey ダイアグラムによる遷移フロー（チャネル → ページカテゴリ → ゴール）',
@@ -117,7 +120,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: '離脱分析',
         href: '/exit',
-        category: '経路・離脱分析',
+        category: '可視化・経路分析',
         description: 'ファネル各ステップの離脱数・離脱率と、離脱率の高いページを特定します。行動シグナル（平均滞在時間・スクロール到達率）を組み合わせ、AI が離脱の質（即離脱か読了後離脱か）を判定します。',
         capabilities: [
             'ファネルステップ別の離脱数・離脱率',
@@ -134,7 +137,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'ページフロー分析',
         href: '/pageflow',
-        category: '経路・離脱分析',
+        category: '可視化・経路分析',
         description: '指定したページの「直前に見ていたページ」と「直後に見たページ」を両方向で集計します。サンクスページ後の誘導効果測定（例: LP応募→クロスワーク本体への遷移率）や、任意ページの導線実態の確認に使います。',
         capabilities: [
             'ページパス前方一致での対象指定（例: /lp-thanks で全事業のLP応募サンクスをまとめて分析）',
@@ -254,7 +257,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: '職種別CV分析',
         href: '/occupation',
-        category: 'レポート・データ',
+        category: 'CV分析',
         description: '会員登録フォームの職種パラメータ（occ）別の登録CVと職種ページ配下のセッションから、職種ごとの獲得状況を比較します。事業領域別のLP応募CV内訳も表示します。',
         capabilities: [
             '職種別の会員登録CV（サンクスページの ?occ= パラメータで分類）',
@@ -271,7 +274,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'スカウト効果ファネル',
         href: '/scout',
-        category: 'レポート・データ',
+        category: 'コンバージョン・ファネル',
         description: 'スカウトの送信リクエスト（本体DB: ScoutHistories）→ スカウトページ閲覧（GA4 /scout/）→ 応募（scoutId付きURLでの送信ボタンクリック）を一本のファネルで確認します。企業別内訳と日別推移つき。',
         capabilities: [
             '送信リクエスト・送達・閲覧UU・応募のファネルサマリー（送達はdrm-front側のSMS送信結果書き戻し実装後に表示）',
@@ -285,7 +288,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: '求人種別CV分析',
         href: '/cv-types',
-        category: 'レポート・データ',
+        category: 'CV分析',
         description: '応募CVを契約種別（人材紹介 / 求人広告 / ハローワーク）に分解し、会員登録と並べて状況を確認します。drm-front の GTM ラベル規則（JobR / JobA / JobH、サンクスは ThxJob*）を利用しています。',
         capabilities: [
             '求人種別ごとの応募完了数と構成比（完了は送信ボタンクリック基準。DB実応募数との一致を確認済み・bot耐性あり）',
@@ -307,7 +310,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'CV単価・お金まわり',
         href: '/cv-value',
-        category: 'レポート・データ',
+        category: 'KPI・レポート',
         description: '応募・会員登録1件あたりの期待売上（CV単価）と、期間のCV数を金額換算した早見ページ。施策の価値比較・優先度判断の共通モノサシとして使います。係数はSalesforce実測（登録履歴→求職者→マッチング入社済の受注額−返金想定）から算出。',
         capabilities: [
             'CV単価カード: 会員登録（単独）約1.8万円・人材紹介応募 約5,300円・求人広告応募 約7,800円・ハローワーク応募 約2,800円。相互の倍率つき（例: 登録1件=ハロワ応募6.5件分）',
@@ -321,7 +324,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'LINE配信レポート',
         href: '/line-report',
-        category: 'レポート・データ',
+        category: 'チャネル・集客',
         description: 'LINE経由（utm_medium=line）の再訪・CV・期待売上換算と、おすすめ求人LINE配信（毎週火曜・連携者向けFlexカルーセル）の週次実績を常設表示。LINE施策（配信頻度AB・連携率改善等）の判定基盤。',
         capabilities: [
             'LINE経由の再訪ユーザー・セッション・CV（応募/LP応募/会員登録）と円換算（CV単価係数）',
@@ -336,7 +339,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'SEOモニタ',
         href: '/seo-report',
-        category: 'レポート・データ',
+        category: 'チャネル・集客',
         description: 'Search Console（sc-domain:x-work.jp）の掲載順位・表示回数・CTR・クリックをページカテゴリ別に常時監視。施策（モザイク・モーダル・FV変更等）のSEO影響を「対象カテゴリ vs 非対象カテゴリの前後比較（DiD）」で判定するための基盤。',
         capabilities: [
             '全体サマリー（クリック・表示回数・CTR・平均順位）と前期間比',
@@ -353,7 +356,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: '月次インサイトレポート',
         href: '/insights',
-        category: 'レポート・データ',
+        category: 'KPI・レポート',
         description: '今月と先月の主要 KPI（アクティブユーザー・セッション・エンゲージメント率・PV など）を自動集計し、AI がサマリー・改善点・来月の推奨アクションを生成します。',
         capabilities: [
             '今月 vs 先月の KPI 比較テーブル（前月比%付き）',
@@ -367,7 +370,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'トレンド分析',
         href: '/trend',
-        category: 'レポート・データ',
+        category: 'KPI・レポート',
         description: '月次・週次の PV / CV / CVR 推移をレポートテンプレートごとに集計します。AI が月による傾向・落ち込み期間・改善期間を分析します。',
         capabilities: [
             '月次 CVR トレンドグラフ',
@@ -381,7 +384,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'GA4分析',
         href: '/analytics',
-        category: 'レポート・データ',
+        category: 'データ・ツール',
         description: 'GA4 のデータをレポートテンプレートに基づいて集計します。セッション・PV・CVR・エンゲージメント率・直帰率などを表示します。',
         capabilities: [
             'テンプレート別のGA4レポート集計',
@@ -393,7 +396,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'ヒートマップ',
         href: '/heatmap',
-        category: 'レポート・データ',
+        category: '可視化・経路分析',
         description: 'GTM 経由で収集したクリック座標・スクロール深度をヒートマップとして可視化します。ページのどの要素が注目されているかを視覚的に把握できます。',
         capabilities: [
             'クリックヒートマップ（座標密度表示）',
@@ -404,7 +407,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     },
     {
         name: '週次AIサマリー配信',
-        category: 'レポート・データ',
+        category: 'KPI・レポート',
         description: '毎週月曜 09:00 JST に先週（月〜日）の主要KPI・チャネル別セッション変動・実行中ABテストの途中経過を集計し、AIサマリー（ハイライト・気になる変化・今週のアクション）を添えて Slack に自動配信します。UIページはなくスケジューラが自動実行します。',
         capabilities: [
             '先週 vs 前週の KPI 比較（セッション・新規ユーザー・応募CV・LP応募CV・会員登録CV・全体CVR）',
@@ -419,7 +422,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
     {
         name: 'CV急落・セグメント変動アラート',
         href: '/alerts',
-        category: 'レポート・データ',
+        category: 'KPI・レポート',
         description: '毎日 09:30 JST に前日の指標を過去8週の同一曜日の中央値と比較してSlack通知します。全体指標（セッション・CV・CVR）の急落に加え、セグメント別（ページカテゴリ別の閲覧、CV種別×チャネル別）は急増（スパイク）も検知します。SEO順位変動・キャンペーン・bot流入・タグ事故は全体値に埋もれてセグメント単位で先に現れるため。',
         capabilities: [
             '曜日変動対策（過去8週の同一曜日と比較）・スパイク対策（平均でなく中央値）',

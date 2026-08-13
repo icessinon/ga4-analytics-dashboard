@@ -79,14 +79,39 @@
     margin-top: 0.75rem;
 }
 
+.groupButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 1rem 0.35rem 0;
+}
+
+.groupButton:hover .groupLabel {
+    color: #e5e7eb;
+}
+
 .groupLabel {
     display: block;
-    padding: 0.25rem 1.25rem 0.35rem;
+    padding: 0 0 0 1.25rem;
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: #9ca3af;
+}
+
+.chevron {
+    color: #6b7280;
+    font-size: 0.75rem;
+    transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+    transform: rotate(90deg);
 }
 
 .list {
