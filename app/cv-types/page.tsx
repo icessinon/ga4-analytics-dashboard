@@ -53,6 +53,7 @@ interface RouteFunnelResponse {
 interface CvTypesResponse {
     jobTypes: JobTypeRow[]
     listViews?: number
+    channelMix?: Array<{ channel: string; sessions: number; users: number }>
     signup: { formViews: number; completed: number; formToComplete: number | null }
     daily: DailyPoint[]
     startDate: string
@@ -242,6 +243,46 @@ export default function CvTypesPage() {
                             ※ 会員登録はページベース（/members/signup → /members/signup/thanks）。求人広告応募時の自動会員化はここに含まれません。
                         </p>
                     </div>
+
+                    {data.channelMix && data.channelMix.length > 0 && (() => {
+                        const totalSessions = data.channelMix.reduce((s, c) => s + c.sessions, 0)
+                        return (
+                            <div className={styles.card}>
+                                <h2 className={styles.sectionTitle}>サイト全体の流入チャネル構成（セッション）</h2>
+                                <div className={styles.tableWrapper}>
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>チャネル</th>
+                                                <th className={styles.num}>セッション</th>
+                                                <th className={styles.num}>構成比</th>
+                                                <th className={styles.num}>ユーザー</th>
+                                                <th style={{ width: '35%' }}></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.channelMix.map((c) => (
+                                                <tr key={c.channel}>
+                                                    <td>{c.channel}</td>
+                                                    <td className={styles.num}>{c.sessions.toLocaleString()}</td>
+                                                    <td className={`${styles.num} ${styles.strong}`}>{totalSessions > 0 ? `${((c.sessions / totalSessions) * 100).toFixed(1)}%` : '－'}</td>
+                                                    <td className={styles.num}>{c.users.toLocaleString()}</td>
+                                                    <td>
+                                                        <span style={{ display: 'inline-block', height: '0.625rem', borderRadius: '0.25rem', background: '#60a5fa', width: `${totalSessions > 0 ? (c.sessions / totalSessions) * 100 : 0}%` }} />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className={styles.tableNote}>
+                                    ※ GA4のデフォルトチャネルグループ（セッション基準・ラストタッチ）。オーガニックの「価値」はこの構成比より重い点に注意
+                                    （サイト経由の純会員登録の約9割がオーガニック起点＝ファーストタッチ。ラストタッチではDirect等に分類される）。<br />
+                                    ※ <strong>2026-08-11以降はUnassignedが異常に膨らむ計測インシデントが発生中</strong>。解決までこの期間を含む構成比は参考値です。
+                                </p>
+                            </div>
+                        )
+                    })()}
 
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>求人詳細の流入内訳（チャネル × 一覧経由）</h2>

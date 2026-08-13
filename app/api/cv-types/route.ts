@@ -88,7 +88,7 @@ export async function POST(request: Request) {
             },
         }
 
-        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily, channelReport, viaListReport, listPagesReport, fieldReport] = await Promise.all([
+        const [labelReport, clickReport, clickDaily, signupForm, signupThanks, signupDaily, channelReport, viaListReport, listPagesReport, fieldReport, siteChannelReport] = await Promise.all([
             // 種別×ステージ（詳細・フォーム）のユーザー数（ビューラベル別）
             fetchGA4Data({
                 propertyId, dateRanges,
@@ -194,6 +194,13 @@ export async function POST(request: Request) {
                 },
                 limit: 200,
             }, accessToken),
+            // サイト全体の流入チャネル構成（セッション）
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+                metrics: [{ name: 'sessions' }, { name: 'activeUsers' }],
+                limit: 30,
+            }, accessToken),
         ])
 
         const labelUsers = new Map<string, number>()
@@ -286,9 +293,19 @@ export async function POST(request: Request) {
 
         const listViews = parseInt(listPagesReport.rows?.[0]?.metricValues[0]?.value ?? '0', 10)
 
+        // サイト全体の流入チャネル構成（セッションシェア）
+        const channelMix = (siteChannelReport.rows ?? [])
+            .map((r) => ({
+                channel: r.dimensionValues[0]?.value || '(not set)',
+                sessions: parseInt(r.metricValues[0]?.value ?? '0', 10),
+                users: parseInt(r.metricValues[1]?.value ?? '0', 10),
+            }))
+            .sort((a, b) => b.sessions - a.sessions)
+
         return NextResponse.json({
             jobTypes,
             listViews,
+            channelMix,
             signup: {
                 formViews: signupFormUsers,
                 completed: signupCompleted,
