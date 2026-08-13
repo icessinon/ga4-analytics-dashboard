@@ -24,12 +24,14 @@ interface CategoryStat extends TotalStat {
 interface DailyRow { date: string; clicks: number; impressions: number; position: number | null }
 interface QueryRow { query: string; clicks: number; impressions: number; position: number | null }
 interface PageRow { path: string; clicks: number; impressions: number; position: number | null; prevClicks: number; prevPosition: number | null }
+interface AppearanceRow { type: string; label: string; clicks: number; impressions: number; position: number | null; prevClicks: number; prevImpressions: number }
 
 interface SeoReportResponse {
     range: { startDate: string; endDate: string }
     prevRange: { startDate: string; endDate: string }
     pathFilter: string | null
     topPages: PageRow[]
+    searchAppearance: AppearanceRow[]
     total: TotalStat
     daily: DailyRow[]
     categories: CategoryStat[]
@@ -192,6 +194,42 @@ export default function SeoReportPage() {
                             ※ SEOの反映はクロール→再評価で2〜6週間かかるため、リリース直後の数日で判断しないこと。
                         </p>
                     </div>
+
+                    {data.searchAppearance.length > 0 && (
+                        <div className={styles.card}>
+                            <h2 className={styles.sectionTitle}>検索タイプ別（しごと検索枠のトレンド）</h2>
+                            <div className={styles.tableWrapper}>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>タイプ</th>
+                                            <th className={styles.num}>クリック</th>
+                                            <th className={styles.num}>前期間比</th>
+                                            <th className={styles.num}>表示回数</th>
+                                            <th className={styles.num}>前期間比</th>
+                                            <th className={styles.num}>全体クリックに占める割合</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.searchAppearance.map((a) => (
+                                            <tr key={a.type}>
+                                                <td>{a.label}</td>
+                                                <td className={`${styles.num} ${styles.strong}`}>{a.clicks.toLocaleString()}</td>
+                                                <td className={styles.num}>{diffPct(a.clicks, a.prevClicks)}</td>
+                                                <td className={styles.num}>{a.impressions.toLocaleString()}</td>
+                                                <td className={styles.num}>{diffPct(a.impressions, a.prevImpressions)}</td>
+                                                <td className={styles.num}>{data.total.clicks > 0 ? `${((a.clicks / data.total.clicks) * 100).toFixed(1)}%` : '－'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className={styles.tableNote}>
+                                ※ JOB_LISTING/JOB_DETAILS = Googleしごと検索の求人リッチリザルト（JobPosting構造化データ依存）。
+                                この枠がクリックの約3割を占めるため、急減時は構造化データのエラー・ポリシー違反を疑うこと。パスフィルタは適用されません（GSC API仕様）。
+                            </p>
+                        </div>
+                    )}
 
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>上位ページ（URL別・前期間比つき）</h2>

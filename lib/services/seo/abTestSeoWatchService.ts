@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/client'
-import { gscQuery } from '@/lib/api/gsc/client'
+import { gscQuery, type GscFilter } from '@/lib/api/gsc/client'
+import { GSC_PAGE_CATEGORIES } from '@/lib/api/gsc/categories'
 import { sendSlackNotification, type SlackBlock } from '@/lib/services/notification/slackService'
 import { callGemini } from '@/lib/api/gemini/callGemini'
 
@@ -47,10 +48,16 @@ function addDays(d: Date, n: number): Date {
 }
 
 async function fetchWindow(startDate: string, endDate: string, pathsRegex: string | null): Promise<WindowStat> {
+    return fetchWindowFiltered(startDate, endDate, pathsRegex
+        ? [{ dimension: 'page', operator: 'includingRegex', expression: pathsRegex }]
+        : [])
+}
+
+async function fetchWindowFiltered(startDate: string, endDate: string, filters: GscFilter[]): Promise<WindowStat> {
     const rows = await gscQuery({
         startDate, endDate,
         dimensions: [],
-        ...(pathsRegex ? { filters: [{ dimension: 'page' as const, operator: 'includingRegex' as const, expression: pathsRegex }] } : {}),
+        ...(filters.length > 0 ? { filters } : {}),
     })
     return {
         clicks: rows[0]?.clicks ?? 0,
@@ -177,16 +184,91 @@ export function buildSeoWatchBlocks(results: SeoWatchResult[], weekly: boolean):
     return blocks
 }
 
-/** 日次実行のエントリポイント。alertがあれば通知、weekly=trueなら異常なしでもサマリー通知 */
-export async function checkAbTestSeoAndNotify(weekly: boolean): Promise<SeoWatchResult[]> {
-    const results = await runAbTestSeoWatch()
-    const webhookUrl = process.env.SLACK_WEBHOOK_URL
-    if (!webhookUrl || results.length === 0) return results
-    const alerts = results.filter((r) => r.status === 'alert')
-    if (alerts.length > 0 && !weekly) {
-        await sendSlackNotification([webhookUrl], buildSeoWatchBlocks(alerts, false))
-    } else if (weekly) {
-        await sendSlackNotification([webhookUrl], buildSeoWatchBlocks(results, true))
+// ── ページカテゴリ別のSEO急落常設監視（ABテストと無関係にサイト全体を守る） ──
+
+// 前週比でクリックがこれ以上減ったらアラート
+const CATEGORY_DROP_THRESHOLD = -0.25
+// 前週クリックがこれ未満のカテゴリは判定しない
+const CATEGORY_MIN_CLICKS = 200
+
+export interface CategoryWatchResult {
+    label: string
+    status: 'alert' | 'ok' | 'insufficient_data'
+    current: WindowStat
+    previous: WindowStat
+    clicksChange: number | null
+    positionChange: number | null
+}
+
+/** 全ページカテゴリの直近7日 vs その前7日を比較（GSCラグ考慮） */
+export async function checkSeoCategories(): Promise<CategoryWatchResult[]> {
+    const curEnd = addDays(new Date(), -GSC_LAG_DAYS)
+    const curStart = addDays(curEnd, -(WINDOW_DAYS - 1))
+    const prevEnd = addDays(curStart, -1)
+    const prevStart = addDays(prevEnd, -(WINDOW_DAYS - 1))
+
+    const results: CategoryWatchResult[] = []
+    for (const cat of GSC_PAGE_CATEGORIES) {
+        const [current, previous] = await Promise.all([
+            fetchWindowFiltered(fmt(curStart), fmt(curEnd), cat.filters),
+            fetchWindowFiltered(fmt(prevStart), fmt(prevEnd), cat.filters),
+        ])
+        const clicksChange = changeRate(current.clicks, previous.clicks)
+        const positionChange = (current.position != null && previous.position != null)
+            ? current.position - previous.position
+            : null
+        const status: CategoryWatchResult['status'] = previous.clicks < CATEGORY_MIN_CLICKS
+            ? 'insufficient_data'
+            : (clicksChange != null && clicksChange <= CATEGORY_DROP_THRESHOLD) ? 'alert' : 'ok'
+        results.push({ label: cat.label, status, current, previous, clicksChange, positionChange })
     }
     return results
+}
+
+function fmtRate(rate: number): string {
+    const pct = (rate * 100).toFixed(0)
+    return rate >= 0 ? `+${pct}%` : `${pct}%`
+}
+
+export function buildCategoryBlocks(results: CategoryWatchResult[], weekly: boolean): SlackBlock[] {
+    const line = (r: CategoryWatchResult) =>
+        `${r.status === 'alert' ? '🚨' : r.status === 'ok' ? '✅' : 'ℹ️'} *${r.label}*: クリック ${r.previous.clicks.toLocaleString()}→${r.current.clicks.toLocaleString()}` +
+        `（${r.clicksChange != null ? fmtRate(r.clicksChange) : '－'}）` +
+        `${r.positionChange != null ? ` / 順位 ${r.positionChange >= 0 ? '+' : ''}${r.positionChange.toFixed(1)}` : ''}`
+    return [
+        { type: 'header', text: { type: 'plain_text', text: weekly ? '🔍 SEOカテゴリ別 週次サマリー' : '🚨 SEOカテゴリ急落アラート' } },
+        { type: 'section', text: { type: 'mrkdwn', text: '直近7日 vs その前7日（GSC・3日ラグ考慮）\n' + results.map(line).join('\n') } },
+        { type: 'section', text: { type: 'mrkdwn', text: '詳細はダッシュボードの「SEOモニタ」で確認（カテゴリ別・URL別・検索タイプ別）。全カテゴリ一斉の変動はアルゴリズム更新・季節要因の可能性。' } },
+    ]
+}
+
+/** 日次実行のエントリポイント。alertがあれば通知、weekly=trueなら異常なしでもサマリー通知 */
+export async function checkAbTestSeoAndNotify(weekly: boolean): Promise<{ abTests: SeoWatchResult[]; categories: CategoryWatchResult[] }> {
+    const results = await runAbTestSeoWatch()
+    let categories: CategoryWatchResult[] = []
+    try {
+        categories = await checkSeoCategories()
+    } catch (err) {
+        console.error('[seoWatch] カテゴリ監視失敗:', err instanceof Error ? err.message : err)
+    }
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL
+    if (!webhookUrl) return { abTests: results, categories }
+
+    const abAlerts = results.filter((r) => r.status === 'alert')
+    const catAlerts = categories.filter((r) => r.status === 'alert')
+    if (weekly) {
+        // 週次: カテゴリ全体サマリー＋ABテスト監視（あれば）をまとめて配信
+        const blocks = buildCategoryBlocks(categories, true)
+        if (results.length > 0) blocks.push(...buildSeoWatchBlocks(results, true))
+        await sendSlackNotification([webhookUrl], blocks)
+    } else {
+        // 日次: 異常があるものだけ即時通知
+        if (catAlerts.length > 0) {
+            await sendSlackNotification([webhookUrl], buildCategoryBlocks(categories, false))
+        }
+        if (abAlerts.length > 0) {
+            await sendSlackNotification([webhookUrl], buildSeoWatchBlocks(abAlerts, false))
+        }
+    }
+    return { abTests: results, categories }
 }

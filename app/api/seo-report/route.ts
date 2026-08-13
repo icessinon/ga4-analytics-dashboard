@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { gscQuery, type GscFilter } from '@/lib/api/gsc/client'
+import { GSC_PAGE_CATEGORIES } from '@/lib/api/gsc/categories'
 
 /**
  * SEOモニタ: Search Console の掲載順位・表示回数・CTR・クリックを
@@ -8,38 +9,7 @@ import { gscQuery, type GscFilter } from '@/lib/api/gsc/client'
  * GSCデータは2〜3日遅れのため endDate は3日前を上限にする。
  */
 
-const INDUSTRY_ALT = 'driver|sekokan|sekkei|soko|shokunin|seibi|hoshu|setsubi-sagyo|keibi|unkan|kojo-sagyo|food|unyu-sagyo|others'
-
-const PAGE_CATEGORIES: Array<{ key: string; label: string; filters: GscFilter[] }> = [
-    {
-        key: 'detail',
-        label: '求人詳細',
-        filters: [{ dimension: 'page', operator: 'includingRegex', expression: `^https://x-work\\.jp/(${INDUSTRY_ALT})/media_[0-9]+` }],
-    },
-    {
-        key: 'list',
-        label: '検索・一覧',
-        filters: [
-            { dimension: 'page', operator: 'includingRegex', expression: `^https://x-work\\.jp/(search|(${INDUSTRY_ALT})(/|$))` },
-            { dimension: 'page', operator: 'excludingRegex', expression: 'media_' },
-        ],
-    },
-    {
-        key: 'cond',
-        label: '資格条件',
-        filters: [{ dimension: 'page', operator: 'includingRegex', expression: '^https://x-work\\.jp/cond/' }],
-    },
-    {
-        key: 'top',
-        label: 'TOP',
-        filters: [{ dimension: 'page', operator: 'equals', expression: 'https://x-work.jp/' }],
-    },
-    {
-        key: 'journal',
-        label: 'コラム',
-        filters: [{ dimension: 'page', operator: 'contains', expression: '/journal' }],
-    },
-]
+const PAGE_CATEGORIES = GSC_PAGE_CATEGORIES
 
 function fmt(d: Date): string {
     return d.toISOString().slice(0, 10)
@@ -79,19 +49,44 @@ export async function POST(request: Request) {
         const range = { startDate: fmt(start), endDate: fmt(end) }
         const prevRange = { startDate: fmt(prevStart), endDate: fmt(prevEnd) }
 
-        // 全体日別 + 上位クエリ + 上位ページ(当期・前期) + カテゴリ別（当期・前期）を並列取得
-        const [daily, topQueries, topPagesNow, topPagesPrev, totalNow, totalPrev, ...catResults] = await Promise.all([
+        // 全体日別 + 上位クエリ + 上位ページ(当期・前期) + 検索タイプ別(当期・前期) + カテゴリ別（当期・前期）を並列取得
+        const [daily, topQueries, topPagesNow, topPagesPrev, totalNow, totalPrev, appearanceNow, appearancePrev, ...catResults] = await Promise.all([
             gscQuery({ ...range, dimensions: ['date'], rowLimit: 200, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             gscQuery({ ...range, dimensions: ['query'], rowLimit: 15, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             gscQuery({ ...range, dimensions: ['page'], rowLimit: 20, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             gscQuery({ ...prevRange, dimensions: ['page'], rowLimit: 500, ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             gscQuery({ ...range, dimensions: [], ...(pathFilters.length ? { filters: pathFilters } : {}) }),
             gscQuery({ ...prevRange, dimensions: [], ...(pathFilters.length ? { filters: pathFilters } : {}) }),
+            // 検索での見え方（しごと検索枠など）。searchAppearanceは他ディメンション・pageフィルタと併用不可のため常に全体
+            gscQuery({ ...range, dimensions: ['searchAppearance'], rowLimit: 20 }),
+            gscQuery({ ...prevRange, dimensions: ['searchAppearance'], rowLimit: 20 }),
             ...PAGE_CATEGORIES.flatMap((c) => [
                 gscQuery({ ...range, dimensions: [], filters: c.filters }),
                 gscQuery({ ...prevRange, dimensions: [], filters: c.filters }),
             ]),
         ])
+
+        const APPEARANCE_LABELS: Record<string, string> = {
+            JOB_LISTING: 'しごと検索（求人一覧枠）',
+            JOB_DETAILS: 'しごと検索（求人詳細枠）',
+        }
+        const prevAppearance = new Map<string, { clicks: number; impressions: number }>()
+        for (const r of appearancePrev) {
+            prevAppearance.set(r.keys?.[0] ?? '', { clicks: r.clicks ?? 0, impressions: r.impressions ?? 0 })
+        }
+        const searchAppearance = appearanceNow.map((r) => {
+            const type = r.keys?.[0] ?? ''
+            const prev = prevAppearance.get(type)
+            return {
+                type,
+                label: APPEARANCE_LABELS[type] ?? type,
+                clicks: r.clicks ?? 0,
+                impressions: r.impressions ?? 0,
+                position: r.position ?? null,
+                prevClicks: prev?.clicks ?? 0,
+                prevImpressions: prev?.impressions ?? 0,
+            }
+        })
 
         const prevByPage = new Map<string, { clicks: number; position: number | null }>()
         for (const r of topPagesPrev) {
@@ -132,6 +127,7 @@ export async function POST(request: Request) {
             prevRange,
             pathFilter: pathFilter?.trim() || null,
             topPages,
+            searchAppearance,
             total: {
                 clicks: totalNow[0]?.clicks ?? 0,
                 impressions: totalNow[0]?.impressions ?? 0,
