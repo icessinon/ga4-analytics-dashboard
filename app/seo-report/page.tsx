@@ -110,16 +110,15 @@ export default function SeoReportPage() {
                 </select>
                 <input
                     type="text"
-                    className={styles.select}
-                    style={{ minWidth: '20rem' }}
+                    className={styles.pathInput}
                     value={pathInput}
                     onChange={(e) => setPathInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') setPathFilter(pathInput) }}
                     placeholder="パスで絞り込み（正規表現可）: /(driver)/media_.* など"
                     aria-label="パスフィルタ"
                 />
-                <button type="button" className={styles.select} onClick={() => setPathFilter(pathInput)}>適用</button>
-                {pathFilter && <button type="button" className={styles.select} onClick={() => { setPathInput(''); setPathFilter('') }}>解除</button>}
+                <button type="button" className={styles.button} onClick={() => setPathFilter(pathInput)}>適用</button>
+                {pathFilter && <button type="button" className={styles.button} onClick={() => { setPathInput(''); setPathFilter('') }}>解除</button>}
                 {data && (
                     <span className={styles.periodNote}>
                         集計期間: {data.range.startDate} 〜 {data.range.endDate}（前期間比較・GSCは2〜3日遅れ）

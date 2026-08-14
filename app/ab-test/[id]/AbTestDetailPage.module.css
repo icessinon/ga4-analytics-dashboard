@@ -368,6 +368,8 @@
 .labelDenominator,
 .labelNumerator {
     display: block;
+    /* GTMラベルは長い連続文字列（SU__Driver__Area__...__B-1618等）のため折り返し必須 */
+    overflow-wrap: anywhere;
 }
 
 .labelEmpty {
