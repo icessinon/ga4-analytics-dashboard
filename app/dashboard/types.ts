@@ -168,6 +168,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
     {
         label: 'ユーザー分析',
         items: [
+            { title: 'CVセッション解剖（BQ）', subtitle: '応募・登録セッションの行動量と求人詳細後の次アクション（BigQuery生イベント）', getHref: () => '/user/flow', productPrefix: true },
             { title: 'セグメント行動分析', subtitle: 'デバイス・ブラウザ・流入元別の行動タイムライン', getHref: () => '/user', productPrefix: true },
             { title: 'コホートリテンション', subtitle: '初回訪問週ごとの継続率マトリクス', getHref: () => '/user/cohort', productPrefix: true },
             { title: 'ユーザーリスト抽出', subtitle: '条件を組み合わせてセグメントのユーザー数・行動傾向を確認', getHref: () => '/user/segment-builder', productPrefix: true },

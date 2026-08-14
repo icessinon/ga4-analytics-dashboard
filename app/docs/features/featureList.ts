@@ -24,6 +24,21 @@ export const FEATURE_CATEGORIES = [
 export const FEATURE_LIST: FeatureDoc[] = [
     // ── ユーザー分析 ──
     {
+        name: 'CVセッション解剖（BQ）',
+        href: '/user/flow',
+        category: 'ユーザー分析',
+        description: 'BigQueryのGA4生イベント（x-work-ga.analytics_534098180.events_*、2026-08-07〜）をセッション単位でSQL集計。応募・登録した人が「何件の求人詳細を見て・検索を使って・何分で」CVしたかを非CVセッションと比較し、求人詳細ページ直後の遷移先（次アクション）の実測割合を表示します。GA4 APIの集計値では不可能なセッション内行動の分解が目的。',
+        capabilities: [
+            'グループ別行動量比較（応募あり / 会員登録あり / 非CV求人閲覧あり / 非CV閲覧なし）: 求人詳細閲覧数の平均・中央値、検索利用率、滞在時間、CVまでの所要時間',
+            '求人詳細の閲覧数分布（0 / 1 / 2〜3 / 4〜9 / 10件以上）— 応募ありの0件は一覧モーダル・featured等の非詳細導線',
+            '求人詳細→次アクション内訳（別の詳細 / 検索 / 一覧 / 応募フォーム / 離脱 等）— 詳細→フォーム進出率がFV改善・CTA施策のKPI',
+            '応募 = EF__Job(R|A|H)__Btnクリック（実応募一致）、登録 = /members/signup/thanks到達、検索 = /search・一覧・資格条件',
+            'クエリは毎回dry runでスキャン量を確認（5GB超で中止）。7日間で約660MB・1円未満',
+        ],
+        metrics: ['event_name', 'page_location', 'click_label', 'ga_session_id'],
+        apiRoute: 'POST /api/user-flow',
+    },
+    {
         name: 'ユーザー行動タイムライン',
         href: '/user',
         category: 'ユーザー分析',
