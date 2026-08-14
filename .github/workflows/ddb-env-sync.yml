@@ -1,0 +1,44 @@
+name: DDB env sync (一時・手動実行)
+
+# 本番EC2の .env に DynamoDB 読み取りキー（DDB_AWS_*）を追記する一時ワークフロー。
+# 値は Actions secrets 経由で渡すためログには出ない（GitHubが自動マスク）。
+# 実行後は不要（削除してよい）。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: EC2の.envにDDBキーを追記してapp再作成
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DDB_KEY: ${{ secrets.DDB_AWS_ACCESS_KEY_ID }}
+          DDB_SECRET: ${{ secrets.DDB_AWS_SECRET_ACCESS_KEY }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DDB_KEY,DDB_SECRET
+          script: |
+            set -e
+            cd /var/www/ga4-analytics-dashboard
+            if grep -q "^DDB_AWS_ACCESS_KEY_ID=" .env; then
+              echo "既にDDBキーが存在します。スキップ"
+            else
+              {
+                echo ""
+                echo "# DynamoDB読み取り（スカウトファネル等）2026-08-14 追加"
+                echo "DDB_AWS_ACCESS_KEY_ID=$DDB_KEY"
+                echo "DDB_AWS_SECRET_ACCESS_KEY=$DDB_SECRET"
+                echo "DDB_AWS_REGION=ap-northeast-1"
+              } >> .env
+              echo ".env に追記しました"
+            fi
+            echo "DDB keys in .env: $(grep -c '^DDB_AWS' .env)"
+            docker compose up -d --force-recreate app
+            sleep 5
+            docker exec ga4-dashboard-app node -e 'console.log("container env check: KEY len =", (process.env.DDB_AWS_ACCESS_KEY_ID || "").length)'
