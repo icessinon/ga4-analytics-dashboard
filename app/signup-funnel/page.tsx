@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import SignupTrendChart, { TrendSeries } from '@/components/signup-funnel/SignupTrendChart'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './SignupFunnelPage.module.css'
@@ -26,6 +27,21 @@ interface SignupFunnelResponse {
     unassignedClicks: number
 }
 
+interface TrendForm {
+    key: string
+    label: string
+    clicks: number[]
+    completed: number[]
+}
+
+interface TrendResponse {
+    startDate: string
+    endDate: string
+    dates: string[]
+    overall: { clicks: number[]; completed: number[]; formUsers: number[] }
+    forms: TrendForm[]
+}
+
 // 今月・前月はクライアントで具体日付に変換する
 function monthRange(offset: 0 | -1): { startDate: string; endDate: string } {
     const now = new Date()
@@ -35,6 +51,12 @@ function monthRange(offset: 0 | -1): { startDate: string; endDate: string } {
     return { startDate: fmt(first), endDate: offset === 0 ? 'yesterday' : fmt(last) }
 }
 
+function daysAgoStr(days: number): string {
+    const d = new Date()
+    d.setDate(d.getDate() - days)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const PERIOD_OPTIONS = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
@@ -42,16 +64,15 @@ const PERIOD_OPTIONS = [
     { value: '90daysAgo', label: '過去90日' },
     { value: 'thisMonth', label: '今月' },
     { value: 'lastMonth', label: '前月' },
+    { value: 'custom', label: 'カスタム（日付指定）' },
 ]
-
-function periodToRange(period: string): { startDate: string; endDate: string } {
-    if (period === 'thisMonth') return monthRange(0)
-    if (period === 'lastMonth') return monthRange(-1)
-    return { startDate: period, endDate: 'yesterday' }
-}
 
 function pct(n: number, base: number): string {
     return base > 0 ? `${((n / base) * 100).toFixed(0)}%` : '－'
+}
+
+function pct1(n: number, base: number): string {
+    return base > 0 ? `${((n / base) * 100).toFixed(1)}%` : '－'
 }
 
 function dropClass(rate: number): string {
@@ -60,16 +81,70 @@ function dropClass(rate: number): string {
     return styles.dropLow
 }
 
+// 検証済みダークパレット（dataviz参照パレット準拠・固定順）。先頭は常に「全体」
+const SERIES_COLORS = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767']
+
+type TrendMetric = 'clicks' | 'completed' | 'rate'
+
+const TREND_METRICS: Array<{ value: TrendMetric; label: string }> = [
+    { value: 'clicks', label: '流入（職種選択）' },
+    { value: 'completed', label: '登録完了' },
+    { value: 'rate', label: '完走率' },
+]
+
+function fmtDateLabel(d: string): string {
+    return `${parseInt(d.slice(4, 6), 10)}/${parseInt(d.slice(6, 8), 10)}`
+}
+
+// 日次配列を週次（月曜始まり）に合算する
+function toWeekly(dates: string[], values: number[]): { labels: string[]; values: number[] } {
+    const labels: string[] = []
+    const out: number[] = []
+    let currentWeek = ''
+    for (let i = 0; i < dates.length; i++) {
+        const d = new Date(`${dates[i].slice(0, 4)}-${dates[i].slice(4, 6)}-${dates[i].slice(6, 8)}T00:00:00`)
+        const monday = new Date(d)
+        monday.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+        const weekKey = `${monday.getMonth() + 1}/${monday.getDate()}週`
+        if (weekKey !== currentWeek) {
+            currentWeek = weekKey
+            labels.push(weekKey)
+            out.push(0)
+        }
+        out[out.length - 1] += values[i]
+    }
+    return { labels, values: out }
+}
+
 export default function SignupFunnelPage() {
     const { currentProduct } = useProduct()
     const [period, setPeriod] = useState('30daysAgo')
+    const [customStart, setCustomStart] = useState(daysAgoStr(30))
+    const [customEnd, setCustomEnd] = useState(daysAgoStr(1))
     const [form, setForm] = useState<string | null>(null)
     const [data, setData] = useState<SignupFunnelResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    const [trend, setTrend] = useState<TrendResponse | null>(null)
+    const [trendLoading, setTrendLoading] = useState(false)
+    const [trendError, setTrendError] = useState<string | null>(null)
+    const [trendMetric, setTrendMetric] = useState<TrendMetric>('rate')
+
+    const periodToRange = useCallback((): { startDate: string; endDate: string } | null => {
+        if (period === 'thisMonth') return monthRange(0)
+        if (period === 'lastMonth') return monthRange(-1)
+        if (period === 'custom') {
+            if (!customStart || !customEnd || customStart > customEnd) return null
+            return { startDate: customStart, endDate: customEnd }
+        }
+        return { startDate: period, endDate: 'yesterday' }
+    }, [period, customStart, customEnd])
+
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId) return
+        const range = periodToRange()
+        if (!range) return
         setLoading(true)
         setError(null)
         try {
@@ -78,7 +153,7 @@ export default function SignupFunnelPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
-                    ...periodToRange(period),
+                    ...range,
                     form: form ?? undefined,
                 }),
             })
@@ -91,13 +166,87 @@ export default function SignupFunnelPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, period, form])
+    }, [currentProduct?.ga4PropertyId, periodToRange, form])
+
+    const loadTrend = useCallback(async () => {
+        if (!currentProduct?.ga4PropertyId) return
+        const range = periodToRange()
+        if (!range) return
+        setTrendLoading(true)
+        setTrendError(null)
+        try {
+            const res = await fetch('/api/signup-funnel/trend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, ...range }),
+            })
+            const json = await parseJsonResponse<TrendResponse & { error?: string }>(res)
+            if (!res.ok) throw new Error(json.error || '取得に失敗しました')
+            setTrend(json)
+        } catch (e) {
+            setTrendError(e instanceof Error ? e.message : '取得に失敗しました')
+            setTrend(null)
+        } finally {
+            setTrendLoading(false)
+        }
+    }, [currentProduct?.ga4PropertyId, periodToRange])
 
     useEffect(() => { load() }, [load])
+    useEffect(() => { loadTrend() }, [loadTrend])
 
     // 完走率計算のベース: 起点（職種選択）があればそれ、なければ最初の質問のclick
     const base = data ? (data.origin ?? data.questions[0]?.click ?? 0) : 0
     const completed = data?.questions.length ? data.questions[data.questions.length - 1].click : 0
+
+    // 推移チャート: 全体 + 上位4職種 + その他（6系列固定・色は職種に固定割当）
+    const trendView = useMemo(() => {
+        if (!trend || trend.dates.length === 0) return null
+        const weekly = trend.dates.length > 35
+        const top = trend.forms.slice(0, 4)
+        const rest = trend.forms.slice(4)
+        const restClicks = trend.dates.map((_, i) => rest.reduce((s, f) => s + f.clicks[i], 0))
+        const restCompleted = trend.dates.map((_, i) => rest.reduce((s, f) => s + f.completed[i], 0))
+
+        const entries: Array<{ name: string; clicks: number[]; completed: number[] }> = [
+            { name: '全体', clicks: trend.overall.clicks, completed: trend.overall.completed },
+            ...top.map((f) => ({ name: f.label, clicks: f.clicks, completed: f.completed })),
+            ...(rest.length > 0 ? [{ name: 'その他職種', clicks: restClicks, completed: restCompleted }] : []),
+        ]
+
+        let labels = trend.dates.map(fmtDateLabel)
+        const series: TrendSeries[] = entries.map((e, idx) => {
+            let clicks = e.clicks
+            let comp = e.completed
+            if (weekly) {
+                const w1 = toWeekly(trend.dates, e.clicks)
+                const w2 = toWeekly(trend.dates, e.completed)
+                labels = w1.labels
+                clicks = w1.values
+                comp = w2.values
+            }
+            const data =
+                trendMetric === 'clicks' ? clicks
+                : trendMetric === 'completed' ? comp
+                : clicks.map((c, i) => (c > 0 ? Math.round((comp[i] / c) * 1000) / 10 : null))
+            return { name: e.name, color: SERIES_COLORS[idx % SERIES_COLORS.length], data }
+        })
+        return { labels, series, weekly }
+    }, [trend, trendMetric])
+
+    const trendTotals = useMemo(() => {
+        if (!trend) return null
+        const sum = (a: number[]) => a.reduce((s, n) => s + n, 0)
+        const overallClicks = sum(trend.overall.clicks)
+        const overallCompleted = sum(trend.overall.completed)
+        const forms = trend.forms.map((f) => ({
+            key: f.key,
+            label: f.label,
+            clicks: sum(f.clicks),
+            completed: sum(f.completed),
+        }))
+        const occKnown = sum(forms.map((f) => f.completed))
+        return { overallClicks, overallCompleted, occUnknown: overallCompleted - occKnown, forms }
+    }, [trend])
 
     return (
         <div className={styles.container}>
@@ -120,6 +269,26 @@ export default function SignupFunnelPage() {
                 <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
                     {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
+                {period === 'custom' && (
+                    <>
+                        <input
+                            type="date"
+                            className={styles.select}
+                            value={customStart}
+                            max={customEnd}
+                            onChange={(e) => setCustomStart(e.target.value)}
+                        />
+                        <span className={styles.periodNote}>〜</span>
+                        <input
+                            type="date"
+                            className={styles.select}
+                            value={customEnd}
+                            min={customStart}
+                            max={daysAgoStr(0)}
+                            onChange={(e) => setCustomEnd(e.target.value)}
+                        />
+                    </>
+                )}
                 {data && <span className={styles.periodNote}>集計期間: {data.startDate} 〜 {data.endDate}</span>}
             </div>
 
@@ -234,6 +403,65 @@ export default function SignupFunnelPage() {
                     </div>
                 </>
             )}
+
+            <div className={styles.card}>
+                <h2 className={styles.sectionTitle}>職種別 × 全体の推移（流入・登録完了・完走率）</h2>
+                <div className={styles.controls}>
+                    {TREND_METRICS.map((m) => (
+                        <button
+                            key={m.value}
+                            className={`${styles.formTab} ${trendMetric === m.value ? styles.formTabActive : ''}`}
+                            onClick={() => setTrendMetric(m.value)}
+                        >
+                            {m.label}
+                        </button>
+                    ))}
+                    {trendView?.weekly && <span className={styles.periodNote}>期間が長いため週次（月曜始まり）で表示</span>}
+                </div>
+                {trendLoading && <p className={styles.loading}>推移を読み込み中...</p>}
+                {trendError && <div className={styles.error}>{trendError}</div>}
+                {trendView && !trendLoading && (
+                    <>
+                        <SignupTrendChart labels={trendView.labels} series={trendView.series} percent={trendMetric === 'rate'} />
+                        {trendTotals && (
+                            <div className={styles.tableWrapper}>
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>職種フォーム</th>
+                                            <th className={styles.num}>流入（職種選択クリック）</th>
+                                            <th className={styles.num}>登録完了</th>
+                                            <th className={styles.num}>完走率</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr className={styles.originRow}>
+                                            <td>全体</td>
+                                            <td className={styles.num}>{trendTotals.overallClicks.toLocaleString()}</td>
+                                            <td className={`${styles.num} ${styles.strong}`}>{trendTotals.overallCompleted.toLocaleString()}</td>
+                                            <td className={styles.num}>{pct1(trendTotals.overallCompleted, trendTotals.overallClicks)}</td>
+                                        </tr>
+                                        {trendTotals.forms.map((f) => (
+                                            <tr key={f.key}>
+                                                <td>{f.label}</td>
+                                                <td className={styles.num}>{f.clicks.toLocaleString()}</td>
+                                                <td className={`${styles.num} ${styles.strong}`}>{f.completed.toLocaleString()}</td>
+                                                <td className={styles.num}>{pct1(f.completed, f.clicks)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                        <p className={styles.tableNote}>
+                            流入＝職種選択ボタン（SU__Jobs__Btn__）のクリックユーザー、登録完了＝/members/signup/thanks 到達ユーザー（職種は ?occ= パラメータで分解）、完走率＝完了÷流入。
+                            {trendTotals && trendTotals.occUnknown > 0 && ` 完了のうち ${trendTotals.occUnknown.toLocaleString()}人 は occ パラメータなしのため全体のみに含まれます。`}
+                            チャートは上位4職種＋その他に集約しています（全職種の数値は表を参照）。
+                            日をまたいで完了したユーザーは流入と完了の日付がズレるため、日次の完走率は目安です。
+                        </p>
+                    </>
+                )}
+            </div>
         </div>
     )
 }
