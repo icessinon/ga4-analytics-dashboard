@@ -181,6 +181,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
             '期間切り替え（7 / 14 / 30 / 90日・今月・前月・カスタム日付指定）',
             '職種別×全体の推移チャート（流入=職種選択クリック / 登録完了=thanks到達を?occ=で職種分解 / 完走率の3指標切替、35日超は週次集約）と職種別合計テーブル',
             '前期間比較（直前の同じ長さの期間）: 全体サマリーカードと職種別テーブルに流入・完了の変化率（%）と完走率のポイント差（pt）を色付き表示',
+            '推移セクションは上の質問別ファネルとは独立した期間セレクタ（プリセット＋カスタム日付）を持つ',
         ],
         metrics: ['totalUsers', 'customEvent:view_label', 'customEvent:click_label', 'pagePathPlusQueryString'],
         apiRoute: 'POST /api/signup-funnel（推移は POST /api/signup-funnel/trend）',

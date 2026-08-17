@@ -148,6 +148,18 @@ function toWeekly(dates: string[], values: number[]): { labels: string[]; values
     return { labels, values: out }
 }
 
+function resolveRange(period: string, customStart: string, customEnd: string): { startDate: string; endDate: string } | null {
+    if (period === 'thisMonth') return monthRange(0)
+    if (period === 'lastMonth') return monthRange(-1)
+    if (period === 'custom') {
+        if (!customStart || !customEnd || customStart > customEnd) return null
+        return { startDate: customStart, endDate: customEnd }
+    }
+    const m = period.match(/^(\d+)daysAgo$/)
+    if (m) return { startDate: daysAgoStr(parseInt(m[1], 10)), endDate: daysAgoStr(1) }
+    return { startDate: period, endDate: 'yesterday' }
+}
+
 export default function SignupFunnelPage() {
     const { currentProduct } = useProduct()
     const [period, setPeriod] = useState('30daysAgo')
@@ -163,18 +175,19 @@ export default function SignupFunnelPage() {
     const [trendLoading, setTrendLoading] = useState(false)
     const [trendError, setTrendError] = useState<string | null>(null)
     const [trendMetric, setTrendMetric] = useState<TrendMetric>('rate')
+    // 推移セクションは上のファネルと独立して期間を選べる
+    const [trendPeriod, setTrendPeriod] = useState('30daysAgo')
+    const [trendCustomStart, setTrendCustomStart] = useState(daysAgoStr(30))
+    const [trendCustomEnd, setTrendCustomEnd] = useState(daysAgoStr(1))
 
-    const periodToRange = useCallback((): { startDate: string; endDate: string } | null => {
-        if (period === 'thisMonth') return monthRange(0)
-        if (period === 'lastMonth') return monthRange(-1)
-        if (period === 'custom') {
-            if (!customStart || !customEnd || customStart > customEnd) return null
-            return { startDate: customStart, endDate: customEnd }
-        }
-        const m = period.match(/^(\d+)daysAgo$/)
-        if (m) return { startDate: daysAgoStr(parseInt(m[1], 10)), endDate: daysAgoStr(1) }
-        return { startDate: period, endDate: 'yesterday' }
-    }, [period, customStart, customEnd])
+    const periodToRange = useCallback(
+        () => resolveRange(period, customStart, customEnd),
+        [period, customStart, customEnd]
+    )
+    const trendRange = useMemo(
+        () => resolveRange(trendPeriod, trendCustomStart, trendCustomEnd),
+        [trendPeriod, trendCustomStart, trendCustomEnd]
+    )
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId) return
@@ -205,7 +218,7 @@ export default function SignupFunnelPage() {
 
     const loadTrend = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId) return
-        const range = periodToRange()
+        const range = trendRange
         if (!range) return
         setTrendLoading(true)
         setTrendError(null)
@@ -234,7 +247,7 @@ export default function SignupFunnelPage() {
         } finally {
             setTrendLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, periodToRange])
+    }, [currentProduct?.ga4PropertyId, trendRange])
 
     useEffect(() => { load() }, [load])
     useEffect(() => { loadTrend() }, [loadTrend])
@@ -319,10 +332,7 @@ export default function SignupFunnelPage() {
         }
     }, [trend, prevTrend])
 
-    const prevRange = useMemo(() => {
-        const range = periodToRange()
-        return range ? prevRangeOf(range) : null
-    }, [periodToRange])
+    const prevRange = useMemo(() => (trendRange ? prevRangeOf(trendRange) : null), [trendRange])
 
     return (
         <div className={styles.container}>
@@ -482,6 +492,32 @@ export default function SignupFunnelPage() {
 
             <div className={styles.card}>
                 <h2 className={styles.sectionTitle}>職種別 × 全体の推移（流入・登録完了・完走率）</h2>
+                <div className={styles.controls}>
+                    <select className={styles.select} value={trendPeriod} onChange={(e) => setTrendPeriod(e.target.value)}>
+                        {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    {trendPeriod === 'custom' && (
+                        <>
+                            <input
+                                type="date"
+                                className={styles.select}
+                                value={trendCustomStart}
+                                max={trendCustomEnd}
+                                onChange={(e) => setTrendCustomStart(e.target.value)}
+                            />
+                            <span className={styles.periodNote}>〜</span>
+                            <input
+                                type="date"
+                                className={styles.select}
+                                value={trendCustomEnd}
+                                min={trendCustomStart}
+                                max={daysAgoStr(0)}
+                                onChange={(e) => setTrendCustomEnd(e.target.value)}
+                            />
+                        </>
+                    )}
+                    {trendRange && <span className={styles.periodNote}>期間: {trendRange.startDate} 〜 {trendRange.endDate}（上のファネルとは独立）</span>}
+                </div>
                 <div className={styles.controls}>
                     {TREND_METRICS.map((m) => (
                         <button
