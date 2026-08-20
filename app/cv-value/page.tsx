@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import {
     CV_UNIT_VALUE_ASOF,
@@ -34,7 +36,7 @@ interface ActualResponse {
     signup: { standalone: number | null }
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -60,7 +62,8 @@ function yen(v: number): string {
 
 export default function CvValuePage() {
     const { currentProduct } = useProduct()
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<CvTypesResponse | null>(null)
     const [actual, setActual] = useState<ActualResponse | null>(null)
     const [actualLoading, setActualLoading] = useState(false)
@@ -68,7 +71,7 @@ export default function CvValuePage() {
     const [error, setError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId) return
+        if (!currentProduct?.ga4PropertyId || !range) return
         setLoading(true)
         setError(null)
         try {
@@ -77,8 +80,8 @@ export default function CvValuePage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<CvTypesResponse & { error?: string }>(res)
@@ -89,7 +92,7 @@ export default function CvValuePage() {
             fetch('/api/applications/actual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: range.startDate, endDate: range.endDate }),
             })
                 .then((r) => parseJsonResponse<ActualResponse & { error?: string }>(r).then((j) => { if (r.ok) setActual(j); else setActual(null) }))
                 .catch(() => setActual(null))
@@ -100,7 +103,7 @@ export default function CvValuePage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, period])
+    }, [currentProduct?.ga4PropertyId, range])
 
     useEffect(() => { load() }, [load])
 
@@ -164,10 +167,13 @@ export default function CvValuePage() {
             <div className={styles.card}>
                 <h2 className={styles.sectionTitle}>期間のCVを金額換算</h2>
                 <div className={styles.controls}>
-                    <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                        {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    {data && <span className={styles.periodNote}>集計期間: {data.startDate} 〜 {data.endDate}</span>}
+                    <PeriodSelect
+                        state={periodState}
+                        options={withCustomOption(PERIOD_OPTIONS)}
+                        selectClassName={styles.select}
+                        noteClassName={styles.periodNote}
+                        resolved={data}
+                    />
                 </div>
 
                 {loading && <p className={styles.loading}>読み込み中...</p>}

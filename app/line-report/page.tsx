@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { CV_UNIT_VALUE_YEN, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './LineReportPage.module.css'
@@ -23,7 +25,7 @@ interface LineReportResponse {
     snapshotAsOf: string
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -44,20 +46,21 @@ function fmtDate(d: string): string {
 
 export default function LineReportPage() {
     const { currentProduct } = useProduct()
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<LineReportResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId) return
+        if (!currentProduct?.ga4PropertyId || !range) return
         setLoading(true)
         setError(null)
         try {
             const res = await fetch('/api/line-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: range.startDate, endDate: range.endDate }),
             })
             const json = await parseJsonResponse<LineReportResponse & { error?: string }>(res)
             if (!res.ok) throw new Error(json.error || '取得に失敗しました')
@@ -68,7 +71,7 @@ export default function LineReportPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, period])
+    }, [currentProduct?.ga4PropertyId, range])
 
     useEffect(() => { load() }, [load])
 
@@ -81,6 +84,8 @@ export default function LineReportPage() {
     const totalCv = data ? data.cv.applyCv + data.cv.lpApplyCv + data.cv.signupCv : 0
     const latestDelivery = data?.deliveries?.[0] ?? null
     const maxDaily = data ? Math.max(1, ...data.daily.map((d) => d.users)) : 1
+    // 日別テーブルは新しい日付が上（降順）
+    const dailyDesc = data ? [...data.daily].sort((a, b) => b.date.localeCompare(a.date)) : []
 
     return (
         <div className={styles.container}>
@@ -99,10 +104,13 @@ export default function LineReportPage() {
             <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/cv-types', label: '求人種別CV分析' }, { href: '/insights', label: '月次インサイトレポート' }]} />
 
             <div className={styles.controls}>
-                <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {data && <span className={styles.periodNote}>集計期間: {data.startDate} 〜 {data.endDate}</span>}
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                    noteClassName={styles.periodNote}
+                    resolved={data}
+                />
             </div>
 
             {loading && <p className={styles.loading}>読み込み中...</p>}
@@ -217,7 +225,7 @@ export default function LineReportPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.daily.map((d) => (
+                                    {dailyDesc.map((d) => (
                                         <tr key={d.date}>
                                             <td>{fmtDate(d.date)}</td>
                                             <td className={styles.num}>{d.users.toLocaleString()}</td>

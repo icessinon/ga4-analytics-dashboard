@@ -222,7 +222,7 @@ export default function AbTestDailyCvrPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {days.map((d) => (
+                                        {[...days].reverse().map((d) => (
                                             <tr key={d.date} className={styles.dataRow}>
                                                 <td className={styles.tdLabel}>{d.date}</td>
                                                 {variants.map((v) => {

@@ -6,6 +6,9 @@ import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import AISpinner from '@/components/AISpinner/AISpinner'
 import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
+import { calculateDaysBetween } from '@/lib/utils/date'
 import styles from './ScoringPage.module.css'
 
 interface ScoreBreakdown {
@@ -44,10 +47,10 @@ const SEGMENT_OPTIONS = [
     { value: 'country', label: '国' },
 ]
 
-const PERIOD_OPTIONS = [
-    { value: 30, label: '過去30日' },
-    { value: 60, label: '過去60日' },
-    { value: 90, label: '過去90日' },
+const PERIOD_OPTIONS: PeriodOption[] = [
+    { value: '30daysAgo', label: '過去30日' },
+    { value: '60daysAgo', label: '過去60日' },
+    { value: '90daysAgo', label: '過去90日' },
 ]
 
 const RANK_META = {
@@ -68,7 +71,8 @@ export default function ScoringPage() {
     const { currentProduct } = useProduct()
 
     const [segmentDimension, setSegmentDimension] = useState('deviceCategory')
-    const [periodDays, setPeriodDays] = useState(30)
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [segments, setSegments] = useState<ScoredSegment[] | null>(null)
@@ -80,7 +84,7 @@ export default function ScoringPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!currentProduct) return
+        if (!currentProduct || !range) return
         setLoading(true)
         setError(null)
         setSegments(null)
@@ -93,7 +97,8 @@ export default function ScoringPage() {
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     segmentDimension,
-                    periodDays,
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const data = await res.json()
@@ -110,7 +115,7 @@ export default function ScoringPage() {
     }
 
     const handleGeminiAnalysis = async () => {
-        if (!segments) return
+        if (!segments || !range) return
         setGeminiLoading(true)
         setGeminiError(null)
         setGeminiResult(null)
@@ -126,7 +131,7 @@ export default function ScoringPage() {
                         recentUserRatio: s.recentUserRatio,
                     })),
                     segmentDimension,
-                    periodDays,
+                    periodDays: calculateDaysBetween(range.startDate, range.endDate),
                 }),
             })
             const json = await res.json()
@@ -203,15 +208,11 @@ export default function ScoringPage() {
                         </div>
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>集計期間</label>
-                            <select
-                                value={periodDays}
-                                onChange={(e) => setPeriodDays(Number(e.target.value))}
-                                className={styles.formSelect}
-                            >
-                                {PERIOD_OPTIONS.map((o) => (
-                                    <option key={o.value} value={o.value}>{o.label}</option>
-                                ))}
-                            </select>
+                            <PeriodSelect
+                                state={periodState}
+                                options={withCustomOption(PERIOD_OPTIONS)}
+                                selectClassName={styles.formSelect}
+                            />
                         </div>
                     </div>
                     <div className={styles.formActions}>

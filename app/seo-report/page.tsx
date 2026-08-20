@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './SeoReportPage.module.css'
 
@@ -38,10 +40,10 @@ interface SeoReportResponse {
     topQueries: QueryRow[]
 }
 
-const PERIOD_OPTIONS = [
-    { value: 28, label: '過去28日' },
-    { value: 56, label: '過去8週' },
-    { value: 90, label: '過去90日' },
+const PERIOD_OPTIONS: PeriodOption[] = [
+    { value: '28daysAgo', label: '過去28日' },
+    { value: '56daysAgo', label: '過去8週' },
+    { value: '90daysAgo', label: '過去90日' },
 ]
 
 function diffPct(now: number, prev: number): string {
@@ -58,7 +60,8 @@ function posDiff(now: number | null, prev: number | null): string {
 }
 
 export default function SeoReportPage() {
-    const [days, setDays] = useState(28)
+    const periodState = usePeriodRange('28daysAgo')
+    const { range } = periodState
     const [pathInput, setPathInput] = useState('')
     const [pathFilter, setPathFilter] = useState('')
     const [data, setData] = useState<SeoReportResponse | null>(null)
@@ -66,13 +69,14 @@ export default function SeoReportPage() {
     const [error, setError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
+        if (!range) return
         setLoading(true)
         setError(null)
         try {
             const res = await fetch('/api/seo-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ days, pathFilter }),
+                body: JSON.stringify({ startDate: range.startDate, endDate: range.endDate, pathFilter }),
             })
             const json = await parseJsonResponse<SeoReportResponse & { error?: string }>(res)
             if (!res.ok) throw new Error(json.error || '取得に失敗しました')
@@ -83,7 +87,7 @@ export default function SeoReportPage() {
         } finally {
             setLoading(false)
         }
-    }, [days, pathFilter])
+    }, [range, pathFilter])
 
     useEffect(() => { load() }, [load])
 
@@ -105,9 +109,13 @@ export default function SeoReportPage() {
             <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析' }, { href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/trend', label: 'トレンド' }]} />
 
             <div className={styles.controls}>
-                <select className={styles.select} value={days} onChange={(e) => setDays(Number(e.target.value))}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                    noteClassName={styles.periodNote}
+                    resolved={data?.range ?? null}
+                />
                 <input
                     type="text"
                     className={styles.pathInput}
@@ -121,7 +129,7 @@ export default function SeoReportPage() {
                 {pathFilter && <button type="button" className={styles.button} onClick={() => { setPathInput(''); setPathFilter('') }}>解除</button>}
                 {data && (
                     <span className={styles.periodNote}>
-                        集計期間: {data.range.startDate} 〜 {data.range.endDate}（前期間比較・GSCは2〜3日遅れ）
+                        （前期間比較・GSCは2〜3日遅れ）
                         {data.pathFilter && <strong>／ フィルタ適用中: {data.pathFilter}</strong>}
                     </span>
                 )}
@@ -267,7 +275,7 @@ export default function SeoReportPage() {
                     </div>
 
                     <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>日別推移（クリック / 平均順位）</h2>
+                        <h2 className={styles.sectionTitle}>日別推移（クリック / 平均順位・新しい順）</h2>
                         <div className={styles.tableWrapper}>
                             <table className={styles.table}>
                                 <thead>
@@ -280,7 +288,7 @@ export default function SeoReportPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.daily.map((d) => (
+                                    {[...data.daily].reverse().map((d) => (
                                         <tr key={d.date}>
                                             <td>{d.date}</td>
                                             <td className={styles.num}>{d.clicks.toLocaleString()}</td>

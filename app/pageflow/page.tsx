@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './PageFlowPage.module.css'
 
@@ -30,7 +32,7 @@ interface PageFlowResponse {
     endDate: string
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -121,14 +123,15 @@ function FlowTable({ title, rows, total, emptyText }: { title: string; rows: Flo
 export default function PageFlowPage() {
     const { currentProduct } = useProduct()
     const [pagePath, setPagePath] = useState('')
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<PageFlowResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     async function analyze(path?: string) {
         const target = (path ?? pagePath).trim()
-        if (!currentProduct?.ga4PropertyId || !target || loading) return
+        if (!currentProduct?.ga4PropertyId || !target || loading || !range) return
         if (!target.startsWith('/')) {
             setError('ページパスは / で始めてください（例: /lp-thanks）')
             return
@@ -143,8 +146,8 @@ export default function PageFlowPage() {
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     pagePath: target,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<PageFlowResponse & { error?: string }>(res)
@@ -186,9 +189,11 @@ export default function PageFlowPage() {
                     onChange={(e) => setPagePath(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) analyze() }}
                 />
-                <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                />
                 <button className={styles.analyzeButton} onClick={() => analyze()} disabled={loading || !pagePath.trim()}>
                     {loading ? '集計中...' : '分析する'}
                 </button>

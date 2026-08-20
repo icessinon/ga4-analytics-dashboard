@@ -29,22 +29,41 @@ interface CategoryStat {
 
 export async function POST(request: Request) {
     try {
-        const { days = 28, pathFilter = '' } = await request.json().catch(() => ({})) as { days?: number; pathFilter?: string }
+        const { days = 28, pathFilter = '', startDate = '', endDate = '' } = await request.json().catch(() => ({})) as {
+            days?: number
+            pathFilter?: string
+            startDate?: string
+            endDate?: string
+        }
         const nDays = Math.min(180, Math.max(7, Number(days) || 28))
         // 任意のパス正規表現でURL群を絞り込む（例: /(driver)/media_.* や /search）。全体サマリー・日別・クエリ・URL表に適用
         const pathFilters: GscFilter[] = pathFilter && typeof pathFilter === 'string' && pathFilter.trim()
             ? [{ dimension: 'page', operator: 'includingRegex', expression: `^https://x-work\\.jp(${pathFilter.trim()})` }]
             : []
-        // GSCは2〜3日ラグがあるため3日前を終端に
-        const end = new Date()
-        end.setDate(end.getDate() - 3)
-        const start = new Date(end)
-        start.setDate(start.getDate() - (nDays - 1))
+        // GSCは2〜3日ラグがあるため3日前を終端上限に
+        const lagEnd = new Date()
+        lagEnd.setDate(lagEnd.getDate() - 3)
+        const isYmd = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s)
+        let start: Date
+        let end: Date
+        if (isYmd(startDate) && isYmd(endDate)) {
+            // 具体日付指定（カスタム・今月・前月）。終端はラグ分だけ手前に丸める
+            end = new Date(`${endDate}T00:00:00Z`)
+            if (fmt(end) > fmt(lagEnd)) end = new Date(`${fmt(lagEnd)}T00:00:00Z`)
+            start = new Date(`${startDate}T00:00:00Z`)
+            if (start > end) start = new Date(end)
+        } else {
+            // 従来互換: 日数指定
+            end = lagEnd
+            start = new Date(end)
+            start.setDate(start.getDate() - (nDays - 1))
+        }
         // 前期間（同じ長さ）
+        const lenDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
         const prevEnd = new Date(start)
         prevEnd.setDate(prevEnd.getDate() - 1)
         const prevStart = new Date(prevEnd)
-        prevStart.setDate(prevStart.getDate() - (nDays - 1))
+        prevStart.setDate(prevStart.getDate() - (lenDays - 1))
 
         const range = { startDate: fmt(start), endDate: fmt(end) }
         const prevRange = { startDate: fmt(prevStart), endDate: fmt(prevEnd) }

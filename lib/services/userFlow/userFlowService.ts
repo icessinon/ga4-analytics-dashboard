@@ -136,21 +136,22 @@ function toDisplay(suffix: string): string {
     return `${suffix.slice(0, 4)}-${suffix.slice(4, 6)}-${suffix.slice(6, 8)}`
 }
 
-export async function runUserFlowReport(days: number): Promise<UserFlowReport> {
-    // BQの日次エクスポートは前日分まで。JST基準で昨日を終端にする
+export async function runUserFlowReport(startDate: string, endDate: string): Promise<UserFlowReport> {
+    // BQの日次エクスポートは前日分まで。JST基準で昨日を超える終端は昨日に丸める
     const nowJst = new Date(Date.now() + 9 * 3600 * 1000)
-    const end = new Date(nowJst)
-    end.setUTCDate(end.getUTCDate() - 1)
-    const startD = new Date(end)
-    startD.setUTCDate(startD.getUTCDate() - (days - 1))
+    const yesterday = new Date(nowJst)
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+    const yesterdaySuffix = toSuffix(yesterday)
 
-    let start = toSuffix(startD)
-    const endSuffix = toSuffix(end)
+    let start = startDate.replace(/-/g, '')
+    let endSuffix = endDate.replace(/-/g, '')
+    if (endSuffix > yesterdaySuffix) endSuffix = yesterdaySuffix
     let clamped = false
     if (start < GA4_EXPORT_START) {
         start = GA4_EXPORT_START
         clamped = true
     }
+    if (start > endSuffix) start = endSuffix
 
     const [sessRes, nextRes] = await Promise.all([
         runGa4EventsQuery(buildSessionQuery(start, endSuffix)),

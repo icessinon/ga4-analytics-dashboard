@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './PathFunnelPage.module.css'
 
@@ -40,7 +42,7 @@ const MATCH_OPTIONS: Array<{ value: StepInput['matchType']; label: string }> = [
     { value: 'PARTIAL_REGEXP', label: '正規表現' },
 ]
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -83,7 +85,8 @@ const EMPTY_STEP: StepInput = { name: '', type: 'page', matchType: 'BEGINS_WITH'
 export default function PathFunnelPage() {
     const { currentProduct } = useProduct()
     const [steps, setSteps] = useState<StepInput[]>(PRESETS[0].steps.map((s) => ({ ...s })))
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [results, setResults] = useState<StepResult[] | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -146,7 +149,7 @@ export default function PathFunnelPage() {
     }
 
     async function run() {
-        if (!currentProduct?.ga4PropertyId || loading) return
+        if (!currentProduct?.ga4PropertyId || loading || !range) return
         if (steps.some((s) => !s.value.trim())) {
             setError('すべてのステップに条件値を入力してください')
             return
@@ -160,8 +163,8 @@ export default function PathFunnelPage() {
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     steps,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<{ steps?: StepResult[]; error?: string }>(res)
@@ -182,7 +185,7 @@ export default function PathFunnelPage() {
     }
 
     async function runComparison() {
-        if (!currentProduct?.ga4PropertyId || comparing || compareSelected.length < 2) return
+        if (!currentProduct?.ga4PropertyId || comparing || compareSelected.length < 2 || !range) return
         const all = [...PRESETS, ...saved]
         const targets = compareSelected
             .map((name) => all.find((f) => f.name === name))
@@ -198,8 +201,8 @@ export default function PathFunnelPage() {
                     body: JSON.stringify({
                         propertyId: currentProduct.ga4PropertyId,
                         steps: f.steps,
-                        startDate: period,
-                        endDate: 'yesterday',
+                        startDate: range.startDate,
+                        endDate: range.endDate,
                     }),
                 })
                 const json = await parseJsonResponse<{ steps?: StepResult[]; error?: string }>(res)
@@ -297,10 +300,12 @@ export default function PathFunnelPage() {
                         + ステップ追加
                     </button>
                     <div className={styles.runControls}>
-                        <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                            {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
-                        <button className={styles.runButton} onClick={run} disabled={loading || !currentProduct?.ga4PropertyId}>
+                        <PeriodSelect
+                            state={periodState}
+                            options={withCustomOption(PERIOD_OPTIONS)}
+                            selectClassName={styles.select}
+                        />
+                        <button className={styles.runButton} onClick={run} disabled={loading || !currentProduct?.ga4PropertyId || !range}>
                             {loading ? '集計中...' : 'ファネル実行'}
                         </button>
                     </div>

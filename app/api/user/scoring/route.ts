@@ -52,6 +52,8 @@ export async function POST(request: Request) {
             propertyId,
             segmentDimension = 'deviceCategory',
             periodDays = 30,
+            startDate: startDateInput,
+            endDate: endDateInput,
             accessToken: customToken,
         } = body
 
@@ -62,16 +64,22 @@ export async function POST(request: Request) {
         const accessToken = await getGA4AccessToken(customToken)
 
         const today = new Date()
-        const endDate = parseDateString(fmt(today))
+        const endDate = endDateInput ? parseDateString(endDateInput) : parseDateString(fmt(today))
 
-        // 全期間
-        const fullStart = new Date(today)
-        fullStart.setDate(today.getDate() - periodDays)
-        const startDate = parseDateString(fmt(fullStart))
+        // 全期間（startDate/endDate 指定時はそれを優先。未指定時は periodDays から算出）
+        let startDate: string
+        if (startDateInput) {
+            startDate = parseDateString(startDateInput)
+        } else {
+            const fullStart = new Date(today)
+            fullStart.setDate(today.getDate() - periodDays)
+            startDate = parseDateString(fmt(fullStart))
+        }
 
-        // 直近7日
-        const recentStart = new Date(today)
-        recentStart.setDate(today.getDate() - 7)
+        // 直近7日（期間終端からさかのぼった7日間。Recency指標の分子）
+        const endBase = new Date(`${endDate}T00:00:00`)
+        const recentStart = new Date(endBase)
+        recentStart.setDate(endBase.getDate() - 7)
         const recentStartDate = parseDateString(fmt(recentStart))
 
         const baseRequest = {

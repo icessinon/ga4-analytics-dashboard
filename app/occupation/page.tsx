@@ -5,6 +5,8 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import AISpinner from '@/components/AISpinner/AISpinner'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './OccupationPage.module.css'
 
@@ -44,7 +46,7 @@ interface OccupationDetail {
     subCategories: Array<{ segment: string; path: string; sessions: number }>
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -59,7 +61,8 @@ function renderAiLine(line: string, i: number) {
 
 export default function OccupationPage() {
     const { currentProduct } = useProduct()
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<OccupationResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -70,7 +73,7 @@ export default function OccupationPage() {
     const [details, setDetails] = useState<Record<string, OccupationDetail | 'loading' | 'error'>>({})
 
     const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId) return
+        if (!currentProduct?.ga4PropertyId || !range) return
         setLoading(true)
         setError(null)
         setAnalysis(null)
@@ -83,8 +86,8 @@ export default function OccupationPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<OccupationResponse & { error?: string }>(res)
@@ -96,7 +99,7 @@ export default function OccupationPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, period])
+    }, [currentProduct?.ga4PropertyId, range])
 
     useEffect(() => { load() }, [load])
 
@@ -130,7 +133,7 @@ export default function OccupationPage() {
     }
 
     async function toggleDetail(o: OccupationRow) {
-        if (!o.slug || !currentProduct?.ga4PropertyId) return
+        if (!o.slug || !currentProduct?.ga4PropertyId || !range) return
         if (expandedOcc === o.occ) {
             setExpandedOcc(null)
             return
@@ -145,8 +148,8 @@ export default function OccupationPage() {
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     slug: o.slug,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<OccupationDetail & { error?: string }>(res)
@@ -179,12 +182,13 @@ export default function OccupationPage() {
             <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析' }, { href: '/insights', label: '月次インサイト' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
-                <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {data && (
-                    <span className={styles.periodNote}>集計期間: {data.startDate} 〜 {data.endDate}</span>
-                )}
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                    noteClassName={styles.periodNote}
+                    resolved={data}
+                />
             </div>
 
             {loading && <p className={styles.loading}>読み込み中...</p>}

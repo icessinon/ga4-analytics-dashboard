@@ -5,6 +5,8 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import CvTypesTrendChart, { type DailyPoint } from '@/components/cv-types/CvTypesTrendChart'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './CvTypesPage.module.css'
@@ -60,7 +62,7 @@ interface CvTypesResponse {
     endDate: string
 }
 
-const PERIOD_OPTIONS = [
+const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
     { value: '14daysAgo', label: '過去14日' },
     { value: '30daysAgo', label: '過去30日' },
@@ -80,7 +82,8 @@ function pct(v: number | null): string {
 
 export default function CvTypesPage() {
     const { currentProduct } = useProduct()
-    const [period, setPeriod] = useState('30daysAgo')
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<CvTypesResponse | null>(null)
     const [actual, setActual] = useState<ActualResponse | null>(null)
     const [actualLoading, setActualLoading] = useState(false)
@@ -90,7 +93,7 @@ export default function CvTypesPage() {
     const [error, setError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId) return
+        if (!currentProduct?.ga4PropertyId || !range) return
         setLoading(true)
         setError(null)
         try {
@@ -99,8 +102,8 @@ export default function CvTypesPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
-                    startDate: period,
-                    endDate: 'yesterday',
+                    startDate: range.startDate,
+                    endDate: range.endDate,
                 }),
             })
             const json = await parseJsonResponse<CvTypesResponse & { error?: string }>(res)
@@ -111,7 +114,7 @@ export default function CvTypesPage() {
             fetch('/api/applications/actual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: range.startDate, endDate: range.endDate }),
             })
                 .then((r) => parseJsonResponse<ActualResponse & { error?: string }>(r).then((j) => { if (r.ok) setActual(j); else setActual(null) }))
                 .catch(() => setActual(null))
@@ -121,7 +124,7 @@ export default function CvTypesPage() {
             fetch('/api/cv-types/route-funnel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: period, endDate: 'yesterday' }),
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: range.startDate, endDate: range.endDate }),
             })
                 .then((r) => parseJsonResponse<RouteFunnelResponse & { error?: string }>(r).then((j) => { if (r.ok) setRouteFunnel(j); else setRouteFunnel(null) }))
                 .catch(() => setRouteFunnel(null))
@@ -132,7 +135,7 @@ export default function CvTypesPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, period])
+    }, [currentProduct?.ga4PropertyId, range])
 
     useEffect(() => { load() }, [load])
 
@@ -155,10 +158,13 @@ export default function CvTypesPage() {
             <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
-                <select className={styles.select} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {data && <span className={styles.periodNote}>集計期間: {data.startDate} 〜 {data.endDate}</span>}
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                    noteClassName={styles.periodNote}
+                    resolved={data}
+                />
             </div>
 
             {loading && <p className={styles.loading}>読み込み中...</p>}

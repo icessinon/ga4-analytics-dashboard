@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './UserFlowPage.module.css'
 
@@ -20,7 +22,6 @@ interface FlowGroup {
 interface NextAction { action: string; count: number }
 
 interface UserFlowResponse {
-    days: number
     startDate: string
     endDate: string
     clamped: boolean
@@ -29,10 +30,10 @@ interface UserFlowResponse {
     scannedMb: number
 }
 
-const PERIOD_OPTIONS = [
-    { value: 7, label: '過去7日' },
-    { value: 14, label: '過去14日' },
-    { value: 28, label: '過去28日' },
+const PERIOD_OPTIONS: PeriodOption[] = [
+    { value: '7daysAgo', label: '過去7日' },
+    { value: '14daysAgo', label: '過去14日' },
+    { value: '28daysAgo', label: '過去28日' },
 ]
 
 const GROUP_LABELS: Record<FlowGroup['key'], string> = {
@@ -65,19 +66,21 @@ const DIST_BUCKETS = [
 ] as const
 
 export default function UserFlowPage() {
-    const [days, setDays] = useState(7)
+    const periodState = usePeriodRange('7daysAgo')
+    const { range } = periodState
     const [data, setData] = useState<UserFlowResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
+        if (!range) return
         setLoading(true)
         setError(null)
         try {
             const res = await fetch('/api/user-flow', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ days }),
+                body: JSON.stringify({ startDate: range.startDate, endDate: range.endDate }),
             })
             const json = await parseJsonResponse<UserFlowResponse & { error?: string; message?: string }>(res)
             if (!res.ok) throw new Error(json.message || json.error || '取得に失敗しました')
@@ -88,7 +91,7 @@ export default function UserFlowPage() {
         } finally {
             setLoading(false)
         }
-    }, [days])
+    }, [range])
 
     useEffect(() => { load() }, [load])
 
@@ -117,14 +120,14 @@ export default function UserFlowPage() {
             ]} />
 
             <div className={styles.controls}>
-                <select className={styles.select} value={days} onChange={(e) => setDays(Number(e.target.value))}>
-                    {PERIOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {data && (
-                    <span className={styles.periodNote}>
-                        集計期間: {data.startDate} 〜 {data.endDate}（BQスキャン {data.scannedMb}MB）
-                    </span>
-                )}
+                <PeriodSelect
+                    state={periodState}
+                    options={withCustomOption(PERIOD_OPTIONS)}
+                    selectClassName={styles.select}
+                    noteClassName={styles.periodNote}
+                    resolved={data}
+                />
+                {data && <span className={styles.periodNote}>（BQスキャン {data.scannedMb}MB）</span>}
             </div>
 
             {data?.clamped && (
