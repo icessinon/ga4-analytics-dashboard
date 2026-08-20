@@ -77,7 +77,10 @@ export async function POST(request: Request) {
         }
 
         const requestedDaily = new Map<string, number>()
-        const statusTotal = { requested: 0, sent: 0, failed: 0 }
+        const companyDailyMap = new Map<string, Map<string, number>>()
+        // status は requested/sent/failed 以外の値も入りうるため、総数は別カウントする
+        const statusTotal: Record<string, number> = { requested: 0, sent: 0, failed: 0 }
+        let totalAttempts = 0
         const companyAgg = new Map<string, { companyName: string | null; requested: number; sent: number; viewed: number; applied: number }>()
         const companyOf = (companyId: string | null, companyName: string | null) => {
             const key = companyId ?? 'unknown'
@@ -97,12 +100,20 @@ export async function POST(request: Request) {
                 if (!attempt.requestedAt) continue
                 const d = jstDate(attempt.requestedAt)
                 if (d < startDate || d > endDate) continue
-                const status = (attempt.status ?? 'requested') as keyof typeof statusTotal
+                const status = attempt.status ?? 'requested'
                 statusTotal[status] = (statusTotal[status] ?? 0) + 1
+                totalAttempts += 1
                 requestedDaily.set(d, (requestedDaily.get(d) ?? 0) + 1)
                 const meta = attempt.scoutId ? scoutMeta.get(attempt.scoutId.toLowerCase()) : undefined
                 const row = companyOf(companyId, meta?.companyName ?? null)
                 row.requested += 1
+                const cKey = companyId ?? 'unknown'
+                let cDaily = companyDailyMap.get(cKey)
+                if (!cDaily) {
+                    cDaily = new Map()
+                    companyDailyMap.set(cKey, cDaily)
+                }
+                cDaily.set(d, (cDaily.get(d) ?? 0) + 1)
                 if (status === 'sent') row.sent += 1
                 if (attempt.scoutId && !scoutMeta.has(attempt.scoutId.toLowerCase())) {
                     scoutMeta.set(attempt.scoutId.toLowerCase(), { companyId, companyName: meta?.companyName ?? null })
@@ -128,7 +139,7 @@ export async function POST(request: Request) {
                 ],
             },
         }
-        const [viewDailyRes, viewByScoutRes, applyDailyRes, applyByUrlRes, viewTotalRes, applyTotalRes] = await Promise.all([
+        const [viewDailyRes, viewByScoutRes, applyDailyRes, applyByUrlRes, viewTotalRes, applyTotalRes, viewDailyByScoutRes, applyDailyByUrlRes] = await Promise.all([
             fetchGA4Data({
                 propertyId, dateRanges,
                 dimensions: [{ name: 'date' }],
@@ -170,6 +181,21 @@ export async function POST(request: Request) {
                 dimensionFilter: applyClickFilter,
                 limit: 10,
             }, accessToken),
+            // 企業別チャート用: 日付×スカウトページの閲覧、日付×URLの応募クリック
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'pagePath' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: '/scout/' } } },
+                limit: 10000,
+            }, accessToken),
+            fetchGA4Data({
+                propertyId, dateRanges,
+                dimensions: [{ name: 'date' }, { name: 'pageLocation' }],
+                metrics: [{ name: 'totalUsers' }],
+                dimensionFilter: applyClickFilter,
+                limit: 10000,
+            }, accessToken),
         ])
 
         const viewedDaily = new Map<string, number>()
@@ -210,6 +236,33 @@ export async function POST(request: Request) {
             }
         }
 
+        // ---- 企業別×日別の閲覧・応募（scoutId経由で企業に紐付け）----
+        const ymd = (raw: string) => `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+        const addDaily = (map: Map<string, Map<string, number>>, companyId: string, d: string, n: number) => {
+            let m = map.get(companyId)
+            if (!m) {
+                m = new Map()
+                map.set(companyId, m)
+            }
+            m.set(d, (m.get(d) ?? 0) + n)
+        }
+        const companyViewedDaily = new Map<string, Map<string, number>>()
+        for (const row of viewDailyByScoutRes.rows ?? []) {
+            const scoutId = scoutIdFromPagePath(row.dimensionValues?.[1]?.value ?? '')
+            if (!scoutId) continue
+            const meta = scoutMeta.get(scoutId)
+            if (!meta?.companyId) continue
+            addDaily(companyViewedDaily, meta.companyId, ymd(row.dimensionValues?.[0]?.value ?? ''), parseInt(row.metricValues?.[0]?.value ?? '0', 10))
+        }
+        const companyAppliedDaily = new Map<string, Map<string, number>>()
+        for (const row of applyDailyByUrlRes.rows ?? []) {
+            const scoutId = extractScoutIdFromUrl(row.dimensionValues?.[1]?.value ?? '')
+            if (!scoutId) continue
+            const meta = scoutMeta.get(scoutId)
+            if (!meta?.companyId) continue
+            addDaily(companyAppliedDaily, meta.companyId, ymd(row.dimensionValues?.[0]?.value ?? ''), parseInt(row.metricValues?.[0]?.value ?? '0', 10))
+        }
+
         // ---- 日次系列（対象期間の全日）----
         const daily: Array<{ date: string; requested: number; viewed: number; applied: number }> = []
         for (let t = new Date(`${startDate}T00:00:00Z`).getTime(); t <= new Date(`${endDate}T00:00:00Z`).getTime(); t += 86400000) {
@@ -233,20 +286,32 @@ export async function POST(request: Request) {
             }))
             .sort((a, b) => b.requested - a.requested)
 
+        // ---- 企業別×日別の送信・閲覧・応募（企業クリック時の個別チャート用）----
+        const dates = daily.map((d) => d.date)
+        const companyDaily = companies.map((c) => ({
+            companyId: c.companyId,
+            companyName: c.companyName,
+            requested: dates.map((d) => companyDailyMap.get(c.companyId)?.get(d) ?? 0),
+            viewed: dates.map((d) => companyViewedDaily.get(c.companyId)?.get(d) ?? 0),
+            applied: dates.map((d) => companyAppliedDaily.get(c.companyId)?.get(d) ?? 0),
+        }))
+
         return NextResponse.json({
             success: true,
             startDate,
             endDate,
             summary: {
-                requested: statusTotal.requested + statusTotal.sent + statusTotal.failed,
+                requested: totalAttempts,
                 sent: statusTotal.sent,
                 failed: statusTotal.failed,
+                skipped: statusTotal.skipped ?? 0,
                 viewedUsers,
                 viewedScoutIds,
                 appliedUsers,
             },
             daily,
             companies,
+            companyDaily,
             fetchedAt: new Date().toISOString(),
         })
     } catch (error) {
