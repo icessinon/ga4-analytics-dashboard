@@ -150,6 +150,19 @@ export const FEATURE_LIST: FeatureDoc[] = [
     },
 
     {
+        name: '求人一覧パフォーマンス',
+        href: '/list-performance',
+        category: '可視化',
+        description: '求人一覧の2系統（職種一覧 /driver等14種と検索結果 /search）のPV・閲覧セッションと、閲覧後に同一セッションで求人詳細（media_）へ遷移した割合を比較します。BigQueryのGA4生イベントをセッション単位で集計。',
+        capabilities: [
+            '職種別内訳（14職種それぞれのPV・セッション・詳細遷移率）+ 職種計 + /search',
+            '日次推移チャート（職種一覧計 vs /search、詳細遷移率・PV・セッション切替）',
+            '期間切り替え（プリセット・今月・前月・カスタム。BQエクスポート開始2026-08-07以降）',
+        ],
+        metrics: ['BigQuery events_*（page_view）'],
+        apiRoute: 'POST /api/list-performance',
+    },
+    {
         name: 'ページフロー分析',
         href: '/pageflow',
         category: '可視化・経路分析',
@@ -241,7 +254,10 @@ export const FEATURE_LIST: FeatureDoc[] = [
         description: 'GA4 データをソースとした A/B テストの管理・実行・評価を行います。統計的有意差検定（Z検定）・サンプルサイズ・改善率の判定基準を設定し、AI が勝者の推奨を補足します。',
         capabilities: [
             'テスト作成・編集・ステータス管理（running / paused / completed）',
+            'CVR設定のGTMラベルは1行=1ラベルで複数指定（実ラベルのオートコンプリート付き）。複数指定時は途中経過・テスト実行結果にラベル別内訳（件数・構成比）を表示',
+            'Backlog Issue欄（番号・課題キー・URLのいずれか）。一覧・詳細にリンク表示',
             'GA4フィルタ・除外フィルタ（例: pageLocation に userId= を含むイベントを除外し、LP経由ユーザーを除いた直接流入のみでCVR比較）',
+            'フィルタ式を複数指定（カンマ区切りOR）した場合、途中経過・最終結果で「全体⇔フィルタ式別」を切り替えて内訳（PV/CV/CVR・有意差）を表示',
             'Z検定による統計的有意差判定',
             'サンプルサイズ・テスト期間・改善率の合否チェック',
             'スケジュール実行・Webhook 通知',

@@ -163,6 +163,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'ユーザー経路分析', subtitle: '来訪から会員登録完了までのフロー可視化', getHref: () => '/journey', productPrefix: true },
             { title: '離脱分析', subtitle: 'ファネルの各ステップの離脱数・離脱率の高いページを特定', getHref: () => '/exit', productPrefix: true },
             { title: 'ページフロー分析', subtitle: '指定ページの直前・直後の遷移ページを両方向で集計', getHref: () => '/pageflow', productPrefix: true },
+            { title: '求人一覧パフォーマンス', subtitle: '職種一覧と/searchのPV・求人詳細への遷移率を比較（BQセッション集計）', getHref: () => '/list-performance', productPrefix: true },
         ],
     },
     {
