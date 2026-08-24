@@ -5,7 +5,10 @@ import DateInput from '@/components/DateInput'
 import AbTestScheduleConfig, { ScheduleConfig } from './AbTestScheduleConfig'
 import CustomSelect from '@/components/CustomSelect'
 import GeminiConfig from '@/components/GeminiConfig'
+import LabelInput from '@/components/LabelInput'
+import MultiLabelInput from '@/components/MultiLabelInput/MultiLabelInput'
 import Switch from '@/components/Switch'
+import { extractIssueNumber } from '@/lib/utils/issueUrl'
 import { GA4_CVR_DIMENSIONS, GA4_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
 import styles from './AbTestFormModal.module.css'
 import type { AbTestFormModalProps } from './types'
@@ -33,6 +36,14 @@ const emptyFunnelStep = (): FunnelStepForm => ({
 const joinFunnelLabels = (labels: unknown): string =>
     Array.isArray(labels) ? labels.join(',') : typeof labels === 'string' ? labels : ''
 
+// 旧データはカンマ区切り文字列、新データは配列。どちらもtrim済み配列に正規化する
+const splitLabels = (s: string | string[] | undefined) =>
+    (Array.isArray(s) ? s : (s ?? '').split(',')).map((l) => l.trim()).filter(Boolean)
+
+// 保存済み設定（string | string[]）をMultiLabelInput用の配列に変換
+const toLabelArray = (v: unknown): string[] =>
+    Array.isArray(v) ? v : typeof v === 'string' && v ? v.split(',').map((l) => l.trim()) : []
+
 export default function AbTestFormModal({
     isOpen,
     onClose,
@@ -46,6 +57,7 @@ export default function AbTestFormModal({
         name: '',
         description: '',
         hypothesis: '',
+        issueUrl: '',
         expectedImprovement: '',
         startDate: '',
         endDate: '',
@@ -66,30 +78,30 @@ export default function AbTestFormModal({
         limit: 25000,
         cvrA: {
             denominatorDimension: '',
-            denominatorLabels: '',
+            denominatorLabels: [] as string[],
             numeratorDimension: '',
-            numeratorLabels: '',
+            numeratorLabels: [] as string[],
             metric: 'totalUsers',
         },
         cvrB: {
             denominatorDimension: '',
-            denominatorLabels: '',
+            denominatorLabels: [] as string[],
             numeratorDimension: '',
-            numeratorLabels: '',
+            numeratorLabels: [] as string[],
             metric: 'totalUsers',
         },
         cvrC: {
             denominatorDimension: '',
-            denominatorLabels: '',
+            denominatorLabels: [] as string[],
             numeratorDimension: '',
-            numeratorLabels: '',
+            numeratorLabels: [] as string[],
             metric: 'totalUsers',
         },
         cvrD: {
             denominatorDimension: '',
-            denominatorLabels: '',
+            denominatorLabels: [] as string[],
             numeratorDimension: '',
-            numeratorLabels: '',
+            numeratorLabels: [] as string[],
             metric: 'totalUsers',
         },
         abTestEvaluationConfig: {
@@ -125,6 +137,25 @@ export default function AbTestFormModal({
         setFunnelSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
     }
 
+    // GTMタグ規則: バリアントB/C/DのラベルはAのラベル + __{variant}-{issue番号}。
+    // Backlog Issueが入力されていれば、候補の優先表示とAからの自動生成に使う
+    const issueNum = extractIssueNumber(formData.issueUrl)
+    const variantSuffix = (v: 'B' | 'C' | 'D') => (issueNum ? `__${v}-${issueNum}` : undefined)
+    const generateFromA = (v: 'B' | 'C' | 'D') => {
+        const suffix = variantSuffix(v)
+        if (!suffix) return
+        setGa4Config((prev) => ({
+            ...prev,
+            [`cvr${v}`]: {
+                ...prev[`cvr${v}`],
+                denominatorDimension: prev[`cvr${v}`].denominatorDimension || prev.cvrA.denominatorDimension,
+                numeratorDimension: prev[`cvr${v}`].numeratorDimension || prev.cvrA.numeratorDimension,
+                denominatorLabels: prev.cvrA.denominatorLabels.filter(Boolean).map((l) => `${l.trim()}${suffix}`),
+                numeratorLabels: prev.cvrA.numeratorLabels.filter(Boolean).map((l) => `${l.trim()}${suffix}`),
+            },
+        }))
+    }
+
     // 必要サンプルサイズ: 有意水準95%（z=1.96）・検出力80%（z=0.84）の両側Z検定
     const requiredSampleSize = (() => {
         const p1 = parseFloat(baselineCvr) / 100
@@ -152,16 +183,16 @@ export default function AbTestFormModal({
                     propertyId: selectedProduct.ga4PropertyId || prev.propertyId,
                     cvrC: prev.cvrC || {
                         denominatorDimension: '',
-                        denominatorLabels: '',
+                        denominatorLabels: [] as string[],
                         numeratorDimension: '',
-                        numeratorLabels: '',
+                        numeratorLabels: [] as string[],
                         metric: 'totalUsers',
                     },
                     cvrD: prev.cvrD || {
                         denominatorDimension: '',
-                        denominatorLabels: '',
+                        denominatorLabels: [] as string[],
                         numeratorDimension: '',
-                        numeratorLabels: '',
+                        numeratorLabels: [] as string[],
                         metric: 'totalUsers',
                     },
                 }))
@@ -182,6 +213,7 @@ export default function AbTestFormModal({
                 name: editingTest.name,
                 description: editingTest.description || '',
                 hypothesis: editingTest.hypothesis || '',
+                issueUrl: editingTest.issueUrl || '',
                 expectedImprovement: editingTest.expectedImprovement != null ? String(editingTest.expectedImprovement) : '',
                 startDate: new Date(editingTest.startDate).toISOString().split('T')[0],
                 endDate: editingTest.endDate ? new Date(editingTest.endDate).toISOString().split('T')[0] : '',
@@ -204,30 +236,30 @@ export default function AbTestFormModal({
                     limit: config.limit || 25000,
                     cvrA: {
                         denominatorDimension: config.cvrA?.denominatorDimension || '',
-                        denominatorLabels: Array.isArray(config.cvrA?.denominatorLabels) ? config.cvrA.denominatorLabels.join(',') : config.cvrA?.denominatorLabels || '',
+                        denominatorLabels: toLabelArray(config.cvrA?.denominatorLabels),
                         numeratorDimension: config.cvrA?.numeratorDimension || '',
-                        numeratorLabels: Array.isArray(config.cvrA?.numeratorLabels) ? config.cvrA.numeratorLabels.join(',') : config.cvrA?.numeratorLabels || '',
+                        numeratorLabels: toLabelArray(config.cvrA?.numeratorLabels),
                         metric: config.cvrA?.metric || 'totalUsers',
                     },
                     cvrB: {
                         denominatorDimension: config.cvrB?.denominatorDimension || '',
-                        denominatorLabels: Array.isArray(config.cvrB?.denominatorLabels) ? config.cvrB.denominatorLabels.join(',') : config.cvrB?.denominatorLabels || '',
+                        denominatorLabels: toLabelArray(config.cvrB?.denominatorLabels),
                         numeratorDimension: config.cvrB?.numeratorDimension || '',
-                        numeratorLabels: Array.isArray(config.cvrB?.numeratorLabels) ? config.cvrB.numeratorLabels.join(',') : config.cvrB?.numeratorLabels || '',
+                        numeratorLabels: toLabelArray(config.cvrB?.numeratorLabels),
                         metric: config.cvrB?.metric || 'totalUsers',
                     },
                     cvrC: {
                         denominatorDimension: config.cvrC?.denominatorDimension || '',
-                        denominatorLabels: Array.isArray(config.cvrC?.denominatorLabels) ? config.cvrC.denominatorLabels.join(',') : config.cvrC?.denominatorLabels || '',
+                        denominatorLabels: toLabelArray(config.cvrC?.denominatorLabels),
                         numeratorDimension: config.cvrC?.numeratorDimension || '',
-                        numeratorLabels: Array.isArray(config.cvrC?.numeratorLabels) ? config.cvrC.numeratorLabels.join(',') : config.cvrC?.numeratorLabels || '',
+                        numeratorLabels: toLabelArray(config.cvrC?.numeratorLabels),
                         metric: config.cvrC?.metric || 'totalUsers',
                     },
                     cvrD: {
                         denominatorDimension: config.cvrD?.denominatorDimension || '',
-                        denominatorLabels: Array.isArray(config.cvrD?.denominatorLabels) ? config.cvrD.denominatorLabels.join(',') : config.cvrD?.denominatorLabels || '',
+                        denominatorLabels: toLabelArray(config.cvrD?.denominatorLabels),
                         numeratorDimension: config.cvrD?.numeratorDimension || '',
-                        numeratorLabels: Array.isArray(config.cvrD?.numeratorLabels) ? config.cvrD.numeratorLabels.join(',') : config.cvrD?.numeratorLabels || '',
+                        numeratorLabels: toLabelArray(config.cvrD?.numeratorLabels),
                         metric: config.cvrD?.metric || 'totalUsers',
                     },
                     abTestEvaluationConfig: config.abTestEvaluationConfig || {
@@ -271,6 +303,7 @@ export default function AbTestFormModal({
                 name: '',
                 description: '',
                 hypothesis: '',
+                issueUrl: '',
                 expectedImprovement: '',
                 startDate: '',
                 endDate: '',
@@ -300,30 +333,30 @@ export default function AbTestFormModal({
                 limit: 25000,
                 cvrA: {
                     denominatorDimension: '',
-                    denominatorLabels: '',
+                    denominatorLabels: [] as string[],
                     numeratorDimension: '',
-                    numeratorLabels: '',
+                    numeratorLabels: [] as string[],
                     metric: 'totalUsers',
                 },
                 cvrB: {
                     denominatorDimension: '',
-                    denominatorLabels: '',
+                    denominatorLabels: [] as string[],
                     numeratorDimension: '',
-                    numeratorLabels: '',
+                    numeratorLabels: [] as string[],
                     metric: 'totalUsers',
                 },
                 cvrC: {
                     denominatorDimension: '',
-                    denominatorLabels: '',
+                    denominatorLabels: [] as string[],
                     numeratorDimension: '',
-                    numeratorLabels: '',
+                    numeratorLabels: [] as string[],
                     metric: 'totalUsers',
                 },
                 cvrD: {
                     denominatorDimension: '',
-                    denominatorLabels: '',
+                    denominatorLabels: [] as string[],
                     numeratorDimension: '',
-                    numeratorLabels: '',
+                    numeratorLabels: [] as string[],
                     metric: 'totalUsers',
                 },
                 abTestEvaluationConfig: {
@@ -375,15 +408,15 @@ export default function AbTestFormModal({
                     metric: ga4Config.cvrA.metric,
                     numeratorDimension: ga4Config.cvrA.numeratorDimension,
                     denominatorDimension: ga4Config.cvrA.denominatorDimension,
-                    numeratorLabels: ga4Config.cvrA.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
-                    denominatorLabels: ga4Config.cvrA.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
+                    numeratorLabels: splitLabels(ga4Config.cvrA.numeratorLabels),
+                    denominatorLabels: splitLabels(ga4Config.cvrA.denominatorLabels),
                 },
                 cvrB: {
                     metric: ga4Config.cvrB.metric,
                     numeratorDimension: ga4Config.cvrB.numeratorDimension,
                     denominatorDimension: ga4Config.cvrB.denominatorDimension,
-                    numeratorLabels: ga4Config.cvrB.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
-                    denominatorLabels: ga4Config.cvrB.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
+                    numeratorLabels: splitLabels(ga4Config.cvrB.numeratorLabels),
+                    denominatorLabels: splitLabels(ga4Config.cvrB.denominatorLabels),
                 },
             }
 
@@ -392,8 +425,8 @@ export default function AbTestFormModal({
                     metric: ga4Config.cvrC.metric,
                     numeratorDimension: ga4Config.cvrC.numeratorDimension,
                     denominatorDimension: ga4Config.cvrC.denominatorDimension,
-                    numeratorLabels: ga4Config.cvrC.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
-                    denominatorLabels: ga4Config.cvrC.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
+                    numeratorLabels: splitLabels(ga4Config.cvrC.numeratorLabels),
+                    denominatorLabels: splitLabels(ga4Config.cvrC.denominatorLabels),
                 }
             }
 
@@ -402,8 +435,8 @@ export default function AbTestFormModal({
                     metric: ga4Config.cvrD.metric,
                     numeratorDimension: ga4Config.cvrD.numeratorDimension,
                     denominatorDimension: ga4Config.cvrD.denominatorDimension,
-                    numeratorLabels: ga4Config.cvrD.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
-                    denominatorLabels: ga4Config.cvrD.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0),
+                    numeratorLabels: splitLabels(ga4Config.cvrD.numeratorLabels),
+                    denominatorLabels: splitLabels(ga4Config.cvrD.denominatorLabels),
                 }
             }
 
@@ -455,7 +488,6 @@ export default function AbTestFormModal({
     }
 
     const [submitting, setSubmitting] = useState(false)
-    const splitLabels = (s: string | undefined) => (s ?? '').split(',').map((l) => l.trim()).filter(Boolean)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -596,6 +628,17 @@ export default function AbTestFormModal({
                                     className={styles.input}
                                     rows={3}
                                 />
+                            </div>
+                            <div>
+                                <label className={styles.label}>Backlog Issue</label>
+                                <input
+                                    type="text"
+                                    value={formData.issueUrl}
+                                    onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
+                                    className={styles.input}
+                                    placeholder="例: 1804 / XWORK_PRODUCT-1804 / https://xmile.backlog.com/view/..."
+                                />
+                                <p className={styles.helpText}>番号・課題キー・URLのいずれでもOK。一覧と詳細ページにリンクを表示します。</p>
                             </div>
                             <div>
                                 <label className={styles.label}>仮説</label>
@@ -807,15 +850,15 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.label}>分母ラベル（カンマ区切り）</label>
-                                    <input
-                                        type="text"
-                                        value={ga4Config.cvrA.denominatorLabels}
-                                        onChange={(e) => setGa4Config({
+                                    <label className={styles.label}>分母ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrA.denominatorLabels}
+                                        onChange={(vals) => setGa4Config({
                                             ...ga4Config,
-                                            cvrA: { ...ga4Config.cvrA, denominatorLabels: e.target.value }
+                                            cvrA: { ...ga4Config.cvrA, denominatorLabels: vals }
                                         })}
-                                        className={styles.input}
+                                        inputClassName={styles.input}
+                                        aria-label="CVR A 分母ラベル"
                                     />
                                 </div>
                                 <div>
@@ -833,15 +876,15 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.label}>分子ラベル（カンマ区切り）</label>
-                                    <input
-                                        type="text"
-                                        value={ga4Config.cvrA.numeratorLabels}
-                                        onChange={(e) => setGa4Config({
+                                    <label className={styles.label}>分子ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrA.numeratorLabels}
+                                        onChange={(vals) => setGa4Config({
                                             ...ga4Config,
-                                            cvrA: { ...ga4Config.cvrA, numeratorLabels: e.target.value }
+                                            cvrA: { ...ga4Config.cvrA, numeratorLabels: vals }
                                         })}
-                                        className={styles.input}
+                                        inputClassName={styles.input}
+                                        aria-label="CVR A 分子ラベル"
                                     />
                                 </div>
                                 <div>
@@ -861,7 +904,14 @@ export default function AbTestFormModal({
                         </div>
 
                         <div className={styles.formSection}>
-                            <h4 className={styles.formSubSectionTitle}>CVR設定 B *</h4>
+                            <div className={styles.formSectionHeader}>
+                                <h4 className={styles.formSubSectionTitle}>CVR設定 B *</h4>
+                                {issueNum && (
+                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('B')}>
+                                        Aのラベルから自動生成（__B-{issueNum}）
+                                    </button>
+                                )}
+                            </div>
                             <div className={styles.formGrid}>
                                 <div>
                                     <label className={styles.label}>分母ディメンション</label>
@@ -878,15 +928,17 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.label}>分母ラベル（カンマ区切り）</label>
-                                    <input
-                                        type="text"
-                                        value={ga4Config.cvrB.denominatorLabels}
-                                        onChange={(e) => setGa4Config({
+                                    <label className={styles.label}>分母ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrB.denominatorLabels}
+                                        onChange={(vals) => setGa4Config({
                                             ...ga4Config,
-                                            cvrB: { ...ga4Config.cvrB, denominatorLabels: e.target.value }
+                                            cvrB: { ...ga4Config.cvrB, denominatorLabels: vals }
                                         })}
-                                        className={styles.input}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('B')}
+                                        synthesizeSuffix={variantSuffix('B')}
+                                        aria-label="CVR B 分母ラベル"
                                     />
                                 </div>
                                 <div>
@@ -904,15 +956,17 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.label}>分子ラベル（カンマ区切り）</label>
-                                    <input
-                                        type="text"
-                                        value={ga4Config.cvrB.numeratorLabels}
-                                        onChange={(e) => setGa4Config({
+                                    <label className={styles.label}>分子ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrB.numeratorLabels}
+                                        onChange={(vals) => setGa4Config({
                                             ...ga4Config,
-                                            cvrB: { ...ga4Config.cvrB, numeratorLabels: e.target.value }
+                                            cvrB: { ...ga4Config.cvrB, numeratorLabels: vals }
                                         })}
-                                        className={styles.input}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('B')}
+                                        synthesizeSuffix={variantSuffix('B')}
+                                        aria-label="CVR B 分子ラベル"
                                     />
                                 </div>
                                 <div>
@@ -934,6 +988,11 @@ export default function AbTestFormModal({
                         <div className={styles.formSection}>
                             <div className={styles.formSectionHeader}>
                                 <h4 className={styles.formSubSectionTitle}>CVR設定 C（オプション）</h4>
+                                {showCvrC && issueNum && (
+                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('C')}>
+                                        Aのラベルから自動生成（__C-{issueNum}）
+                                    </button>
+                                )}
                                 <Switch
                                     checked={showCvrC}
                                     onChange={setShowCvrC}
@@ -957,16 +1016,18 @@ export default function AbTestFormModal({
                                         />
                                     </div>
                                     <div>
-                                        <label className={styles.label}>分母ラベル（カンマ区切り）</label>
-                                        <input
-                                            type="text"
-                                            value={ga4Config.cvrC.denominatorLabels}
-                                            onChange={(e) => setGa4Config({
-                                                ...ga4Config,
-                                                cvrC: { ...ga4Config.cvrC, denominatorLabels: e.target.value }
-                                            })}
-                                            className={styles.input}
-                                        />
+                                        <label className={styles.label}>分母ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrC.denominatorLabels}
+                                        onChange={(vals) => setGa4Config({
+                                            ...ga4Config,
+                                            cvrC: { ...ga4Config.cvrC, denominatorLabels: vals }
+                                        })}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('C')}
+                                        synthesizeSuffix={variantSuffix('C')}
+                                        aria-label="CVR C 分母ラベル"
+                                    />
                                     </div>
                                     <div>
                                         <label className={styles.label}>分子ディメンション</label>
@@ -983,16 +1044,18 @@ export default function AbTestFormModal({
                                         />
                                     </div>
                                     <div>
-                                        <label className={styles.label}>分子ラベル（カンマ区切り）</label>
-                                        <input
-                                            type="text"
-                                            value={ga4Config.cvrC.numeratorLabels}
-                                            onChange={(e) => setGa4Config({
-                                                ...ga4Config,
-                                                cvrC: { ...ga4Config.cvrC, numeratorLabels: e.target.value }
-                                            })}
-                                            className={styles.input}
-                                        />
+                                        <label className={styles.label}>分子ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrC.numeratorLabels}
+                                        onChange={(vals) => setGa4Config({
+                                            ...ga4Config,
+                                            cvrC: { ...ga4Config.cvrC, numeratorLabels: vals }
+                                        })}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('C')}
+                                        synthesizeSuffix={variantSuffix('C')}
+                                        aria-label="CVR C 分子ラベル"
+                                    />
                                     </div>
                                     <div>
                                         <label className={styles.label}>計算メトリクス</label>
@@ -1014,6 +1077,11 @@ export default function AbTestFormModal({
                         <div className={styles.formSection}>
                             <div className={styles.formSectionHeader}>
                                 <h4 className={styles.formSubSectionTitle}>CVR設定 D（オプション）</h4>
+                                {showCvrD && issueNum && (
+                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('D')}>
+                                        Aのラベルから自動生成（__D-{issueNum}）
+                                    </button>
+                                )}
                                 <Switch
                                     checked={showCvrD}
                                     onChange={setShowCvrD}
@@ -1037,16 +1105,18 @@ export default function AbTestFormModal({
                                         />
                                     </div>
                                     <div>
-                                        <label className={styles.label}>分母ラベル（カンマ区切り）</label>
-                                        <input
-                                            type="text"
-                                            value={ga4Config.cvrD.denominatorLabels}
-                                            onChange={(e) => setGa4Config({
-                                                ...ga4Config,
-                                                cvrD: { ...ga4Config.cvrD, denominatorLabels: e.target.value }
-                                            })}
-                                            className={styles.input}
-                                        />
+                                        <label className={styles.label}>分母ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrD.denominatorLabels}
+                                        onChange={(vals) => setGa4Config({
+                                            ...ga4Config,
+                                            cvrD: { ...ga4Config.cvrD, denominatorLabels: vals }
+                                        })}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('D')}
+                                        synthesizeSuffix={variantSuffix('D')}
+                                        aria-label="CVR D 分母ラベル"
+                                    />
                                     </div>
                                     <div>
                                         <label className={styles.label}>分子ディメンション</label>
@@ -1063,16 +1133,18 @@ export default function AbTestFormModal({
                                         />
                                     </div>
                                     <div>
-                                        <label className={styles.label}>分子ラベル（カンマ区切り）</label>
-                                        <input
-                                            type="text"
-                                            value={ga4Config.cvrD.numeratorLabels}
-                                            onChange={(e) => setGa4Config({
-                                                ...ga4Config,
-                                                cvrD: { ...ga4Config.cvrD, numeratorLabels: e.target.value }
-                                            })}
-                                            className={styles.input}
-                                        />
+                                        <label className={styles.label}>分子ラベル</label>
+                                    <MultiLabelInput
+                                        values={ga4Config.cvrD.numeratorLabels}
+                                        onChange={(vals) => setGa4Config({
+                                            ...ga4Config,
+                                            cvrD: { ...ga4Config.cvrD, numeratorLabels: vals }
+                                        })}
+                                        inputClassName={styles.input}
+                                        prioritySubstring={variantSuffix('D')}
+                                        synthesizeSuffix={variantSuffix('D')}
+                                        aria-label="CVR D 分子ラベル"
+                                    />
                                     </div>
                                     <div>
                                         <label className={styles.label}>計算メトリクス</label>
@@ -1128,42 +1200,34 @@ export default function AbTestFormModal({
                                         triggerClassName={styles.input}
                                         aria-label={`ステップ${i + 1} ディメンション`}
                                     />
-                                    <input
-                                        type="text"
+                                    <LabelInput
                                         placeholder="Aのラベル"
                                         value={step.labelsA}
-                                        onChange={(e) => updateFunnelStep(i, { labelsA: e.target.value })}
+                                        onChange={(val) => updateFunnelStep(i, { labelsA: val })}
                                         className={styles.input}
-                                        aria-label={`ステップ${i + 1} Aラベル`}
                                     />
                                     {showCvrB && (
-                                        <input
-                                            type="text"
+                                        <LabelInput
                                             placeholder="Bのラベル"
                                             value={step.labelsB}
-                                            onChange={(e) => updateFunnelStep(i, { labelsB: e.target.value })}
+                                            onChange={(val) => updateFunnelStep(i, { labelsB: val })}
                                             className={styles.input}
-                                            aria-label={`ステップ${i + 1} Bラベル`}
                                         />
                                     )}
                                     {showCvrC && (
-                                        <input
-                                            type="text"
+                                        <LabelInput
                                             placeholder="Cのラベル"
                                             value={step.labelsC}
-                                            onChange={(e) => updateFunnelStep(i, { labelsC: e.target.value })}
+                                            onChange={(val) => updateFunnelStep(i, { labelsC: val })}
                                             className={styles.input}
-                                            aria-label={`ステップ${i + 1} Cラベル`}
                                         />
                                     )}
                                     {showCvrD && (
-                                        <input
-                                            type="text"
+                                        <LabelInput
                                             placeholder="Dのラベル"
                                             value={step.labelsD}
-                                            onChange={(e) => updateFunnelStep(i, { labelsD: e.target.value })}
+                                            onChange={(val) => updateFunnelStep(i, { labelsD: val })}
                                             className={styles.input}
-                                            aria-label={`ステップ${i + 1} Dラベル`}
                                         />
                                     )}
                                     <button
@@ -1331,46 +1395,37 @@ export default function AbTestFormModal({
                                 <p>取得データ行数: {testResult.rowCount || 0}</p>
                                 {testResult.cvrResults && (
                                     <div className={styles.cvrResults}>
-                                        {testResult.cvrResults.cvrA && (
-                                            <div>
-                                                <strong>バリアントA:</strong>{' '}
-                                                {testResult.cvrResults.cvrA.error ? (
-                                                    <span className={styles.error}>エラー: {testResult.cvrResults.cvrA.error}</span>
-                                                ) : (
-                                                    `PV: ${testResult.cvrResults.cvrA.pv}, CV: ${testResult.cvrResults.cvrA.cv}, CVR: ${(testResult.cvrResults.cvrA.cvr * 100).toFixed(2)}%`
-                                                )}
-                                            </div>
-                                        )}
-                                        {testResult.cvrResults.cvrB && (
-                                            <div>
-                                                <strong>バリアントB:</strong>{' '}
-                                                {testResult.cvrResults.cvrB.error ? (
-                                                    <span className={styles.error}>エラー: {testResult.cvrResults.cvrB.error}</span>
-                                                ) : (
-                                                    `PV: ${testResult.cvrResults.cvrB.pv}, CV: ${testResult.cvrResults.cvrB.cv}, CVR: ${(testResult.cvrResults.cvrB.cvr * 100).toFixed(2)}%`
-                                                )}
-                                            </div>
-                                        )}
-                                        {testResult.cvrResults.cvrC && (
-                                            <div>
-                                                <strong>バリアントC:</strong>{' '}
-                                                {testResult.cvrResults.cvrC.error ? (
-                                                    <span className={styles.error}>エラー: {testResult.cvrResults.cvrC.error}</span>
-                                                ) : (
-                                                    `PV: ${testResult.cvrResults.cvrC.pv}, CV: ${testResult.cvrResults.cvrC.cv}, CVR: ${(testResult.cvrResults.cvrC.cvr * 100).toFixed(2)}%`
-                                                )}
-                                            </div>
-                                        )}
-                                        {testResult.cvrResults.cvrD && (
-                                            <div>
-                                                <strong>バリアントD:</strong>{' '}
-                                                {testResult.cvrResults.cvrD.error ? (
-                                                    <span className={styles.error}>エラー: {testResult.cvrResults.cvrD.error}</span>
-                                                ) : (
-                                                    `PV: ${testResult.cvrResults.cvrD.pv}, CV: ${testResult.cvrResults.cvrD.cv}, CVR: ${(testResult.cvrResults.cvrD.cvr * 100).toFixed(2)}%`
-                                                )}
-                                            </div>
-                                        )}
+                                        {(['A', 'B', 'C', 'D'] as const).map((key) => {
+                                            const r = testResult.cvrResults[`cvr${key}`]
+                                            if (!r) return null
+                                            const breakdown: Array<{ kind: string; label: string; value: number; total: number }> = []
+                                            if ((r.pvByLabel?.length ?? 0) > 1) {
+                                                for (const l of r.pvByLabel) breakdown.push({ kind: 'PV', label: l.label, value: l.value, total: r.pv })
+                                            }
+                                            if ((r.cvByLabel?.length ?? 0) > 1) {
+                                                for (const l of r.cvByLabel) breakdown.push({ kind: 'CV', label: l.label, value: l.value, total: r.cv })
+                                            }
+                                            return (
+                                                <div key={key}>
+                                                    <strong>バリアント{key}:</strong>{' '}
+                                                    {r.error ? (
+                                                        <span className={styles.error}>エラー: {r.error}</span>
+                                                    ) : (
+                                                        `PV: ${r.pv}, CV: ${r.cv}, CVR: ${(r.cvr * 100).toFixed(2)}%`
+                                                    )}
+                                                    {breakdown.length > 0 && (
+                                                        <ul className={styles.labelBreakdownList}>
+                                                            {breakdown.map((b) => (
+                                                                <li key={`${b.kind}-${b.label}`}>
+                                                                    {b.kind} <code>{b.label}</code>: {b.value.toLocaleString()}
+                                                                    {b.total > 0 && `（${((b.value / b.total) * 100).toFixed(1)}%）`}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 )}
                             </div>

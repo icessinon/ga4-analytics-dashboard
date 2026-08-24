@@ -10,9 +10,24 @@ interface LabelInputProps {
     placeholder?: string
     className?: string
     required?: boolean
+    /** この文字列を含む候補を先頭に並べる（例: ABテストのバリアントサフィックス __B-1741） */
+    prioritySubstring?: string
+    /**
+     * 検索にヒットしたサフィックスなしラベルから「ラベル+このサフィックス」の生成候補も出す。
+     * リリース前・発火前でバリアント用ラベルがまだGA4に存在しないケース向け（命名規則: B/C/DはAのラベル+__{V}-{issue}）
+     */
+    synthesizeSuffix?: string
 }
 
-export default function LabelInput({ value, onChange, placeholder, className, required }: LabelInputProps) {
+const VARIANT_SUFFIX_RE = /__[A-D]-\w+$/
+
+interface Suggestion {
+    label: string
+    /** 実ラベルではなく命名規則から生成した未発火候補 */
+    synthetic: boolean
+}
+
+export default function LabelInput({ value, onChange, placeholder, className, required, prioritySubstring, synthesizeSuffix }: LabelInputProps) {
     const { labels } = useLabels()
     const [open, setOpen] = useState(false)
     const [highlighted, setHighlighted] = useState(-1)
@@ -25,9 +40,37 @@ export default function LabelInput({ value, onChange, placeholder, className, re
     const prefix = lastSep >= 0 ? value.slice(0, lastSep + 1) : ''
     const current = value.slice(lastSep + 1).trim()
 
-    const filtered = current
+    const matched = current
         ? labels.filter((l) => l.toLowerCase().includes(current.toLowerCase()) && l !== current)
+        : prioritySubstring
+        // 未入力でもフォーカス時にサフィックス一致の候補を出す（バリアント用ラベルの発見を助ける）
+        ? labels.filter((l) => l.includes(prioritySubstring))
         : []
+    let filtered: Suggestion[]
+    if (prioritySubstring || synthesizeSuffix) {
+        // 並び順: ①発火済みのサフィックス付き実ラベル ②未発火の生成候補 ③その他の実ラベル。
+        // 候補リストは先頭30件しか表示しないため、②を③より前に置かないとリリース前に埋もれて見えなくなる
+        const key = prioritySubstring ?? synthesizeSuffix ?? ''
+        const withSuffix = matched.filter((l) => l.includes(key))
+        const others = matched.filter((l) => !l.includes(key))
+        let synthetic: Suggestion[] = []
+        if (synthesizeSuffix) {
+            // 実ラベルにまだ存在しないバリアント用ラベルを、サフィックスなしラベルから合成して提示する
+            const realSet = new Set(labels)
+            synthetic = matched
+                .filter((l) => !VARIANT_SUFFIX_RE.test(l))
+                .map((l) => `${l}${synthesizeSuffix}`)
+                .filter((l) => !realSet.has(l) && l !== current)
+                .map((label) => ({ label, synthetic: true }))
+        }
+        filtered = [
+            ...withSuffix.map((label) => ({ label, synthetic: false })),
+            ...synthetic,
+            ...others.map((label) => ({ label, synthetic: false })),
+        ]
+    } else {
+        filtered = matched.map((label) => ({ label, synthetic: false }))
+    }
 
     const showList = open && filtered.length > 0
 
@@ -54,7 +97,7 @@ export default function LabelInput({ value, onChange, placeholder, className, re
             setHighlighted((h) => Math.max(h - 1, 0))
         } else if (e.key === 'Enter' && highlighted >= 0 && !e.nativeEvent.isComposing) {
             e.preventDefault()
-            select(filtered[highlighted])
+            select(filtered[highlighted].label)
         } else if (e.key === 'Escape') {
             setOpen(false)
         }
@@ -95,14 +138,15 @@ export default function LabelInput({ value, onChange, placeholder, className, re
             />
             {showList && (
                 <ul ref={listRef} className={styles.list}>
-                    {filtered.slice(0, 30).map((label, i) => (
+                    {filtered.slice(0, 30).map((s, i) => (
                         <li
-                            key={label}
+                            key={s.label}
                             className={`${styles.item} ${i === highlighted ? styles.itemHighlighted : ''}`}
-                            onMouseDown={(e) => { e.preventDefault(); select(label) }}
+                            onMouseDown={(e) => { e.preventDefault(); select(s.label) }}
                             onMouseEnter={() => setHighlighted(i)}
                         >
-                            {label}
+                            {s.synthetic && <span className={styles.syntheticBadge}>未発火・生成</span>}
+                            {s.label}
                         </li>
                     ))}
                 </ul>

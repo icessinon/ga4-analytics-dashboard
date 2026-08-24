@@ -134,6 +134,7 @@ model AbTest {
   name                  String    @db.VarChar(255)
   description           String?   @db.Text
   hypothesis            String?   @db.Text          // 事前仮説（Plan: 何をどう変えると何が改善するか）
+  issueUrl              String?   @db.VarChar(500)  // Backlog Issue（URLまたは番号。番号のみならXWORK_PRODUCT-{n}のURLに展開して表示）
   expectedImprovement   Decimal?  @db.Decimal(8, 2) // 期待改善率（%）
   variantAName          String    @db.VarChar(255)
   variantBName          String    @db.VarChar(255)

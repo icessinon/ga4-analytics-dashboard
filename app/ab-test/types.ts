@@ -3,6 +3,7 @@ export interface AbTest {
     name: string
     description: string | null
     hypothesis?: string | null
+    issueUrl?: string | null
     expectedImprovement?: number | string | null
     startDate: string
     endDate: string | null

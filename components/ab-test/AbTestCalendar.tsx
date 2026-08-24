@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { displayTestName } from '@/lib/utils/issueUrl'
 import type { AbTest, AbTestCalendarProps } from './types'
 import styles from './AbTestCalendar.module.css'
 
@@ -225,7 +226,7 @@ export default function AbTestCalendar({ abTests, onDateClick }: AbTestCalendarP
                                             setHoverPosition(null)
                                         }}
                                     >
-                                        {test.name}
+                                        {displayTestName(test.name, test.issueUrl)}
                                     </div>
                                 ))}
                                 {tests.length > 3 && (
@@ -265,7 +266,7 @@ export default function AbTestCalendar({ abTests, onDateClick }: AbTestCalendarP
                         transform: 'translate(-50%, -100%)',
                     }}
                 >
-                    <h4 className={styles.tooltipTitle}>{hoveredTest.name}</h4>
+                    <h4 className={styles.tooltipTitle}>{displayTestName(hoveredTest.name, hoveredTest.issueUrl)}</h4>
                     <p className={styles.tooltipText}>
                         プロダクト: {hoveredTest.product.name}
                     </p>

@@ -109,44 +109,104 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
 
-        const report = await fetchGA4Data(ga4Request, accessToken)
-        const dimensionHeaders = report.dimensionHeaders || []
-        const metricHeaders = report.metricHeaders || []
-
         const activeVariants = VARIANT_KEYS.filter((v) => ga4Config[`cvr${v}`])
-
-        const variants = activeVariants.map((key) => {
-            const result = calculateCVR(report, normalizeCvrConfig(ga4Config[`cvr${key}`]!), dimensionHeaders, metricHeaders)
-            return { key, pv: result.pv, cv: result.cv, cvr: result.cvr }
-        })
 
         const elapsedDays = Math.max(
             1,
             Math.floor((new Date(`${endDate}T00:00:00`).getTime() - new Date(`${startDate}T00:00:00`).getTime()) / 86400000) + 1
         )
 
-        const baseline = variants.find((v) => v.key === 'A')
-        const comparisons = variants
-            .filter((v) => v.key !== 'A')
-            .map((v) => {
-                if (!baseline) return null
-                const stat = calculateStatisticalSignificance(v.cv, v.pv, baseline.cv, baseline.pv)
-                const required = getRequiredSignificanceByHybrid(elapsedDays, baseline.cv, v.cv, baseline.pv, v.pv)
+        // レポート（行集合）からバリアント別CVR・有意差・リードをまとめて計算する
+        type GA4Report = Parameters<typeof calculateCVR>[0]
+        const computeResults = (report: GA4Report) => {
+            const dimensionHeaders = report.dimensionHeaders || []
+            const metricHeaders = report.metricHeaders || []
+            const variants = activeVariants.map((key) => {
+                const result = calculateCVR(report, normalizeCvrConfig(ga4Config[`cvr${key}`]!), dimensionHeaders, metricHeaders)
                 return {
-                    variant: v.key,
-                    liftVsA: baseline.cvr > 0 ? (v.cvr - baseline.cvr) / baseline.cvr : null,
-                    significance: stat.significance,
-                    zScore: stat.zScore,
-                    requiredSignificance: required.required,
-                    isSufficient: stat.significance >= required.required,
+                    key,
+                    pv: result.pv,
+                    cv: result.cv,
+                    cvr: result.cvr,
+                    // 複数ラベル指定時に「どのラベルが何件か」を表示するための内訳
+                    pvByLabel: result.pvByLabel,
+                    cvByLabel: result.cvByLabel,
                 }
             })
-            .filter((c): c is NonNullable<typeof c> => c !== null)
+            const baseline = variants.find((v) => v.key === 'A')
+            const comparisons = variants
+                .filter((v) => v.key !== 'A')
+                .map((v) => {
+                    if (!baseline) return null
+                    const stat = calculateStatisticalSignificance(v.cv, v.pv, baseline.cv, baseline.pv)
+                    const required = getRequiredSignificanceByHybrid(elapsedDays, baseline.cv, v.cv, baseline.pv, v.pv)
+                    return {
+                        variant: v.key,
+                        liftVsA: baseline.cvr > 0 ? (v.cvr - baseline.cvr) / baseline.cvr : null,
+                        significance: stat.significance,
+                        zScore: stat.zScore,
+                        requiredSignificance: required.required,
+                        isSufficient: stat.significance >= required.required,
+                    }
+                })
+                .filter((c): c is NonNullable<typeof c> => c !== null)
+            const measured = variants.filter((v) => v.pv > 0)
+            const leader = measured.length >= 2
+                ? measured.reduce((best, v) => (v.cvr > best.cvr ? v : best)).key
+                : null
+            return { variants, comparisons, leader }
+        }
 
-        const measured = variants.filter((v) => v.pv > 0)
-        const leader = measured.length >= 2
-            ? measured.reduce((best, v) => (v.cvr > best.cvr ? v : best)).key
+        // フィルタ式が複数（カンマ区切りOR）のときは、フィルタディメンションを1列足した
+        // 別レポートを取り、式ごとの内訳も計算する（全体の数値は従来レポートのまま変えない）
+        const filterExpressions = (ga4Config.filter?.dimension && ga4Config.filter?.expression)
+            ? ga4Config.filter.expression.split(',').map((s) => s.trim()).filter(Boolean)
+            : []
+        const needBreakdown = filterExpressions.length >= 2
+
+        const segmentRequest: GA4ReportRequest | null = needBreakdown
+            ? {
+                ...ga4Request,
+                dimensions: dimensions.some((d) => d.name === ga4Config.filter!.dimension)
+                    ? dimensions
+                    : [...dimensions, { name: ga4Config.filter!.dimension! }],
+                limit: Math.max(ga4Config.limit || 0, 50000),
+            }
             : null
+
+        const [report, segmentReport] = await Promise.all([
+            fetchGA4Data(ga4Request, accessToken),
+            segmentRequest ? fetchGA4Data(segmentRequest, accessToken) : Promise.resolve(null),
+        ])
+
+        const { variants, comparisons, leader } = computeResults(report)
+
+        // フィルタ式ごとの内訳: フィルタディメンション値が式にマッチする行だけで再計算
+        const matchValue = (value: string, operator: string, expr: string): boolean => {
+            switch (operator.toUpperCase()) {
+                case 'EXACT': return value === expr
+                case 'BEGINS_WITH': return value.startsWith(expr)
+                case 'ENDS_WITH': return value.endsWith(expr)
+                case 'FULL_REGEXP': try { return new RegExp(`^(?:${expr})$`).test(value) } catch { return false }
+                case 'PARTIAL_REGEXP': try { return new RegExp(expr).test(value) } catch { return false }
+                default: return value.includes(expr) // CONTAINS
+            }
+        }
+        let filterSegments: Array<{ expression: string } & ReturnType<typeof computeResults>> | undefined
+        if (segmentReport) {
+            const segHeaders = segmentReport.dimensionHeaders || []
+            const filterDimIndex = segHeaders.findIndex((h: { name: string }) => h.name === ga4Config.filter!.dimension)
+            if (filterDimIndex >= 0) {
+                const operator = ga4Config.filter!.operator || 'CONTAINS'
+                filterSegments = filterExpressions.map((expr) => {
+                    const rows = (segmentReport.rows || []).filter(
+                        (r: { dimensionValues?: Array<{ value?: string }> }) =>
+                            matchValue(r.dimensionValues?.[filterDimIndex]?.value ?? '', operator, expr)
+                    )
+                    return { expression: expr, ...computeResults({ ...segmentReport, rows }) }
+                })
+            }
+        }
 
         return NextResponse.json({
             success: true,
@@ -158,6 +218,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             variants,
             comparisons,
             leader,
+            // フィルタ式が複数のときのみ: 式ごとの内訳（UIで全体⇔式別を切り替え表示）
+            filterDimension: needBreakdown ? ga4Config.filter?.dimension : undefined,
+            filterSegments,
             fetchedAt: new Date().toISOString(),
         })
     } catch (error) {

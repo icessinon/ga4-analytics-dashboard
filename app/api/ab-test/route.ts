@@ -86,6 +86,7 @@ export async function POST(request: Request) {
             name,
             description,
             hypothesis,
+            issueUrl,
             expectedImprovement,
             startDate,
             endDate,
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
                 name,
                 description,
                 hypothesis: hypothesis || null,
+                issueUrl: issueUrl || null,
                 expectedImprovement: parseImprovement(expectedImprovement),
                 variantAName: 'A', // 固定値
                 variantBName: 'B', // 固定値
@@ -158,6 +160,7 @@ export async function PUT(request: Request) {
             name,
             description,
             hypothesis,
+            issueUrl,
             expectedImprovement,
             startDate,
             endDate,
@@ -179,6 +182,7 @@ export async function PUT(request: Request) {
         if (name !== undefined) updateData.name = name
         if (description !== undefined) updateData.description = description
         if (hypothesis !== undefined) updateData.hypothesis = hypothesis || null
+        if (issueUrl !== undefined) updateData.issueUrl = issueUrl || null
         if (expectedImprovement !== undefined) updateData.expectedImprovement = parseImprovement(expectedImprovement)
         if (startDate !== undefined) updateData.startDate = new Date(startDate)
         if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null

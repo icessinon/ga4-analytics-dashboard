@@ -21,10 +21,18 @@ export interface CvrConfig {
     metric: string
 }
 
+export interface LabelCount {
+    label: string
+    value: number
+}
+
 export interface CvrResult {
     pv: number
     cv: number
     cvr: number
+    /** ラベル別内訳（設定順。複数ラベル指定時にどのラベルが何件かを見るため） */
+    pvByLabel: LabelCount[]
+    cvByLabel: LabelCount[]
 }
 
 export interface GA4ReportRow {
@@ -53,7 +61,7 @@ export function calculateCVR(
     dimensionHeaders: Array<{ name: string }>,
     metricHeaders: Array<{ name: string; type: string }>
 ): CvrResult {
-    const result: CvrResult = { pv: 0, cv: 0, cvr: 0 }
+    const result: CvrResult = { pv: 0, cv: 0, cvr: 0, pvByLabel: [], cvByLabel: [] }
 
     if (!report || !report.rows || report.rows.length === 0) {
         return result
@@ -92,6 +100,9 @@ export function calculateCVR(
         return true
     }
 
+    const pvByLabel = new Map<string, number>(normalizedDenominatorLabels.map((l) => [l, 0]))
+    const cvByLabel = new Map<string, number>(normalizedNumeratorLabels.map((l) => [l, 0]))
+
     for (const row of report.rows) {
         const denValue = normalize(row.dimensionValues[denDimIndex]?.value || '')
         const numValue = normalize(row.dimensionValues[numDimIndex]?.value || '')
@@ -100,16 +111,20 @@ export function calculateCVR(
         if (normalizedDenominatorLabels.includes(denValue)) {
             if (applyFilters(row, cvrConfig.denominatorFilters)) {
                 result.pv += metricValue
+                pvByLabel.set(denValue, (pvByLabel.get(denValue) ?? 0) + metricValue)
             }
         }
 
         if (normalizedNumeratorLabels.includes(numValue)) {
             if (applyFilters(row, cvrConfig.numeratorFilters)) {
                 result.cv += metricValue
+                cvByLabel.set(numValue, (cvByLabel.get(numValue) ?? 0) + metricValue)
             }
         }
     }
 
     result.cvr = result.pv > 0 ? result.cv / result.pv : 0
+    result.pvByLabel = [...pvByLabel.entries()].map(([label, value]) => ({ label, value }))
+    result.cvByLabel = [...cvByLabel.entries()].map(([label, value]) => ({ label, value }))
     return result
 }

@@ -11,6 +11,7 @@ import AbTestFormModal from '@/components/ab-test/AbTestFormModal'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import type { AbTest } from './types'
+import { resolveIssueLink } from '@/lib/utils/issueUrl'
 import styles from './AbTestPage.module.css'
 
 function AbTestPageContent() {
@@ -325,6 +326,14 @@ function AbTestPageContent() {
                                     <tr key={test.id} className={styles.tableRow}>
                                         <td className={styles.tableCell}>
                                             <div className={styles.tableCellName}>{test.name}</div>
+                                            {(() => {
+                                                const issue = resolveIssueLink(test.issueUrl)
+                                                return issue && (
+                                                    <a href={issue.href} target="_blank" rel="noopener noreferrer" className={styles.issueLink} onClick={(e) => e.stopPropagation()}>
+                                                        🔗 {issue.text}
+                                                    </a>
+                                                )
+                                            })()}
                                             {test.description && (
                                                 <div className={styles.tableCellDescription}>
                                                     {test.description}

@@ -108,6 +108,8 @@ export async function POST(request: Request) {
                     cv: cvrA.cv,
                     pv: cvrA.pv,
                     cvr: cvrA.cvr,
+                    pvByLabel: cvrA.pvByLabel,
+                    cvByLabel: cvrA.cvByLabel,
                 }
             } catch (error) {
                 cvrResults.cvrA = {
@@ -145,6 +147,8 @@ export async function POST(request: Request) {
                     cv: cvrB.cv,
                     pv: cvrB.pv,
                     cvr: cvrB.cvr,
+                    pvByLabel: cvrB.pvByLabel,
+                    cvByLabel: cvrB.cvByLabel,
                 }
             } catch (error) {
                 cvrResults.cvrB = {
@@ -182,6 +186,8 @@ export async function POST(request: Request) {
                     cv: cvrC.cv,
                     pv: cvrC.pv,
                     cvr: cvrC.cvr,
+                    pvByLabel: cvrC.pvByLabel,
+                    cvByLabel: cvrC.cvByLabel,
                 }
             } catch (error) {
                 cvrResults.cvrC = {
@@ -219,6 +225,8 @@ export async function POST(request: Request) {
                     cv: cvrD.cv,
                     pv: cvrD.pv,
                     cvr: cvrD.cvr,
+                    pvByLabel: cvrD.pvByLabel,
+                    cvByLabel: cvrD.cvByLabel,
                 }
             } catch (error) {
                 cvrResults.cvrD = {

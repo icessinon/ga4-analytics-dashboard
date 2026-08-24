@@ -10,13 +10,21 @@ import Loader from '@/components/Loader'
 import AbTestCompletionModal from '@/components/ab-test/AbTestCompletionModal'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import type { AbTest, AbTestReportExecution } from './types'
+import { resolveIssueLink } from '@/lib/utils/issueUrl'
 import styles from './AbTestDetailPage.module.css'
+
+interface LabelCount {
+    label: string
+    value: number
+}
 
 interface CurrentVariant {
     key: string
     pv: number
     cv: number
     cvr: number
+    pvByLabel?: LabelCount[]
+    cvByLabel?: LabelCount[]
 }
 
 interface CurrentComparison {
@@ -27,6 +35,13 @@ interface CurrentComparison {
     isSufficient: boolean
 }
 
+interface FilterSegmentResult {
+    expression: string
+    variants: CurrentVariant[]
+    comparisons: CurrentComparison[]
+    leader: string | null
+}
+
 interface CurrentResult {
     startDate: string
     endDate: string
@@ -35,6 +50,8 @@ interface CurrentResult {
     variants: CurrentVariant[]
     comparisons: CurrentComparison[]
     leader: string | null
+    filterDimension?: string
+    filterSegments?: FilterSegmentResult[]
     fetchedAt: string
 }
 
@@ -99,6 +116,8 @@ export default function AbTestDetailPage() {
     const [executingReport, setExecutingReport] = useState(false)
     const [showCompletionModal, setShowCompletionModal] = useState(false)
     const [currentResult, setCurrentResult] = useState<CurrentResult | null>(null)
+    // フィルタ式が複数あるテストで、結果表示を全体⇔式別に切り替える（nullは全体）
+    const [resultSegment, setResultSegment] = useState<string | null>(null)
     const [currentLoading, setCurrentLoading] = useState(false)
     const [currentError, setCurrentError] = useState<string | null>(null)
     const [notStarted, setNotStarted] = useState<string | null>(null)
@@ -198,6 +217,7 @@ export default function AbTestDetailPage() {
             }
             setNotStarted(null)
             setCurrentResult(data)
+            setResultSegment(null)
         } catch (err) {
             setCurrentError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
@@ -377,7 +397,17 @@ export default function AbTestDetailPage() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <div className={styles.headerRow}>
-                    <h1 className={styles.title}>{abTest.name}</h1>
+                    <h1 className={styles.title}>
+                        {abTest.name}
+                        {(() => {
+                            const issue = resolveIssueLink(abTest.issueUrl)
+                            return issue && (
+                                <a href={issue.href} target="_blank" rel="noopener noreferrer" className={styles.issueLink}>
+                                    🔗 {issue.text}
+                                </a>
+                            )
+                        })()}
+                    </h1>
                     <div className={styles.headerActions}>
                         <BackLink href="/ab-test">一覧に戻る</BackLink>
                         <button
@@ -579,7 +609,11 @@ export default function AbTestDetailPage() {
                         <p className={styles.currentMeta}>GA4からリアルタイム集計中です...</p>
                     )}
 
-                    {currentResult && (
+                    {currentResult && (() => {
+                        // フィルタ式別が選択されていればその内訳、なければ全体を表示する
+                        const activeSegment = currentResult.filterSegments?.find((seg) => seg.expression === resultSegment) ?? null
+                        const display = activeSegment ?? currentResult
+                        return (
                         <div className={styles.currentBody}>
                             <p className={styles.currentMeta}>
                                 {abTest.status === 'completed'
@@ -587,9 +621,36 @@ export default function AbTestDetailPage() {
                                     : `集計期間: ${currentResult.startDate} 〜 ${currentResult.endDate}（経過${currentResult.elapsedDays}日 ${currentResult.reliability.icon} ${currentResult.reliability.level}・${currentResult.reliability.description}）／ 集計時刻: ${new Date(currentResult.fetchedAt).toLocaleString('ja-JP')}`}
                             </p>
 
+                            {(currentResult.filterSegments?.length ?? 0) >= 2 && (
+                                <>
+                                    <div className={styles.basisToggle}>
+                                        <button
+                                            className={resultSegment == null ? styles.basisActive : styles.basisButton}
+                                            onClick={() => setResultSegment(null)}
+                                        >
+                                            全体
+                                        </button>
+                                        {currentResult.filterSegments!.map((seg) => (
+                                            <button
+                                                key={seg.expression}
+                                                className={resultSegment === seg.expression ? styles.basisActive : styles.basisButton}
+                                                onClick={() => setResultSegment(seg.expression)}
+                                            >
+                                                {seg.expression}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {activeSegment && (
+                                        <p className={styles.currentMeta}>
+                                            ※ フィルタ「{currentResult.filterDimension}: {activeSegment.expression}」に絞った内訳です。勝者判定・完了サマリーは全体基準で行われます
+                                        </p>
+                                    )}
+                                </>
+                            )}
+
                             {(() => {
-                                const { leader, variants, comparisons } = currentResult
-                                if (abTest.status === 'completed') {
+                                const { leader, variants, comparisons } = display
+                                if (abTest.status === 'completed' && !activeSegment) {
                                     if (!abTest.winnerVariant) {
                                         return (
                                             <div className={`${styles.currentCallout} ${styles.currentCalloutNeutral}`}>
@@ -636,7 +697,7 @@ export default function AbTestDetailPage() {
                                 )
                             })()}
 
-                            {currentResult.variants.some((v) => v.cv > v.pv) && (
+                            {display.variants.some((v) => v.cv > v.pv) && (
                                 <div className={`${styles.currentCallout} ${styles.currentCalloutError}`}>
                                     ⚠️ CVがPV（分母）を上回っているバリアントがあります（CVR&gt;100%）。分母ラベルがテスト対象ユーザー全体をカバーしているか、CVR設定を見直してください
                                 </div>
@@ -656,17 +717,17 @@ export default function AbTestDetailPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {currentResult.variants.map((v) => {
-                                            const comp = currentResult.comparisons.find((c) => c.variant === v.key)
+                                        {display.variants.map((v) => {
+                                            const comp = display.comparisons.find((c) => c.variant === v.key)
                                             const isCompleted = abTest.status === 'completed'
-                                            const isLeader = isCompleted
+                                            const isLeader = isCompleted && !activeSegment
                                                 ? abTest.winnerVariant === v.key
-                                                : currentResult.leader === v.key
+                                                : display.leader === v.key
                                             return (
                                                 <tr key={v.key} className={isLeader ? styles.currentLeaderRow : undefined}>
                                                     <td>
                                                         {v.key}
-                                                        {isLeader && <span className={styles.leaderBadge}>{isCompleted ? '勝者' : 'リード中'}</span>}
+                                                        {isLeader && <span className={styles.leaderBadge}>{isCompleted && !activeSegment ? '勝者' : 'リード中'}</span>}
                                                     </td>
                                                     <td>{v.pv.toLocaleString()}</td>
                                                     <td>{v.cv.toLocaleString()}</td>
@@ -677,7 +738,7 @@ export default function AbTestDetailPage() {
                                                     }>
                                                         {(() => {
                                                             if (comp?.liftVsA == null) return '-'
-                                                            const aCvr = currentResult.variants.find((x) => x.key === 'A')?.cvr
+                                                            const aCvr = display.variants.find((x) => x.key === 'A')?.cvr
                                                             const absPt = aCvr != null ? (v.cvr - aCvr) * 100 : null
                                                             const rel = `${comp.liftVsA >= 0 ? '+' : ''}${(comp.liftVsA * 100).toFixed(1)}%`
                                                             return absPt != null
@@ -693,13 +754,55 @@ export default function AbTestDetailPage() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* 複数ラベル指定時のみ: どのラベルが何件かの内訳 */}
+                            {display.variants.some((v) => (v.pvByLabel?.length ?? 0) > 1 || (v.cvByLabel?.length ?? 0) > 1) && (
+                                <div className={styles.labelBreakdown}>
+                                    <h3 className={styles.labelBreakdownTitle}>ラベル別内訳</h3>
+                                    <div className={styles.currentTableWrapper}>
+                                        <table className={styles.currentTable}>
+                                            <thead>
+                                                <tr>
+                                                    <th>バリアント</th>
+                                                    <th>種別</th>
+                                                    <th>ラベル</th>
+                                                    <th>件数</th>
+                                                    <th>構成比</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {display.variants.flatMap((v) => {
+                                                    const rows: Array<{ kind: string; label: string; value: number; total: number }> = []
+                                                    if ((v.pvByLabel?.length ?? 0) > 1) {
+                                                        for (const l of v.pvByLabel!) rows.push({ kind: 'PV（分母）', label: l.label, value: l.value, total: v.pv })
+                                                    }
+                                                    if ((v.cvByLabel?.length ?? 0) > 1) {
+                                                        for (const l of v.cvByLabel!) rows.push({ kind: 'CV（分子）', label: l.label, value: l.value, total: v.cv })
+                                                    }
+                                                    return rows.map((r, i) => (
+                                                        <tr key={`${v.key}-${r.kind}-${r.label}`}>
+                                                            <td>{i === 0 ? v.key : ''}</td>
+                                                            <td>{r.kind}</td>
+                                                            <td className={styles.labelBreakdownLabel}>{r.label}</td>
+                                                            <td>{r.value.toLocaleString()}</td>
+                                                            <td>{r.total > 0 ? `${((r.value / r.total) * 100).toFixed(1)}%` : '－'}</td>
+                                                        </tr>
+                                                    ))
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                             <p className={styles.currentNote}>
                                 {abTest.status === 'completed'
                                     ? '※ テスト期間全体をGA4から集計した確定値です'
                                     : '※ GA4からのオンデマンド集計です（当日データを含むため、直近の数値は変動する場合があります）'}
                             </p>
                         </div>
-                    )}
+                        )
+                    })()}
                 </div>
             )}
 
