@@ -155,7 +155,7 @@ export default function CvTypesPage() {
 
             {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
 
-            <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
+            <RelatedPages pages={[{ href: '/cv-value', label: 'CV単価・お金まわり' }, { href: '/occupation', label: '職種別CV分析' }, { href: '/apply-fields', label: '応募フォーム項目別タップ' }, { href: '/pageflow', label: 'ページフロー分析' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
 
             <div className={styles.controls}>
                 <PeriodSelect
@@ -416,63 +416,10 @@ export default function CvTypesPage() {
                     </div>
 
                     <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>応募フォームの項目別ファネル（どこで手が止まるか）</h2>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>ステップ</th>
-                                        {data.jobTypes.map((t) => (
-                                            <th key={t.key} className={styles.num}>{t.label}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td className={styles.strong}>フォーム表示</td>
-                                        {data.jobTypes.map((t) => (
-                                            <td key={t.key} className={`${styles.num} ${styles.strong}`}>{t.formViews.toLocaleString()}</td>
-                                        ))}
-                                    </tr>
-                                    {(data.jobTypes[0]?.fields ?? []).map((_, fi) => {
-                                        const name = data.jobTypes[0].fields![fi].name
-                                        const anyValue = data.jobTypes.some((t) => (t.fields?.[fi]?.users ?? 0) > 0)
-                                        if (!anyValue) return null
-                                        return (
-                                            <tr key={name}>
-                                                <td>{name}</td>
-                                                {data.jobTypes.map((t) => {
-                                                    const u = t.fields?.[fi]?.users ?? 0
-                                                    return (
-                                                        <td key={t.key} className={styles.num}>
-                                                            {u > 0 ? (
-                                                                <>
-                                                                    {u.toLocaleString()}
-                                                                    <span className={styles.chPct}>{t.formViews > 0 ? ` (${((u / t.formViews) * 100).toFixed(0)}%)` : ''}</span>
-                                                                </>
-                                                            ) : '－'}
-                                                        </td>
-                                                    )
-                                                })}
-                                            </tr>
-                                        )
-                                    })}
-                                    <tr>
-                                        <td className={styles.strong}>送信（応募完了）</td>
-                                        {data.jobTypes.map((t) => (
-                                            <td key={t.key} className={`${styles.num} ${styles.strong}`}>
-                                                {t.completed.toLocaleString()}
-                                                <span className={styles.chPct}>{t.formViews > 0 ? ` (${((t.completed / t.formViews) * 100).toFixed(0)}%)` : ''}</span>
-                                            </td>
-                                        ))}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p className={styles.tableNote}>
-                            ※ 各項目は「タップ（着手）したユニークユーザー」。%はフォーム表示に対する割合。項目はフォーム内の並び順。<br />
-                            ※ <strong>2026-07-28以降のデータのみ</strong>（それ以前はGTM設定によりテキスト入力が未計測。期間を広げても増えません）。<br />
-                            ※ 会員はプロフィール自動入力のため項目に触らず送信します。項目の数字は実質<strong>ゲスト応募の行動</strong>です。「－」はその種別のフォームに項目がないか、期間内に操作がなかったもの。
+                        <h2 className={styles.sectionTitle}>応募フォームの項目別タップ（着手）</h2>
+                        <p className={styles.tableNote} style={{ marginTop: 0 }}>
+                            種別ごとに「どの入力項目がどれだけタップ（着手）されているか」の発火数は、専用ページに移しました。フォーム完了率（CVR）と項目別バーをまとめて確認できます。<br />
+                            → <a href="/apply-fields" style={{ color: '#93c5fd', textDecoration: 'underline' }}>応募フォーム 項目別タップ計測</a>
                         </p>
                     </div>
 
