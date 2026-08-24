@@ -395,3 +395,26 @@
     border-color: #60a5fa;
     color: #60a5fa;
 }
+
+/* CVR設定: 「ディメンション | ラベル」を行ペアで揃える2カラムグリッド。
+   ラベル側（MultiLabelInput）は行が増えるため align-items: start で上端を揃える */
+.cvrGrid {
+    display: grid;
+    grid-template-columns: minmax(200px, 280px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .cvrGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.generateBtnGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+    margin-right: 12px;
+}

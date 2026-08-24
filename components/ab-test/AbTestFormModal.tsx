@@ -141,9 +141,25 @@ export default function AbTestFormModal({
     // Backlog Issueが入力されていれば、候補の優先表示とAからの自動生成に使う
     const issueNum = extractIssueNumber(formData.issueUrl)
     const variantSuffix = (v: 'B' | 'C' | 'D') => (issueNum ? `__${v}-${issueNum}` : undefined)
-    const generateFromA = (v: 'B' | 'C' | 'D') => {
+    // そのバリアントに入力済みのラベルへサフィックスを付ける（付与済みのものはスキップ）
+    const appendSuffix = (v: 'B' | 'C' | 'D') => {
         const suffix = variantSuffix(v)
         if (!suffix) return
+        const add = (labels: string[]) =>
+            labels.map((l) => (l.trim() && !/__[A-D]-\w+$/.test(l.trim()) ? `${l.trim()}${suffix}` : l))
+        setGa4Config((prev) => ({
+            ...prev,
+            [`cvr${v}`]: {
+                ...prev[`cvr${v}`],
+                denominatorLabels: add(prev[`cvr${v}`].denominatorLabels),
+                numeratorLabels: add(prev[`cvr${v}`].numeratorLabels),
+            },
+        }))
+    }
+
+    const generateFromA = (v: 'B' | 'C' | 'D', withSuffix: boolean) => {
+        const suffix = withSuffix ? variantSuffix(v) : ''
+        if (suffix === undefined) return
         setGa4Config((prev) => ({
             ...prev,
             [`cvr${v}`]: {
@@ -834,7 +850,7 @@ export default function AbTestFormModal({
 
                         <div className={styles.formSection}>
                             <h4 className={styles.formSubSectionTitle}>CVR設定 A *</h4>
-                            <div className={styles.formGrid}>
+                            <div className={styles.cvrGrid}>
                                 <div>
                                     <label className={styles.label}>分母ディメンション</label>
                                     <CustomSelect
@@ -906,13 +922,18 @@ export default function AbTestFormModal({
                         <div className={styles.formSection}>
                             <div className={styles.formSectionHeader}>
                                 <h4 className={styles.formSubSectionTitle}>CVR設定 B *</h4>
-                                {issueNum && (
-                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('B')}>
-                                        Aのラベルから自動生成（__B-{issueNum}）
+                                <div className={styles.generateBtnGroup}>
+                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('B', false)}>
+                                        Aのラベルをコピー
                                     </button>
-                                )}
+                                    {issueNum && (
+                                        <button type="button" className={styles.generateBtn} onClick={() => appendSuffix('B')}>
+                                            __B-{issueNum} を付ける
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <div className={styles.formGrid}>
+                            <div className={styles.cvrGrid}>
                                 <div>
                                     <label className={styles.label}>分母ディメンション</label>
                                     <CustomSelect
@@ -988,10 +1009,17 @@ export default function AbTestFormModal({
                         <div className={styles.formSection}>
                             <div className={styles.formSectionHeader}>
                                 <h4 className={styles.formSubSectionTitle}>CVR設定 C（オプション）</h4>
-                                {showCvrC && issueNum && (
-                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('C')}>
-                                        Aのラベルから自動生成（__C-{issueNum}）
-                                    </button>
+                                {showCvrC && (
+                                    <div className={styles.generateBtnGroup}>
+                                        <button type="button" className={styles.generateBtn} onClick={() => generateFromA('C', false)}>
+                                            Aのラベルをコピー
+                                        </button>
+                                        {issueNum && (
+                                            <button type="button" className={styles.generateBtn} onClick={() => appendSuffix('C')}>
+                                                __C-{issueNum} を付ける
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                                 <Switch
                                     checked={showCvrC}
@@ -1000,7 +1028,7 @@ export default function AbTestFormModal({
                                 />
                             </div>
                             {showCvrC && (
-                                <div className={styles.formGrid}>
+                                <div className={styles.cvrGrid}>
                                     <div>
                                         <label className={styles.label}>分母ディメンション</label>
                                         <CustomSelect
@@ -1077,10 +1105,17 @@ export default function AbTestFormModal({
                         <div className={styles.formSection}>
                             <div className={styles.formSectionHeader}>
                                 <h4 className={styles.formSubSectionTitle}>CVR設定 D（オプション）</h4>
-                                {showCvrD && issueNum && (
-                                    <button type="button" className={styles.generateBtn} onClick={() => generateFromA('D')}>
-                                        Aのラベルから自動生成（__D-{issueNum}）
-                                    </button>
+                                {showCvrD && (
+                                    <div className={styles.generateBtnGroup}>
+                                        <button type="button" className={styles.generateBtn} onClick={() => generateFromA('D', false)}>
+                                            Aのラベルをコピー
+                                        </button>
+                                        {issueNum && (
+                                            <button type="button" className={styles.generateBtn} onClick={() => appendSuffix('D')}>
+                                                __D-{issueNum} を付ける
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                                 <Switch
                                     checked={showCvrD}
@@ -1089,7 +1124,7 @@ export default function AbTestFormModal({
                                 />
                             </div>
                             {showCvrD && (
-                                <div className={styles.formGrid}>
+                                <div className={styles.cvrGrid}>
                                     <div>
                                         <label className={styles.label}>分母ディメンション</label>
                                         <CustomSelect
