@@ -129,6 +129,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         items: [
             { title: '求人種別CV分析', subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較。チャネル構成比も', getHref: () => '/cv-types', productPrefix: true },
             { title: '職種別CV分析', subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV', getHref: () => '/occupation', productPrefix: true },
+            { title: '応募フォーム項目別タップ', subtitle: '応募種別ごとに各入力項目がどれだけタップ（着手）されているかの発火数', getHref: () => '/apply-fields', productPrefix: true },
         ],
     },
     {

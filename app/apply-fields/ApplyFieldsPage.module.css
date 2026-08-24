@@ -1,0 +1,224 @@
+.container {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f9fafb;
+    margin-bottom: 0.375rem;
+}
+
+.subtitle {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    line-height: 1.6;
+}
+
+.notice {
+    background-color: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 0.5rem;
+    color: #fbbf24;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.select {
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.periodNote {
+    font-size: 0.8125rem;
+    color: #9ca3af;
+}
+
+.loading {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.error {
+    background-color: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    border-radius: 0.5rem;
+    color: #f87171;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 種別カードを横3列で並べる（1種別 = 1カード） */
+.cardGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.card {
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-top: 3px solid #374151;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    min-width: 0;
+}
+
+.cardHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.cardTitle {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: #f9fafb;
+}
+
+/* CVR（フォーム完了率・詳細→完了）の2セル */
+.cvrRow {
+    display: flex;
+    gap: 0.75rem;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.cvrCell {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    background-color: rgba(55, 65, 81, 0.35);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.625rem;
+}
+
+.cvrValue {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: #f9fafb;
+    line-height: 1.1;
+}
+
+.cvrLabel {
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    line-height: 1.35;
+}
+
+.cardMeta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.cardMeta strong {
+    color: #d1d5db;
+    font-weight: 600;
+}
+
+/* 各項目のバー */
+.fieldRow {
+    margin-bottom: 0.75rem;
+}
+
+.fieldLabelLine {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.fieldName {
+    font-size: 0.8125rem;
+    color: #d1d5db;
+}
+
+.fieldValue {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #f9fafb;
+    white-space: nowrap;
+}
+
+.fieldPct {
+    color: #6b7280;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    margin-left: 0.375rem;
+}
+
+.barTrack {
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background-color: rgba(55, 65, 81, 0.6);
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 0.25rem;
+}
+
+.emptyNote {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    padding: 0.5rem 0;
+}
+
+.tableNote {
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.7;
+    margin-top: 0.25rem;
+}
+
+.noteCard {
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .cardGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem;
+    }
+}
