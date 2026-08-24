@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import BackLink from '@/components/BackLink'
+import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
@@ -21,12 +22,18 @@ interface FlowGroup {
 
 interface NextAction { action: string; count: number }
 
+interface DeviceFlowGroup extends FlowGroup { device: string }
+
+interface DailyDetailFlow { date: string; detailPv: number; toEntry: number; exit: number }
+
 interface UserFlowResponse {
     startDate: string
     endDate: string
     clamped: boolean
     groups: FlowGroup[]
+    deviceGroups?: DeviceFlowGroup[]
     nextActions: NextAction[]
+    daily?: DailyDetailFlow[]
     scannedMb: number
 }
 
@@ -57,6 +64,18 @@ const ACTION_LABELS: Record<string, string> = {
     other_page: 'その他のページへ',
 }
 
+const DEVICE_LABELS: Record<string, string> = { mobile: 'モバイル', desktop: 'PC', tablet: 'タブレット' }
+
+// 検証済みダークパレット（dataviz参照パレット準拠）
+const TREND_COLOR = '#3987e5'
+
+type TrendMetric = 'entryRate' | 'exitRate' | 'detailPv'
+const TREND_METRICS: Array<{ value: TrendMetric; label: string }> = [
+    { value: 'entryRate', label: '詳細→フォーム進出率' },
+    { value: 'exitRate', label: '詳細→離脱率' },
+    { value: 'detailPv', label: '求人詳細PV' },
+]
+
 const DIST_BUCKETS = [
     { key: 'd0', label: '0件' },
     { key: 'd1', label: '1件' },
@@ -71,6 +90,8 @@ export default function UserFlowPage() {
     const [data, setData] = useState<UserFlowResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [byDevice, setByDevice] = useState(false)
+    const [trendMetric, setTrendMetric] = useState<TrendMetric>('entryRate')
 
     const load = useCallback(async () => {
         if (!range) return
@@ -94,6 +115,19 @@ export default function UserFlowPage() {
     }, [range])
 
     useEffect(() => { load() }, [load])
+
+    const trendChart = useMemo(() => {
+        if (!data?.daily?.length) return null
+        const labels = data.daily.map((d) => `${parseInt(d.date.slice(5, 7), 10)}/${parseInt(d.date.slice(8, 10), 10)}`)
+        const values = data.daily.map((d) => {
+            if (trendMetric === 'detailPv') return d.detailPv
+            if (d.detailPv === 0) return null
+            const n = trendMetric === 'entryRate' ? d.toEntry : d.exit
+            return Number(((n / d.detailPv) * 100).toFixed(2))
+        })
+        const label = TREND_METRICS.find((m) => m.value === trendMetric)?.label ?? ''
+        return { labels, series: [{ name: label, color: TREND_COLOR, data: values }] }
+    }, [data, trendMetric])
 
     const applied = data?.groups.find((g) => g.key === 'applied') ?? null
     const signup = data?.groups.find((g) => g.key === 'signup') ?? null
@@ -171,7 +205,21 @@ export default function UserFlowPage() {
                     </div>
 
                     <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>グループ別の行動量比較</h2>
+                        <div className={styles.cardHeader}>
+                            <h2 className={styles.sectionTitle}>グループ別の行動量比較</h2>
+                            {(data.deviceGroups?.length ?? 0) > 0 && (
+                                <div className={styles.toggleGroup}>
+                                    <button
+                                        className={byDevice ? styles.toggleBtn : styles.toggleActive}
+                                        onClick={() => setByDevice(false)}
+                                    >全体</button>
+                                    <button
+                                        className={byDevice ? styles.toggleActive : styles.toggleBtn}
+                                        onClick={() => setByDevice(true)}
+                                    >デバイス別</button>
+                                </div>
+                            )}
+                        </div>
                         <div className={styles.tableWrapper}>
                             <table className={styles.table}>
                                 <thead>
@@ -186,9 +234,15 @@ export default function UserFlowPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.groups.map((g) => (
-                                        <tr key={g.key} className={g.key === 'applied' || g.key === 'signup' ? styles.cvRow : undefined}>
-                                            <td>{GROUP_LABELS[g.key]}</td>
+                                    {((byDevice ? (data.deviceGroups ?? []) : data.groups) as Array<FlowGroup & { device?: string }>).map((g) => (
+                                        <tr
+                                            key={g.device ? `${g.key}-${g.device}` : g.key}
+                                            className={g.key === 'applied' || g.key === 'signup' ? styles.cvRow : undefined}
+                                        >
+                                            <td>
+                                                {GROUP_LABELS[g.key]}
+                                                {g.device && <span className={styles.deviceTag}>{DEVICE_LABELS[g.device] ?? g.device}</span>}
+                                            </td>
                                             <td className={`${styles.num} ${styles.strong}`}>{g.sessions.toLocaleString()}</td>
                                             <td className={styles.num}>{g.avgDetails}件</td>
                                             <td className={styles.num}>{g.medDetails}件</td>
@@ -238,6 +292,21 @@ export default function UserFlowPage() {
                             ※ 応募ありで「0件」= 一覧モーダルやfeatured・LP等、求人詳細ページを経由しない応募導線。ここが多い場合は詳細ページ以外の導線が効いています。
                         </p>
                     </div>
+
+                    {trendChart && (
+                        <div className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <h2 className={styles.sectionTitle}>日次推移</h2>
+                                <select className={styles.select} value={trendMetric} onChange={(e) => setTrendMetric(e.target.value as TrendMetric)}>
+                                    {TREND_METRICS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                </select>
+                            </div>
+                            <SignupTrendChart labels={trendChart.labels} series={trendChart.series} percent={trendMetric !== 'detailPv'} />
+                            <p className={styles.tableNote}>
+                                ※ 詳細→フォーム進出率 = その日の求人詳細PVのうち直後に /entry/ へ進んだ割合。FV改善・CTA施策の主要KPI。母数が小さい日は振れます。
+                            </p>
+                        </div>
+                    )}
 
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>求人詳細を見た「次のアクション」</h2>

@@ -31,12 +31,28 @@ export interface NextAction {
     count: number
 }
 
+export interface DeviceFlowGroup extends FlowGroup {
+    device: string
+}
+
+export interface DailyDetailFlow {
+    date: string
+    /** その日の求人詳細PV数（次アクションの母数） */
+    detailPv: number
+    /** 詳細→応募フォーム進出数 */
+    toEntry: number
+    /** 詳細→離脱数 */
+    exit: number
+}
+
 export interface UserFlowReport {
     startDate: string
     endDate: string
     clamped: boolean
     groups: FlowGroup[]
+    deviceGroups: DeviceFlowGroup[]
     nextActions: NextAction[]
+    daily: DailyDetailFlow[]
     scannedMb: number
 }
 
@@ -46,7 +62,9 @@ WITH ev AS (
   SELECT
     CONCAT(user_pseudo_id, '.', CAST((SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id') AS STRING)) AS sid,
     event_timestamp,
+    event_date,
     event_name,
+    device.category AS device,
     REGEXP_EXTRACT((SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location'), r'^https?://[^/]+([^?#]*)') AS path,
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'click_label') AS click_label
   FROM \`${GA4_EXPORT_PROJECT}.${GA4_EXPORT_DATASET}.events_*\`
@@ -58,6 +76,7 @@ function buildSessionQuery(start: string, end: string): string {
     return `${evCte(start, end)},
 sess AS (
   SELECT sid,
+    ANY_VALUE(device) AS device,
     COUNTIF(event_name = 'page_view' AND REGEXP_CONTAINS(path, r'^/(${INDUSTRIES})/media_[0-9]+')) AS detail_views,
     LOGICAL_OR(event_name = 'page_view' AND (
       STARTS_WITH(path, '/search')
@@ -83,6 +102,7 @@ SELECT
     WHEN detail_views > 0 THEN 'browsed'
     ELSE 'other'
   END AS grp,
+  device,
   COUNT(*) AS sessions,
   ROUND(AVG(detail_views), 2) AS avg_details,
   APPROX_QUANTILES(detail_views, 2)[OFFSET(1)] AS med_details,
@@ -95,13 +115,14 @@ SELECT
   COUNTIF(detail_views BETWEEN 4 AND 9) AS d4_9,
   COUNTIF(detail_views >= 10) AS d10p
 FROM sess
-GROUP BY grp`
+-- 全体（device=NULL行）とデバイス別を1スキャンで両取りする
+GROUP BY GROUPING SETS ((grp), (grp, device))`
 }
 
 function buildNextActionQuery(start: string, end: string): string {
     return `${evCte(start, end)},
 pv AS (
-  SELECT sid, event_timestamp,
+  SELECT sid, event_timestamp, event_date,
     CASE
       WHEN REGEXP_CONTAINS(path, r'^/(${INDUSTRIES})/media_[0-9]+') THEN 'detail'
       WHEN STARTS_WITH(path, '/entry/') THEN 'entry_form'
@@ -118,14 +139,14 @@ pv AS (
   WHERE event_name = 'page_view' AND sid IS NOT NULL AND NOT ENDS_WITH(sid, '.')
 ),
 seq AS (
-  SELECT sid, cat,
+  SELECT sid, cat, event_date,
     LEAD(cat) OVER (PARTITION BY sid ORDER BY event_timestamp) AS next_cat
   FROM pv
 )
-SELECT IFNULL(next_cat, 'exit') AS next_action, COUNT(*) AS n
+SELECT event_date AS date, IFNULL(next_cat, 'exit') AS next_action, COUNT(*) AS n
 FROM seq
 WHERE cat = 'detail'
-GROUP BY 1 ORDER BY n DESC`
+GROUP BY 1, 2 ORDER BY 1, 3 DESC`
 }
 
 function toSuffix(d: Date): string {
@@ -158,7 +179,7 @@ export async function runUserFlowReport(startDate: string, endDate: string): Pro
         runGa4EventsQuery(buildNextActionQuery(start, endSuffix)),
     ])
 
-    const groups: FlowGroup[] = sessRes.rows.map((r) => ({
+    const toGroup = (r: Record<string, string | null>): FlowGroup => ({
         key: (r.grp ?? 'other') as FlowGroup['key'],
         sessions: Number(r.sessions ?? 0),
         avgDetails: Number(r.avg_details ?? 0),
@@ -173,21 +194,46 @@ export async function runUserFlowReport(startDate: string, endDate: string): Pro
             d4_9: Number(r.d4_9 ?? 0),
             d10p: Number(r.d10p ?? 0),
         },
-    }))
+    })
     const order: FlowGroup['key'][] = ['applied', 'signup', 'browsed', 'other']
+    // GROUPING SETS: device=NULL行が全体、それ以外がデバイス別
+    const groups: FlowGroup[] = sessRes.rows.filter((r) => r.device == null).map(toGroup)
     groups.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
+    const deviceGroups: DeviceFlowGroup[] = sessRes.rows
+        .filter((r) => r.device != null)
+        .map((r) => ({ ...toGroup(r), device: r.device! }))
+        .sort((a, b) => (order.indexOf(a.key) - order.indexOf(b.key)) || b.sessions - a.sessions)
 
-    const nextActions: NextAction[] = nextRes.rows.map((r) => ({
-        action: r.next_action ?? 'other_page',
-        count: Number(r.n ?? 0),
-    }))
+    // 次アクション: 日付別行を全体に合算し、日次系列（詳細PV・フォーム進出・離脱）も作る
+    const actionTotals = new Map<string, number>()
+    const dailyMap = new Map<string, DailyDetailFlow>()
+    for (const r of nextRes.rows) {
+        const action = r.next_action ?? 'other_page'
+        const n = Number(r.n ?? 0)
+        actionTotals.set(action, (actionTotals.get(action) ?? 0) + n)
+        const date = toDisplay(r.date ?? '')
+        let d = dailyMap.get(date)
+        if (!d) {
+            d = { date, detailPv: 0, toEntry: 0, exit: 0 }
+            dailyMap.set(date, d)
+        }
+        d.detailPv += n
+        if (action === 'entry_form') d.toEntry += n
+        if (action === 'exit') d.exit += n
+    }
+    const nextActions: NextAction[] = [...actionTotals.entries()]
+        .map(([action, count]) => ({ action, count }))
+        .sort((a, b) => b.count - a.count)
+    const daily = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date))
 
     return {
         startDate: toDisplay(start),
         endDate: toDisplay(endSuffix),
         clamped,
         groups,
+        deviceGroups,
         nextActions,
+        daily,
         scannedMb: Math.round((sessRes.scannedBytes + nextRes.scannedBytes) / 1024 ** 2),
     }
 }
