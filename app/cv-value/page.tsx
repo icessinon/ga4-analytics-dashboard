@@ -165,6 +165,53 @@ export default function CvValuePage() {
             </div>
 
             <div className={styles.card}>
+                <h2 className={styles.sectionTitle}>算出ロジックの定義（そのまま共有可）</h2>
+                <div className={styles.formula}>
+                    <strong>期待売上</strong> ＝ CV件数 × CV単価（種別ごとの固定係数）<br />
+                    <strong>CV単価</strong> ＝ 分子（Salesforce実測の売上）÷ 分母（同コホートのCV件数）
+                </div>
+                <div className={styles.defList}>
+                    <div>
+                        <div className={styles.defTerm}>分子（売上）= Salesforceの入社済受注額</div>
+                        <div className={styles.defBody}>
+                            CVした求職者を追跡し、その<strong>求職者のマッチング</strong>（<code>Matching__c</code>）がフェーズ「<strong>7.入社済</strong>」に到達した受注額 <code>MA_ClosingFee__c</code> の合計 −
+                            返金想定額 <code>Estimated_refund_amount__c</code>。経路は 登録履歴 <code>RegistHistory__c</code> → 求職者 <code>CustomObject1__c</code> → マッチング <code>Matching__c</code>。
+                            <br />※ 応募した求人そのものに限らず、CVを起点にCAが後日組成した紹介マッチングの成約も<strong>求職者単位で合算</strong>します（応募イベント単体の売上ではない）。受注額ベース（検収・入金ベースではない）。
+                        </div>
+                    </div>
+                    <div>
+                        <div className={styles.defTerm}>分母（件数）= そのコホートのCVイベント数</div>
+                        <div className={styles.defBody}>
+                            会員登録 = 登録履歴のCVイベント、応募 = 求職者 <code>CustomObject1__c</code> の <code>CO1_DRMOrderType__c</code>（人材紹介 / 求人広告 / ハローワーク）で種別判定した応募イベント数。
+                            コホートは登録日 2025-01〜2026-05（会員登録のみ 2025-08〜2026-05）、成約リードタイム確保のため直近2ヶ月は除外。
+                        </div>
+                    </div>
+                    <div>
+                        <div className={styles.defTerm}>データソースの注記：BigQueryではなくSalesforce</div>
+                        <div className={styles.defBody}>
+                            この単価はBigQueryのライブ集計ではなく、<strong>{CV_UNIT_VALUE_ASOF} にSalesforce実測から一度算出した固定係数</strong>です（<code>lib/constants/cvUnitValue.ts</code> に定義、全ページ共通）。
+                            BigQueryはGA4のセッション・イベント集計に使いますが、<strong>単価の分子（売上）には使っていません</strong>。市況・成約率・手数料相場が動くため四半期に1回程度の再算出を推奨。
+                        </div>
+                    </div>
+                    <div>
+                        <div className={styles.defTerm}>なぜ種別で数倍の差が出るか＝成約率の差（手数料単価ではない）</div>
+                        <div className={styles.defBody}>
+                            平均紹介手数料は各種別とも約73〜83万円で大差ありません。差はほぼ<strong>成約率</strong>由来です。会員登録者はCA提案エンジンに乗る（登録→面談は平均3.4日・約41%が面談到達）ため成約率2.2%、
+                            一方ハローワーク応募者はゲストのまま応募止まりで成約率0.39%。この約6.5倍差が単価差（1.8万円 vs 2,800円）の正体です。
+                        </div>
+                    </div>
+                    <div className={styles.defFlag}>
+                        <div className={styles.defTerm}>要確認（朝会 2026-08-27 の継続論点）</div>
+                        <div className={styles.defBody}>
+                            会員登録CVとSalesforce求職者の紐付けは電話番号・メール一致ベースで、現状<strong>約50%が未紐付け</strong>という不整合があります（分子の追跡精度に影響しうる）。
+                            紐付け定義の確定・重複求職者レコードのリフレッシュ挙動・Zapier起因の取りこぼしは調査中で、確定後に係数を再算出する想定です。
+                            また求人広告（JobA）は入社29件の小標本で、含むのは<strong>紹介パスアップ成約のみ・広告の掲載課金売上は含まない</strong>点に注意。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className={styles.card}>
                 <h2 className={styles.sectionTitle}>期間のCVを金額換算</h2>
                 <div className={styles.controls}>
                     <PeriodSelect
