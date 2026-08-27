@@ -3,6 +3,8 @@
  * 元のGASコードのfetchData関数を参考に実装
  */
 
+import { ga4Fetch } from './concurrency'
+
 export interface GA4ReportRequest {
     propertyId: string;
     dateRanges: Array<{ startDate: string; endDate: string }>;
@@ -106,14 +108,8 @@ export async function fetchGA4Data(
     // metricsは必須
     body.metrics = formatMetrics(request.metrics)
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-    });
+    // 同時実行制御 + 429/503リトライは ga4Fetch に集約（GA4のプロパティ同時リクエスト上限対策）
+    const response = await ga4Fetch(request.propertyId, url, body, accessToken);
 
     if (!response.ok) {
         const error = await response.json();
@@ -179,20 +175,15 @@ export async function runGA4FunnelReport(
             },
     }))
 
-    const response = await fetch(
+    const response = await ga4Fetch(
+        propertyId,
         `https://analyticsdata.googleapis.com/v1alpha/properties/${propertyId}:runFunnelReport`,
         {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                dateRanges,
-                funnelVisualizationType: 'STANDARD_FUNNEL',
-                funnel: { isOpenFunnel: false, steps: funnelSteps },
-            }),
-        }
+            dateRanges,
+            funnelVisualizationType: 'STANDARD_FUNNEL',
+            funnel: { isOpenFunnel: false, steps: funnelSteps },
+        },
+        accessToken,
     )
     if (!response.ok) {
         const error = await response.json()
