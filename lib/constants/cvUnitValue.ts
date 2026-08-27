@@ -8,14 +8,17 @@
  *   成約まで乗って過大評価になる）。一方、応募求人だけに絞るのも誤り（旧2026-08-07版の欠陥）で、
  *   CAが応募者を別求人=特に人材紹介案件へ再マッチして生んだ成約という売上主体を取りこぼす。
  *   CA活動履歴基準はこの中庸で、CVを起点にCAが動いて生んだ成約を過不足なく捕捉する。
+ * ※応募3種別（JobR/JobA/JobH）は同一入社の二重計上を除去（優先度 人材紹介>求人広告>ハローワーク：
+ *   複数チャネルで登録した人の入社は最上位チャネルに一意に寄せる）。会員登録(signup)は「登録の下流価値」
+ *   指標のため応募との重複を許容し据え置き（合算はしない前提）。
  * コホート: 登録日2025-01〜2025-12（会員登録のみ2025-08〜2025-12）。成約リードタイム確保のため
  *   登録上限を2025-12に固定（直近コホートは入社が未成熟で単価が過小になるため）。
  * 受注額ベース（検収・入金ベースではない）。再算出手順・背景はメモリ project_cv_unit_value.md 参照。
  */
 export const CV_UNIT_VALUE_YEN: Record<string, number> = {
     JobR: 15850,
-    JobA: 28069,
-    JobH: 12765,
+    JobA: 18602,
+    JobH: 8726,
     signup: 19760,
 }
 
@@ -46,7 +49,7 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         grossFeeYen: 81_560_469,
         refundYen: 3_745_883,
         unitYen: 19760,
-        note: 'サイト経由（オーガニック 求人詳細ページ(web)/Topページ）の純登録のみ。CVに紐づくCA活動履歴経由の入社を計上',
+        note: 'サイト経由（オーガニック 求人詳細ページ(web)/Topページ）の純登録のみ。CVに紐づくCA活動履歴経由の入社を計上。応募との重複（87件中32件）は下流価値の指標として許容',
     },
     {
         key: 'JobR',
@@ -58,7 +61,7 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         grossFeeYen: 476_137_977,
         refundYen: 26_724_040,
         unitYen: 15850,
-        note: 'CVのCA活動履歴に紐づく入社（応募求人＋CAが後日組成した紹介成約を含む）',
+        note: 'CVのCA活動履歴に紐づく入社（応募求人＋CAが後日組成した紹介成約を含む）。重複除去の最優先チャネルで全入社を保持',
     },
     {
         key: 'JobA',
@@ -66,11 +69,11 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         cohort: '2025-01〜2025-12',
         events: 1182,
         uniq: 867,
-        hires: 68,
-        grossFeeYen: 34_167_787,
+        hires: 50,
+        grossFeeYen: 22_977_887,
         refundYen: 990_000,
-        unitYen: 28069,
-        note: '入社の多くはCAが人材紹介案件へ再マッチした成約。広告の掲載課金売上は含まない・小標本',
+        unitYen: 18602,
+        note: '入社の多くはCAが人材紹介案件へ再マッチした成約。人材紹介と重複する入社18件は除外済み。広告の掲載課金売上は含まない・小標本',
     },
     {
         key: 'JobH',
@@ -78,11 +81,11 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         cohort: '2025-01〜2025-12',
         events: 3375,
         uniq: 1927,
-        hires: 53,
-        grossFeeYen: 47_158_135,
-        refundYen: 4_077_516,
-        unitYen: 12765,
-        note: 'HW求人自体は成約手数料ゼロ。売上主体はCAが人材紹介案件へ再マッチした成約',
+        hires: 30,
+        grossFeeYen: 32_016_559,
+        refundYen: 2_565_516,
+        unitYen: 8726,
+        note: 'HW求人自体は成約手数料ゼロ。売上主体はCAの人材紹介案件への再マッチ。人材紹介・求人広告と重複する入社は除外済み',
     },
 ]
 
