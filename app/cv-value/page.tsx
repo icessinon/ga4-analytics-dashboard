@@ -157,7 +157,7 @@ export default function CvValuePage() {
                     ))}
                 </div>
                 <p className={styles.tableNote}>
-                    ※ 期待売上 = そのCVをした求職者コホートが最終的に生んだ入社済の受注額（−返金想定額）÷ CV件数。<strong>成約率 × 平均紹介手数料</strong>に分解できます
+                    ※ 期待売上 = そのCVに紐づくCA活動履歴経由で生まれた入社済の受注額（−返金想定額）÷ CV件数。<strong>成約率 × 平均紹介手数料</strong>に分解できます
                     （例: 会員登録 = 成約率2.2% × 約83万円 ≒ 1.8万円）。<br />
                     ※ 期待値（平均）なので個々のCVに値札がつくわけではありません。「登録を月100件増やす施策 = 月180万円の売上増と同等」のように<strong>件数×単価で施策同士を比較する</strong>のが正しい使い方です。
                     受注額ベース（検収・入金ベースではありません）。詳しい読み方は<a href="/docs/glossary" style={{ color: '#93c5fd' }}>用語・ドメイン知識</a>参照。
@@ -172,11 +172,13 @@ export default function CvValuePage() {
                 </div>
                 <div className={styles.defList}>
                     <div>
-                        <div className={styles.defTerm}>分子（売上）= Salesforceの入社済受注額</div>
+                        <div className={styles.defTerm}>分子（売上）= CVに紐づくCA活動履歴経由の入社済受注額</div>
                         <div className={styles.defBody}>
-                            CVした求職者を追跡し、その<strong>求職者のマッチング</strong>（<code>Matching__c</code>）がフェーズ「<strong>7.入社済</strong>」に到達した受注額 <code>MA_ClosingFee__c</code> の合計 −
-                            返金想定額 <code>Estimated_refund_amount__c</code>。経路は 登録履歴 <code>RegistHistory__c</code> → 求職者 <code>CustomObject1__c</code> → マッチング <code>Matching__c</code>。
-                            <br />※ 応募した求人そのものに限らず、CVを起点にCAが後日組成した紹介マッチングの成約も<strong>求職者単位で合算</strong>します（応募イベント単体の売上ではない）。受注額ベース（検収・入金ベースではない）。
+                            CVを起点とする<strong>CA活動履歴（<code>AgentActivityHistory__c</code>）</strong>に紐づくマッチング（<code>Matching__c.MA_AgentActivityHistory__c</code>）のうち、
+                            フェーズ <code>Field2__c</code>=「<strong>7.入社済</strong>」の受注額 <code>MA_ClosingFee__c</code> − 返金想定額 <code>Estimated_refund_amount__c</code>。
+                            経路は CV（<code>RegistHistory__c</code>）→ そのCVの <strong>CA活動履歴</strong> → 紐づくマッチング。受注額ベース（検収・入金ベースではない）。
+                            <br />※ <strong>求職者単位で全マッチングを合算しない</strong>のが要点。同一求職者は平均約2.6件のCA活動履歴（別接点・別登録・後日の掘り起こし）を持つため、
+                            求職者で束ねると<strong>測りたいCVと無関係な成約まで乗って過大評価</strong>になる。CVに対応するCA活動履歴に紐づく成約のみを数える。
                         </div>
                     </div>
                     <div>
@@ -201,10 +203,12 @@ export default function CvValuePage() {
                         </div>
                     </div>
                     <div className={styles.defFlag}>
-                        <div className={styles.defTerm}>要確認（朝会 2026-08-27 の継続論点）</div>
+                        <div className={styles.defTerm}>要注意：下記の係数値は旧集計で再算出待ち（過大評価の可能性）</div>
                         <div className={styles.defBody}>
-                            会員登録CVとSalesforce求職者の紐付けは電話番号・メール一致ベースで、現状<strong>約50%が未紐付け</strong>という不整合があります（分子の追跡精度に影響しうる）。
-                            紐付け定義の確定・重複求職者レコードのリフレッシュ挙動・Zapier起因の取りこぼしは調査中で、確定後に係数を再算出する想定です。
+                            現在表示している単価（{CV_UNIT_VALUE_ASOF} 算出）は、上記の正しい定義ではなく<strong>旧「求職者単位で入社済を合算」する方法</strong>で出した暫定値です。
+                            上で述べたとおり求職者単位はCVと無関係な成約を含むため<strong>実際より高く出ている可能性が高く</strong>、CA活動履歴基準で再算出予定です（特に会員登録・人材紹介は下振れ方向の見込み）。<br />
+                            あわせて、会員登録CVとSalesforce求職者の紐付けは電話番号・メール一致ベースで現状<strong>約50%が未紐付け</strong>の不整合があり（分子の追跡精度に影響）、
+                            紐付け定義の確定・Zapier起因の取りこぼし調査も継続中。
                             また求人広告（JobA）は入社29件の小標本で、含むのは<strong>紹介パスアップ成約のみ・広告の掲載課金売上は含まない</strong>点に注意。
                         </div>
                     </div>
