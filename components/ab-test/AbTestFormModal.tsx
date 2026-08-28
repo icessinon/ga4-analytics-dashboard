@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import DateInput from '@/components/DateInput'
 import AbTestScheduleConfig, { ScheduleConfig } from './AbTestScheduleConfig'
 import CustomSelect from '@/components/CustomSelect'
@@ -132,6 +132,64 @@ export default function AbTestFormModal({
     const [funnelSteps, setFunnelSteps] = useState<FunnelStepForm[]>([])
     // SEO監視対象パス（カンマ区切りの正規表現）。ga4Config.seoWatchPaths に string[] で保存
     const [seoWatchPaths, setSeoWatchPaths] = useState('')
+
+    // 新規追加時、背景クリックなどで誤って閉じてもドラフトを保持するための制御。
+    // wasEditing: 直前が編集モードだったか（編集→新規追加の切替時だけ空にする）
+    // hasDraft: 新規フォームを一度でも初期化済みか（未初期化の初回だけ空にする）
+    const wasEditingRef = useRef(false)
+    const hasDraftRef = useRef(false)
+
+    // 新規追加フォームを初期状態に戻す。誤クローズ後の再オープンでは呼ばず、ドラフトを残す
+    const resetForm = useCallback(() => {
+        const initialProductId = currentProductId?.toString() || (products.length === 1 ? products[0].id.toString() : '')
+        setFormData({
+            productId: initialProductId,
+            name: '',
+            description: '',
+            hypothesis: '',
+            issueUrl: '',
+            expectedImprovement: '',
+            startDate: '',
+            endDate: '',
+            status: 'running',
+            autoExecute: true,
+        })
+        setShowCvrB(true)
+        setShowCvrC(false)
+        setShowCvrD(false)
+        setFunnelSteps([])
+        setSeoWatchPaths('')
+        setBaselineCvr('')
+        setDailyPv('')
+        setScheduleConfig({
+            enabled: true,
+            executionType: 'on_end',
+        })
+        setGa4Config({
+            propertyId: '',
+            metrics: 'eventCount,totalUsers',
+            dimensions: 'customEvent:click_label,customEvent:view_label',
+            filterDimension: '',
+            filterOperator: 'CONTAINS',
+            filterExpression: '',
+            excludeFilterDimension: '',
+            excludeFilterOperator: 'CONTAINS',
+            excludeFilterExpression: '',
+            limit: 25000,
+            cvrA: { denominatorDimension: '', denominatorLabels: [], numeratorDimension: '', numeratorLabels: [], metric: 'totalUsers' },
+            cvrB: { denominatorDimension: '', denominatorLabels: [], numeratorDimension: '', numeratorLabels: [], metric: 'totalUsers' },
+            cvrC: { denominatorDimension: '', denominatorLabels: [], numeratorDimension: '', numeratorLabels: [], metric: 'totalUsers' },
+            cvrD: { denominatorDimension: '', denominatorLabels: [], numeratorDimension: '', numeratorLabels: [], metric: 'totalUsers' },
+            abTestEvaluationConfig: { minSignificance: null, minPV: 1000, minDays: 14, minImprovementRate: 5, minDifferencePt: 0.5 },
+            geminiConfig: { enabled: false },
+        })
+        if (initialProductId) {
+            const initialProduct = products.find((p) => p.id.toString() === initialProductId)
+            if (initialProduct?.ga4PropertyId) {
+                setGa4Config((prev) => ({ ...prev, propertyId: initialProduct.ga4PropertyId || prev.propertyId }))
+            }
+        }
+    }, [currentProductId, products])
 
     const updateFunnelStep = (index: number, patch: Partial<FunnelStepForm>) => {
         setFunnelSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -312,92 +370,18 @@ export default function AbTestFormModal({
                     executionType: 'on_end',
                 })
             }
+            wasEditingRef.current = true
+            hasDraftRef.current = false
         } else {
-            const initialProductId = currentProductId?.toString() || (products.length === 1 ? products[0].id.toString() : '')
-            setFormData({
-                productId: initialProductId,
-                name: '',
-                description: '',
-                hypothesis: '',
-                issueUrl: '',
-                expectedImprovement: '',
-                startDate: '',
-                endDate: '',
-                status: 'running',
-                autoExecute: true,
-            })
-            setTestResult(null)
-            setTestError(null)
-            setTesting(false)
-            setFunnelSteps([])
-            setSeoWatchPaths('')
-            setScheduleConfig({
-                enabled: true,
-                executionType: 'on_end',
-            })
-
-            setGa4Config({
-                propertyId: '',
-                metrics: 'eventCount,totalUsers',
-                dimensions: 'customEvent:click_label,customEvent:view_label',
-                filterDimension: '',
-                filterOperator: 'CONTAINS',
-                filterExpression: '',
-                excludeFilterDimension: '',
-                excludeFilterOperator: 'CONTAINS',
-                excludeFilterExpression: '',
-                limit: 25000,
-                cvrA: {
-                    denominatorDimension: '',
-                    denominatorLabels: [] as string[],
-                    numeratorDimension: '',
-                    numeratorLabels: [] as string[],
-                    metric: 'totalUsers',
-                },
-                cvrB: {
-                    denominatorDimension: '',
-                    denominatorLabels: [] as string[],
-                    numeratorDimension: '',
-                    numeratorLabels: [] as string[],
-                    metric: 'totalUsers',
-                },
-                cvrC: {
-                    denominatorDimension: '',
-                    denominatorLabels: [] as string[],
-                    numeratorDimension: '',
-                    numeratorLabels: [] as string[],
-                    metric: 'totalUsers',
-                },
-                cvrD: {
-                    denominatorDimension: '',
-                    denominatorLabels: [] as string[],
-                    numeratorDimension: '',
-                    numeratorLabels: [] as string[],
-                    metric: 'totalUsers',
-                },
-                abTestEvaluationConfig: {
-                    minSignificance: null,
-                    minPV: 1000,
-                    minDays: 14,
-                    minImprovementRate: 5,
-                    minDifferencePt: 0.5,
-                },
-                geminiConfig: {
-                    enabled: false,
-                },
-            })
-
-            if (initialProductId) {
-                const initialProduct = products.find((p) => p.id.toString() === initialProductId)
-                if (initialProduct?.ga4PropertyId) {
-                    setGa4Config((prev) => ({
-                        ...prev,
-                        propertyId: initialProduct.ga4PropertyId || prev.propertyId,
-                    }))
-                }
+            // 新規追加。誤クローズ後の再オープンでは入力を残す。
+            // 直前が編集モードだった（編集→新規追加）、または未初期化の初回のときだけ空フォームにする。
+            if (wasEditingRef.current || !hasDraftRef.current) {
+                resetForm()
             }
+            wasEditingRef.current = false
+            hasDraftRef.current = true
         }
-    }, [editingTest?.id, currentProductId, isOpen, products])
+    }, [editingTest?.id, currentProductId, isOpen, products, resetForm])
 
     const handleTestExecute = async () => {
         if (!formData.startDate || !formData.endDate) {
@@ -587,6 +571,9 @@ export default function AbTestFormModal({
                 ga4Config: ga4ConfigData,
                 scheduleConfig: scheduleConfig.enabled ? scheduleConfig : null,
             })
+            // 保存成功時のみドラフトを破棄（次回の新規追加は空フォームから）。
+            // エラー時はここに到達せず、入力を保持したまま再挑戦できる
+            hasDraftRef.current = false
         } finally {
             setSubmitting(false)
             onClose()

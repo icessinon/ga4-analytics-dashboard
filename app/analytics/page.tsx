@@ -22,7 +22,6 @@ function AnalyticsPageContent() {
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
-    const [accessToken, setAccessToken] = useState<string>('')
     const [showCvrB, setShowCvrB] = useState(true)
     const [showCvrC, setShowCvrC] = useState(false)
     const [showCvrD, setShowCvrD] = useState(false)
@@ -185,7 +184,6 @@ function AnalyticsPageContent() {
 
             const requestBody = {
                 productId: currentProduct.id,
-                accessToken: accessToken || undefined,
                 reportName: config.reportName,
                 propertyId: config.propertyId,
                 startDate: config.startDate,
@@ -332,19 +330,6 @@ function AnalyticsPageContent() {
                         <p className={styles.successLink}>
                             ⚠️ GA4プロパティ（492794577）にサービスアカウントのアクセス権限を付与してください。
                             「管理」→「プロパティアクセス管理」から追加できます。
-                        </p>
-                    </div>
-                    <div style={{ marginTop: '1rem' }}>
-                        <label className={styles.formLabel}>GA4アクセストークン（オプション - 上書き用）</label>
-                        <input
-                            type="password"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="サービスアカウントを使用する場合は空欄でOK"
-                            className={styles.formInput}
-                        />
-                        <p className={styles.helpText}>
-                            フォームから入力した場合は、サービスアカウントより優先されます
                         </p>
                     </div>
                 </div>

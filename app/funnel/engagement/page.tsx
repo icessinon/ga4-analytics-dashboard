@@ -34,7 +34,6 @@ export default function EngagementFunnelPage() {
     const [dataFullRange, setDataFullRange] = useState<EngagementFunnelData | null>(null)
     const [selectedViewMonth, setSelectedViewMonth] = useState<string>('all')
     const [error, setError] = useState<string | null>(null)
-    const [accessToken, setAccessToken] = useState('')
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -86,7 +85,6 @@ export default function EngagementFunnelPage() {
                     propertyId,
                     startDate: start,
                     endDate: end,
-                    accessToken: accessToken || undefined,
                 }),
             })
             const json = await res.json()
@@ -124,7 +122,6 @@ export default function EngagementFunnelPage() {
                     propertyId,
                     startDate,
                     endDate,
-                    accessToken: accessToken || undefined,
                 }),
             })
             const json = await res.json()
@@ -238,16 +235,6 @@ export default function EngagementFunnelPage() {
                                 required
                             />
                         </div>
-                    </div>
-                    <div className={styles.formField}>
-                        <label className={styles.label}>GA4アクセストークン（オプション）</label>
-                        <input
-                            type="password"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="環境変数が設定されていれば不要"
-                            className={`${styles.input} ${styles.inputWide}`}
-                        />
                     </div>
                     <div className={styles.formField}>
                         <NeonCheckbox

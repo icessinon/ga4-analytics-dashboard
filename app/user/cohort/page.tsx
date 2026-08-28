@@ -79,7 +79,6 @@ export default function CohortPage() {
     const [startDate, setStartDate] = useState(defaultStart)
     const [endDate, setEndDate] = useState(defaultEnd)
     const [periods, setPeriods] = useState(6)
-    const [accessToken, setAccessToken] = useState('')
     const [loading, setLoading] = useState(false)
     const [cohorts, setCohorts] = useState<CohortRow[] | null>(null)
     const [maxPeriods, setMaxPeriods] = useState(6)
@@ -103,7 +102,6 @@ export default function CohortPage() {
                         startDate,
                         endDate,
                         periods,
-                        accessToken: accessToken || undefined,
                     }),
                 }),
                 fetch(`/api/ab-test?productId=${currentProduct.id}&limit=50`).catch(() => null),
@@ -191,10 +189,6 @@ export default function CohortPage() {
                                 onChange={(e) => setPeriods(Number(e.target.value))}
                                 className={styles.formInput}
                             />
-                        </div>
-                        <div className={styles.formFieldFull}>
-                            <label className={styles.formLabel}>GA4アクセストークン（オプション）</label>
-                            <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="サービスアカウントを使用する場合は空欄でOK" className={styles.formInput} />
                         </div>
                     </div>
                     <div className={styles.formActions}>

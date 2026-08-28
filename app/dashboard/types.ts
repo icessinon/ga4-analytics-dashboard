@@ -91,7 +91,6 @@ export type ChartMetric =
     | 'engagementRate'
 
 export const CV_DIMENSION_OPTIONS: { value: string; label: string }[] = [
-    { value: 'eventName', label: 'イベント名 (eventName)' },
     { value: 'customEvent:click_label', label: 'クリックラベル (click_label)' },
     { value: 'customEvent:view_label', label: 'ビューラベル (view_label)' },
 ]

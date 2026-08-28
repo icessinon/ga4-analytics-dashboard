@@ -89,7 +89,6 @@ export default function StickinessPage() {
     const [compareMode, setCompareMode] = useState(false)
     const [compareStartDate, setCompareStartDate] = useState(defaultCompStart)
     const [compareEndDate, setCompareEndDate] = useState(defaultCompEnd)
-    const [accessToken, setAccessToken] = useState('')
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<ApiResponse | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -139,7 +138,6 @@ export default function StickinessPage() {
                     startDate,
                     endDate,
                     ...(compareMode ? { compareStartDate, compareEndDate } : {}),
-                    accessToken: accessToken || undefined,
                 }),
             })
             const data = await res.json()
@@ -229,16 +227,6 @@ export default function StickinessPage() {
                         </div>
                     )}
 
-                    <div className={styles.formField} style={{ marginBottom: '1rem' }}>
-                        <label className={styles.label}>GA4アクセストークン（オプション）</label>
-                        <input
-                            type="password"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="サービスアカウントを使用する場合は空欄でOK"
-                            className={styles.input}
-                        />
-                    </div>
 
                     <div className={styles.formActions}>
                         <button type="submit" disabled={loading} className={styles.button}>

@@ -35,10 +35,10 @@ export default function DashboardPage() {
     const [customStartDate, setCustomStartDate] = useState<string>('')
     const [customEndDate, setCustomEndDate] = useState<string>('')
     const [pageMetricsLoading, setPageMetricsLoading] = useState(false)
-    const [ga4AccessToken, setGa4AccessToken] = useState('')
     const [cvConfig, setCvConfig] = useState<Record<string, { cvEventName: string; cvDimension: string }>>({})
     const [cvEventInput, setCvEventInput] = useState('')
-    const [cvDimensionInput, setCvDimensionInput] = useState('eventName')
+    const [cvDimensionInput, setCvDimensionInput] = useState('customEvent:click_label')
+    const [cvLabelOptions, setCvLabelOptions] = useState<string[]>([])
     const [cvConfigSaving, setCvConfigSaving] = useState(false)
     const selectedPagePathRef = useRef('')
     selectedPagePathRef.current = selectedPagePath
@@ -166,7 +166,6 @@ export default function DashboardPage() {
                 propertyId: currentProduct.ga4PropertyId,
                 startDate,
                 endDate,
-                accessToken: ga4AccessToken || undefined,
             }),
         })
             .then((r) => parseJsonResponse<{ error?: string; pagePaths?: string[] }>(r))
@@ -189,7 +188,7 @@ export default function DashboardPage() {
                 if (!cancelled) setPagePathsLoading(false)
             })
         return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, ga4AccessToken])
+    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth])
 
     useEffect(() => {
         if (!currentProduct?.ga4PropertyId || !selectedPagePath) {
@@ -201,17 +200,17 @@ export default function DashboardPage() {
         setPageMetricsLoading(true)
         const useCustomRange = Boolean(customStartDate && customEndDate)
         const body = useCustomRange
-            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate, accessToken: ga4AccessToken || undefined }
+            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate }
             : granularity === 'daily'
-                ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth, accessToken: ga4AccessToken || undefined }
+                ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth }
                 : (() => {
                         const { startDate, endDate } = getRangeForGranularity(selectedMonth, granularity)
-                        return { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate, endDate, accessToken: ga4AccessToken || undefined }
+                        return { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate, endDate }
                     })()
         const prevMonth = getPreviousMonth(selectedMonth)
         const bodyPrev = useCustomRange
             ? null
-            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: prevMonth, accessToken: ga4AccessToken || undefined }
+            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: prevMonth }
         if (!useCustomRange && bodyPrev) {
             Promise.all([
                 fetch('/api/dashboard/page-metrics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => parseJsonResponse<PageMetrics & { error?: string }>(r)),
@@ -253,7 +252,7 @@ export default function DashboardPage() {
                 })
         }
         return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate, ga4AccessToken, getPreviousMonth])
+    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate, getPreviousMonth])
 
     useEffect(() => {
         if (!currentProduct?.ga4PropertyId || !selectedPagePath) {
@@ -265,8 +264,8 @@ export default function DashboardPage() {
         let cancelled = false
         setSeriesLoading(true)
         const seriesBody = useCustomRange
-            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate, granularity, accessToken: ga4AccessToken || undefined }
-            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth, granularity, accessToken: ga4AccessToken || undefined }
+            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate, granularity }
+            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth, granularity }
         fetch('/api/dashboard/page-metrics/series', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -285,7 +284,7 @@ export default function DashboardPage() {
                 if (!cancelled) setSeriesLoading(false)
             })
         return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate, ga4AccessToken])
+    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate])
 
     useEffect(() => {
         if (!currentProduct?.id) {
@@ -300,9 +299,11 @@ export default function DashboardPage() {
                 const normalized: Record<string, { cvEventName: string; cvDimension: string }> = {}
                 Object.keys(configs).forEach((path) => {
                     const c = configs[path]
+                    const rawDim = typeof c === 'object' && c?.cvDimension ? c.cvDimension : 'customEvent:click_label'
                     normalized[path] = {
                         cvEventName: typeof c === 'string' ? c : (c?.cvEventName ?? ''),
-                        cvDimension: typeof c === 'object' && c?.cvDimension ? c.cvDimension : 'eventName',
+                        // eventName 参照は廃止したため、旧保存値はクリックラベルに読み替えて UI 整合を取る
+                        cvDimension: rawDim === 'eventName' ? 'customEvent:click_label' : rawDim,
                     }
                 })
                 setCvConfig(normalized)
@@ -313,8 +314,25 @@ export default function DashboardPage() {
     useEffect(() => {
         const c = cvConfig[selectedPagePath]
         setCvEventInput(c?.cvEventName ?? '')
-        setCvDimensionInput(c?.cvDimension ?? 'eventName')
+        setCvDimensionInput(c?.cvDimension ?? 'customEvent:click_label')
     }, [selectedPagePath, cvConfig])
+
+    // CVイベント名の検索候補（直近90日のクリック/ビューラベル）。datalistで絞り込み＋自由入力を両立
+    useEffect(() => {
+        if (!currentProduct?.ga4PropertyId) {
+            setCvLabelOptions([])
+            return
+        }
+        let cancelled = false
+        fetch(`/api/ga4/labels?propertyId=${currentProduct.ga4PropertyId}`)
+            .then((r) => parseJsonResponse<{ error?: string; labels?: string[] }>(r))
+            .then((data) => {
+                if (cancelled || data.error) return
+                setCvLabelOptions(data.labels ?? [])
+            })
+            .catch(() => { if (!cancelled) setCvLabelOptions([]) })
+        return () => { cancelled = true }
+    }, [currentProduct?.ga4PropertyId])
 
     const saveCvConfig = () => {
         if (!currentProduct?.id || !selectedPagePath) return
@@ -337,7 +355,7 @@ export default function DashboardPage() {
                     if (data.cvEventName) {
                         next[selectedPagePath] = {
                             cvEventName: data.cvEventName,
-                            cvDimension: data.cvDimension ?? 'eventName',
+                            cvDimension: data.cvDimension ?? 'customEvent:click_label',
                         }
                     } else delete next[selectedPagePath]
                     return next
@@ -352,7 +370,6 @@ export default function DashboardPage() {
                         productId: currentProduct.id,
                         pagePath: selectedPagePath,
                         month: selectedMonth,
-                        accessToken: ga4AccessToken || undefined,
                     }),
                 })
                     .then((res) => parseJsonResponse<PageMetrics & { error?: string }>(res))
@@ -481,6 +498,7 @@ export default function DashboardPage() {
                 <AbTestDonutCharts
                     countByStatus={stats.abTestCountByStatus}
                     completedOutcome={stats.abTestCompletedOutcome}
+                    productId={currentProduct?.id}
                 />
             )}
 
@@ -576,7 +594,14 @@ export default function DashboardPage() {
                                         onChange={(e) => setCvEventInput(e.target.value)}
                                         placeholder="例: EF_StepForm_Step5-連絡先-CVボタン"
                                         className={styles.cvEventInput}
+                                        list="cv-event-options"
+                                        autoComplete="off"
                                     />
+                                    <datalist id="cv-event-options">
+                                        {cvLabelOptions.map((label) => (
+                                            <option key={label} value={label} />
+                                        ))}
+                                    </datalist>
                                     <button
                                         type="button"
                                         onClick={saveCvConfig}
@@ -588,16 +613,6 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         )}
-                        <div className={styles.pageControlRow}>
-                            <label className={styles.pageControlLabel}>GA4トークン（任意）:</label>
-                            <input
-                                type="password"
-                                placeholder="未入力時は環境変数を使用"
-                                value={ga4AccessToken}
-                                onChange={(e) => setGa4AccessToken(e.target.value)}
-                                className={styles.ga4TokenInput}
-                            />
-                        </div>
                     </div>
                     {pageMetricsLoading && selectedPagePath && (
                         <div className={styles.pageMetricsLoader}>

@@ -1,6 +1,7 @@
 'use client'
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import Link from '@/components/Link'
 import type { AbTestCompletedOutcome, AbTestCountByStatus } from '@/app/dashboard/types'
 import styles from './AbTestDonutCharts.module.css'
 
@@ -18,6 +19,7 @@ const OUTCOME_COLORS = {
 interface AbTestDonutChartsProps {
     countByStatus: AbTestCountByStatus
     completedOutcome: AbTestCompletedOutcome
+    productId?: number
 }
 
 function DonutStatus({ countByStatus }: { countByStatus: AbTestCountByStatus }) {
@@ -30,15 +32,15 @@ function DonutStatus({ countByStatus }: { countByStatus: AbTestCountByStatus }) 
 
     if (total === 0) {
         return (
-            <div className={styles.chartWrap}>
+            <>
                 <h3 className={styles.chartTitle}>AB施策の状態</h3>
                 <div className={styles.emptyMessage}>データがありません</div>
-            </div>
+            </>
         )
     }
 
     return (
-        <div className={styles.chartWrap}>
+        <>
             <h3 className={styles.chartTitle}>AB施策の状態</h3>
             <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -51,9 +53,8 @@ function DonutStatus({ countByStatus }: { countByStatus: AbTestCountByStatus }) 
                         innerRadius={60}
                         outerRadius={90}
                         paddingAngle={2}
-                        label={({ name, value }) => `${name} ${value}`}
                     >
-                        {data.map((entry, index) => (
+                        {data.map((entry) => (
                             <Cell key={entry.key} fill={STATUS_COLORS[entry.key]} />
                         ))}
                     </Pie>
@@ -61,7 +62,7 @@ function DonutStatus({ countByStatus }: { countByStatus: AbTestCountByStatus }) 
                     <Legend />
                 </PieChart>
             </ResponsiveContainer>
-        </div>
+        </>
     )
 }
 
@@ -74,15 +75,15 @@ function DonutOutcome({ completedOutcome }: { completedOutcome: AbTestCompletedO
 
     if (total === 0) {
         return (
-            <div className={styles.chartWrap}>
+            <>
                 <h3 className={styles.chartTitle}>完了の内訳</h3>
                 <div className={styles.emptyMessage}>完了した施策がありません</div>
-            </div>
+            </>
         )
     }
 
     return (
-        <div className={styles.chartWrap}>
+        <>
             <h3 className={styles.chartTitle}>完了の内訳</h3>
             <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -95,9 +96,8 @@ function DonutOutcome({ completedOutcome }: { completedOutcome: AbTestCompletedO
                         innerRadius={60}
                         outerRadius={90}
                         paddingAngle={2}
-                        label={({ name, value }) => `${name} ${value}`}
                     >
-                        {data.map((entry, index) => (
+                        {data.map((entry) => (
                             <Cell key={entry.key} fill={OUTCOME_COLORS[entry.key]} />
                         ))}
                     </Pie>
@@ -105,15 +105,20 @@ function DonutOutcome({ completedOutcome }: { completedOutcome: AbTestCompletedO
                     <Legend />
                 </PieChart>
             </ResponsiveContainer>
-        </div>
+        </>
     )
 }
 
-export default function AbTestDonutCharts({ countByStatus, completedOutcome }: AbTestDonutChartsProps) {
+export default function AbTestDonutCharts({ countByStatus, completedOutcome, productId }: AbTestDonutChartsProps) {
+    const href = productId ? `/ab-test?productId=${productId}` : '/ab-test'
     return (
         <div className={styles.container}>
-            <DonutStatus countByStatus={countByStatus} />
-            <DonutOutcome completedOutcome={completedOutcome} />
+            <Link href={href} className={styles.chartWrap} aria-label="ABテスト一覧へ移動">
+                <DonutStatus countByStatus={countByStatus} />
+            </Link>
+            <Link href={href} className={styles.chartWrap} aria-label="ABテスト一覧へ移動">
+                <DonutOutcome completedOutcome={completedOutcome} />
+            </Link>
         </div>
     )
 }

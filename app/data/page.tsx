@@ -16,7 +16,6 @@ export default function DataPage() {
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState<any>(null)
     const [error, setError] = useState<string | null>(null)
-    const [accessToken, setAccessToken] = useState<string>('')
     const [viewMode, setViewMode] = useState<'all' | 'view' | 'click'>('all')
     const [tableSearch, setTableSearch] = useState('')
     const [config, setConfig] = useState({
@@ -73,7 +72,6 @@ export default function DataPage() {
                 metrics: config.metrics.split(',').map((m) => ({ name: m.trim() })),
                 dimensions: config.dimensions.split(',').map((d) => ({ name: d.trim() })),
                 limit: config.limit,
-                accessToken: accessToken || undefined,
             }
 
             if (config.filterExpression && config.filterExpression.trim()) {
@@ -295,16 +293,6 @@ export default function DataPage() {
                                 max="100000"
                             />
                         </div>
-                    </div>
-                    <div className={styles.formField}>
-                        <label className={styles.formLabel}>GA4アクセストークン（オプション）</label>
-                        <input
-                            type="password"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="サービスアカウントを使用する場合は空欄でOK"
-                            className={styles.formInput}
-                        />
                     </div>
                     <button
                         type="submit"

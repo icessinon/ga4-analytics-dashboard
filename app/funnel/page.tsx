@@ -40,7 +40,6 @@ function FunnelPageContent() {
     const [funnelData, setFunnelData] = useState<FunnelData | null>(null)
     const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [accessToken, setAccessToken] = useState<string>('')
     const [configLoaded, setConfigLoaded] = useState(false)
     const [geminiConfig, setGeminiConfig] = useState<GeminiConfigState>({
         enabled: false,
@@ -278,7 +277,6 @@ function FunnelPageContent() {
                     },
                     periods: validPeriods,
                     filterConfig,
-                    accessToken: accessToken || undefined,
                     geminiConfig: geminiConfig.enabled ? geminiConfig : undefined,
                     name: reportName.trim() || undefined,
                 }
@@ -312,7 +310,6 @@ function FunnelPageContent() {
                         steps: validSteps,
                     },
                     filterConfig,
-                    accessToken: accessToken || undefined,
                     geminiConfig: geminiConfig.enabled ? geminiConfig : undefined,
                     name: reportName.trim() || undefined,
                 }
@@ -556,17 +553,6 @@ function FunnelPageContent() {
                         >
                             + ステップを追加
                         </button>
-                    </div>
-
-                    <div className={styles.formField}>
-                        <label className={styles.formLabel}>GA4アクセストークン（オプション）</label>
-                        <input
-                            type="password"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="サービスアカウントを使用する場合は空欄でOK"
-                            className={styles.formInput}
-                        />
                     </div>
 
                     <GeminiConfig

@@ -103,7 +103,6 @@ function DeviceChart({ title, rows, badge }: { title: string; rows: ViewLabelRow
 
 export default function HeatmapPage() {
     const { currentProduct } = useProduct()
-    const [accessToken, setAccessToken] = useState('')
     const [startDate, setStartDate] = useState(getDefaultDates().startDate)
     const [endDate, setEndDate] = useState(getDefaultDates().endDate)
     const [pagePaths, setPagePaths] = useState<string[]>([])
@@ -128,7 +127,6 @@ export default function HeatmapPage() {
                 productId: currentProduct.id,
                 startDate,
                 endDate,
-                accessToken: accessToken.trim() || undefined,
             }),
         })
             .then((r) => r.json())
@@ -143,7 +141,7 @@ export default function HeatmapPage() {
             .catch(() => { if (!cancelled) setPagePaths([]) })
             .finally(() => { if (!cancelled) setPagePathsLoading(false) })
         return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, startDate, endDate, accessToken])
+    }, [currentProduct?.id, currentProduct?.ga4PropertyId, startDate, endDate])
 
     const handleFetch = async () => {
         if (!currentProduct) {
@@ -162,7 +160,6 @@ export default function HeatmapPage() {
                     startDate,
                     endDate,
                     pagePath: pagePath.trim() || undefined,
-                    accessToken: accessToken.trim() || undefined,
                 }),
             })
             const json = await res.json()
@@ -232,17 +229,6 @@ export default function HeatmapPage() {
                                 disabled={pagePathsLoading}
                                 placeholder="選択してください"
                                 aria-labelledby="heatmap-pagepath-label"
-                            />
-                        </div>
-                        <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-token">GA4 アクセストークン（任意）</label>
-                            <input
-                                id="heatmap-token"
-                                type="password"
-                                className={styles.input}
-                                placeholder="未入力時は環境変数を使用"
-                                value={accessToken}
-                                onChange={(e) => setAccessToken(e.target.value)}
                             />
                         </div>
                         <div className={styles.formActions}>

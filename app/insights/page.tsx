@@ -119,7 +119,6 @@ function DeltaBadge({ a, b }: { a: number; b: number }) {
 
 export default function InsightsPage() {
     const { currentProduct } = useProduct()
-    const [accessToken, setAccessToken] = useState('')
     const [baseMonth, setBaseMonth] = useState<string>(todayYm())
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -141,7 +140,6 @@ export default function InsightsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
-                    accessToken: accessToken || undefined,
                     baseMonth: targetMonth,
                 }),
             })
@@ -260,10 +258,6 @@ export default function InsightsPage() {
                                 max={currentYm}
                                 className={styles.monthPicker}
                             />
-                        </div>
-                        <div className={styles.formField} style={{ flex: 1 }}>
-                            <label className={styles.label}>GA4アクセストークン（オプション）</label>
-                            <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="サービスアカウントを使用する場合は空欄でOK" className={styles.input} />
                         </div>
                     </div>
                     <button type="submit" disabled={loading} className={styles.button} style={{ marginTop: '1rem' }}>

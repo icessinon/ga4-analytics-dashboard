@@ -85,7 +85,6 @@ export default function UserPage() {
     // 共通フォーム
     const [startDate, setStartDate] = useState(defaultStart)
     const [endDate, setEndDate] = useState(defaultEnd)
-    const [accessToken, setAccessToken] = useState('')
 
     // セグメント一覧
     const [listLoading, setListLoading] = useState(false)
@@ -121,7 +120,6 @@ export default function UserPage() {
                     propertyId: currentProduct.ga4PropertyId,
                     startDate,
                     endDate,
-                    accessToken: accessToken || undefined,
                 }),
             })
             const data = await res.json()
@@ -151,7 +149,6 @@ export default function UserPage() {
                     propertyId: currentProduct!.ga4PropertyId,
                     startDate,
                     endDate,
-                    accessToken: accessToken || undefined,
                     deviceCategory:  seg.deviceCategory,
                     browser:         seg.browser,
                     operatingSystem: seg.operatingSystem,
@@ -274,10 +271,6 @@ export default function UserPage() {
                         <div className={styles.formField}>
                             <label className={styles.formLabel}>終了日</label>
                             <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.formInput} required />
-                        </div>
-                        <div className={styles.formFieldFull}>
-                            <label className={styles.formLabel}>GA4アクセストークン（オプション）</label>
-                            <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="サービスアカウントを使用する場合は空欄でOK" className={styles.formInput} />
                         </div>
                     </div>
                     <div className={styles.formActions}>

@@ -15,7 +15,6 @@ export default function TrendPage() {
     const [loading, setLoading] = useState(false)
     const [trendData, setTrendData] = useState<TrendData[] | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [accessToken, setAccessToken] = useState<string>('')
     const [reports, setReports] = useState<Report[]>([])
     const [selectedReportIds, setSelectedReportIds] = useState<number[]>([])
     const [loadingReports, setLoadingReports] = useState(true)
@@ -185,7 +184,6 @@ export default function TrendPage() {
                     body: JSON.stringify({
                         productId: currentProduct.id,
                         month,
-                        accessToken: accessToken || undefined,
                     }),
                 })
 
@@ -414,23 +412,6 @@ export default function TrendPage() {
                         />
                         <p className={styles.helpText}>
                             開始月から終了月までの期間を集計します（複数月の比較が可能です）
-                        </p>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                        <label htmlFor="accessToken" className={styles.label}>
-                            GA4アクセストークン（オプション）
-                        </label>
-                        <input
-                            type="text"
-                            id="accessToken"
-                            value={accessToken}
-                            onChange={(e) => setAccessToken(e.target.value)}
-                            placeholder="環境変数が設定されている場合は不要"
-                            className={styles.input}
-                        />
-                        <p className={styles.helpText}>
-                            環境変数にGA4認証情報が設定されていない場合のみ入力してください
                         </p>
                     </div>
 
