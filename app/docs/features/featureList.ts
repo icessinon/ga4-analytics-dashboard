@@ -375,6 +375,21 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/line-report',
     },
     {
+        name: 'UTM別レポート',
+        href: '/utm-report',
+        category: 'チャネル・集客',
+        description: 'utm_source × utm_medium × utm_campaign 別に、セッション・ユーザー・CV（応募/LP応募/会員登録）・期待売上換算を集計する汎用ビュー。各UTMが「どの施策のリンクで・いつ発行されるか」を lib/constants/utmCatalog.ts の辞書で注記する。完全な命名規則は docs/utm-naming-convention.md（用語集のUTM節と同期）。',
+        capabilities: [
+            'source×medium×campaign別のセッション・ユーザー・CV・CVR・期待売上換算（CV単価係数）',
+            '各行に施策名・発行タイミング・区分バッジ（自社通知/LINE公式/CA配信/スカウトSMS/広告/インフルエンサー等）を注記',
+            'medium別フィルタ（email/line/social/sms/cpc/referral…）とサマリー（対象セッション・CV・円換算・UTM種類数）',
+            'keep_remider（keep_reminderのタイポ）等のコード側既知の不具合を⚠️注記',
+            '注: GA4はUTMをセッション開始時のみ読むため、サイト内リンクUTM（フッター等 utm_source=xwork/thanks）は表示されない（流入UTMのみが対象）',
+        ],
+        metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium', 'sessionCampaignName'],
+        apiRoute: 'POST /api/utm-report',
+    },
+    {
         name: 'SEOモニタ',
         href: '/seo-report',
         category: 'チャネル・集客',

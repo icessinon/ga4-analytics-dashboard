@@ -49,6 +49,16 @@ const DOMAIN_KNOWLEDGE = `
 - ダッシュボードの全GA4集計はデフォルトで国=日本フィルタ（bot対策）。国別分析のみ除外
 - ABテストB/C/D側ラベルは末尾サフィックス（例: __B-1618）
 
+## UTM命名規則（配信・流入元の計測。完全版は docs/utm-naming-convention.md）
+- 共通則: utm_source=発信元（product=自社通知/line=LINE公式/ca=CA配信/scout・crm_scout=スカウトSMS/xwork=サイト内/thanks=サンクス/google・yahoo・facebook=広告/youtube=インフルエンサー）× utm_medium=チャネル（email/line/social/sms/referral/cpc/cpm/influencer）× utm_campaign=施策名。送信側に共通ビルダーは無く各施策がバラバラに発行、受信側のみ getUtmFromRequest/setUtmParamsToCookie で共通化
+- 最重要の読み分け: ①流入UTM（メール/LINE/SMS通知・広告など外部→サイト）はGA4のセッション帰属に計上されUTM別の数字が見れる ②サイト内リンクUTM（フッター/サイドバー/バナー/LP誘導ボタン）はGA4がUTMをセッション開始時のみ読むためほぼ計上されない（既存セッションは元sourceを保持）。裏取り: utm_source=xwork/thanks のセッションは24日間で0件。フッター等のUTMはリンククリック計測・リンク先/Salesforce識別が目的
+- 自社通知(product): line/job_description(おすすめ求人→詳細 449séss)・line/entry_form(→応募フォーム 24)・email/lp_thanks(196/5CV・発行元コード未特定)・email/signup_complete(ウェルカム 54/5)・email/keep_remider_{1st|2nd|3rd}(キープリマインド。keep_reminderのタイポでnが欠落・Reminder.ts:48-50、実データにもタイポのまま流入)
+- LINE公式(line/social・drm-front外/LINE側設定): survey_thanks_scout(サーベイ完了→スカウト誘導 227séss/95CV/CVR41.9%と突出)・richmenu_all_jobsearch(405/17)・richmenu_all_registration(27/3/11.1%)・richmenu_member_jobsearch・richmenu_member_scoutcheck
+- スカウトSMS（最大ボリューム25,648séss・会員登録目的でないため登録CVほぼ0）: scout/sms/at_agent_fee_media_{求人ID}_{日付}_{セグメント}(人材紹介 24,890)・crm_scout/sms/at_direct_{日付}_{県}_{職種}_media_{ID}(求人広告 758)。campaign粒度は数百種→接頭辞(at_agent/at_direct)で束ねる
+- 広告: google/yahoo cpc(google-m-CP…)・facebook cpm・youtube influencer。非UTM: (direct)41,508séss/620CV(登録CV最大源)・organic約23,000・referral(SF管理画面/access.line.me等)・AIアシスタント(chatgpt.com=新興チャネル)
+- サイト内リンクUTM（コード実在だがGA4に出ない）: xwork/referral/xwork_footer_*・xwork_sidebar_*・kyuyo_240606・special_uber-taxi・top_magazine_241107、thanks/referral/thankspage_banner_0228・_popupbanner_0228。既知の不具合: logipokeフッター4件が utm_media（utm_mediumのm欠落・Footer.tsx）でGA4がmedium認識しない／campaign命名が日付式とSalesforce18桁ID混在
+- UTM別（source×medium×campaign）の集計は /utm-report（各UTMの意味・発行タイミングを lib/constants/utmCatalog.ts の辞書で注記。medium別フィルタ・CV・円換算つき）。ほかにLINE専用 /line-report、チャネル別 /cv-types。生データ再取得は scripts/tmp-utm-inventory.ts。注: サイト内リンクUTM（xwork/thanks）はGA4がUTMをセッション開始時のみ読むため /utm-report には出ない
+
 ## データ基盤
 - DynamoDB: JobApplication-prd（会員応募）/ GuestJobApplication-prd（ゲスト応募）/ JobDescriptions-prd（求人、contractType保持）
 - Salesforce: Matching__c（紹介応募・成約）、Order__c（求人）。応募→SF連携はZapier（停止事故歴あり）

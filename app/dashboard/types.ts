@@ -131,6 +131,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
         items: [
             { title: 'SEOモニタ', subtitle: 'Search Consoleの順位・表示回数・CTRをページカテゴリ別・URL別に監視（施策のSEO影響判定）', getHref: () => '/seo-report' },
             { title: 'LINE配信レポート', subtitle: 'LINE経由の再訪・CV・円換算と週次おすすめ配信の実績', getHref: () => '/line-report', productPrefix: true },
+            { title: 'UTM別レポート', subtitle: 'utm_source×medium×campaign別のセッション・CV・円換算。各UTMの意味と発行タイミング注記つき', getHref: () => '/utm-report', productPrefix: true },
         ],
     },
     {

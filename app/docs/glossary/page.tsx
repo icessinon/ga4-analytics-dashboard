@@ -189,6 +189,62 @@ export default function GlossaryPage() {
                 </ul>
             </Section>
 
+            <Section title="UTM命名規則（配信・流入元の計測）">
+                <p className={styles.note}>
+                    UTM（utm_source / utm_medium / utm_campaign）別に数字を見るときに、各値が「どの施策のリンクか」を引くための一覧。
+                    送信側に共通ビルダーは無く各施策がバラバラに発行しているため、実コード(drm-front)とGA4 BQの実流入（collected_traffic_source）で突合した結果を集約している。
+                    完全版は <code>docs/utm-naming-convention.md</code>。数値は2026-08-07〜08-30・国=日本・24日間のセッション/会員登録CV。
+                </p>
+                <p className={styles.note}>
+                    <strong>最重要の読み分け</strong>: UTMには2種類ある。①<strong>流入UTM</strong>（メール/LINE/SMS通知・広告など外部→サイト）＝<strong>GA4のセッション帰属に計上され、UTM別の数字が見れる</strong>。
+                    ②<strong>サイト内リンクUTM</strong>（フッター/サイドバー/バナー/LP誘導ボタン）＝GA4はUTMをセッション開始時のみ読むため<strong>ほぼ計上されない</strong>（既存セッションは元sourceを保持）。
+                    裏取り: <code>utm_source=xwork</code> / <code>thanks</code> のセッションは24日間で0件。フッター等のUTMはリンククリック計測・リンク先/Salesforce識別が目的で、流入計測用ではない。
+                </p>
+                <h3 className={styles.subTitle}>共通則</h3>
+                <ul className={styles.list}>
+                    <li><code>utm_source</code>=発信元: product(自社通知) / line(LINE公式) / ca(CA配信) / scout・crm_scout(スカウトSMS) / xwork(サイト内) / thanks(サンクス) / google・yahoo・facebook(広告) / youtube(インフルエンサー)</li>
+                    <li><code>utm_medium</code>=チャネル: email / line / social / sms / referral / cpc / cpm / influencer</li>
+                    <li><code>utm_campaign</code>=施策名</li>
+                </ul>
+                <h3 className={styles.subTitle}>自社プロダクト通知（utm_source=product）</h3>
+                <table className={styles.table}>
+                    <thead><tr><th>施策</th><th>medium / campaign</th><th>実測 séss/登録CV</th></tr></thead>
+                    <tbody>
+                        <tr><td>おすすめ求人LINE（→詳細）</td><td>line / job_description</td><td>449 / 0</td></tr>
+                        <tr><td>おすすめ求人LINE（→応募フォーム）</td><td>line / entry_form</td><td>24 / 0</td></tr>
+                        <tr><td>LP応募サンクス系メール</td><td>email / lp_thanks</td><td>196 / 5</td></tr>
+                        <tr><td>会員登録完了メール（ウェルカム）</td><td>email / signup_complete</td><td>54 / 5</td></tr>
+                        <tr><td>キープ求人リマインド 1/2/3通目</td><td>email / <strong>keep_remider</strong>_&#123;1st|2nd|3rd&#125; ⚠️タイポ</td><td>37 / 22（2ndは閾値未満）</td></tr>
+                    </tbody>
+                </table>
+                <p className={styles.note}>⚠️ <code>keep_remider</code> は <code>keep_reminder</code> のタイポ（n欠落・Reminder.ts:48-50）。実データにもタイポのまま流入している。<code>lp_thanks</code> は発行元コードが未特定（配信基盤側の可能性・要追跡）。</p>
+                <h3 className={styles.subTitle}>LINE公式アカウント（source=line / medium=social）※drm-front外・LINE側設定</h3>
+                <table className={styles.table}>
+                    <thead><tr><th>campaign</th><th>実測 séss / 登録CV / CVR</th></tr></thead>
+                    <tbody>
+                        <tr><td>survey_thanks_scout（サーベイ完了→スカウト誘導）</td><td><strong>227 / 95 / 41.9% ★突出</strong></td></tr>
+                        <tr><td>richmenu_all_jobsearch</td><td>405 / 17 / 4.2%</td></tr>
+                        <tr><td>richmenu_all_registration</td><td>27 / 3 / 11.1%</td></tr>
+                        <tr><td>richmenu_member_jobsearch / _scoutcheck</td><td>265 / 4、172 / 3</td></tr>
+                    </tbody>
+                </table>
+                <h3 className={styles.subTitle}>スカウトSMS（マーケ配信・最大ボリューム 25,648séss）</h3>
+                <ul className={styles.list}>
+                    <li><code>scout</code> / sms / <code>at_agent_fee_media_&#123;求人ID&#125;_&#123;日付&#125;_&#123;セグメント&#125;</code>＝人材紹介スカウト（24,890séss/6CV）</li>
+                    <li><code>crm_scout</code> / sms / <code>at_direct_&#123;日付&#125;_&#123;都道府県&#125;_&#123;職種&#125;_media_&#123;ID&#125;</code>＝求人広告スカウト（758séss/0CV）</li>
+                    <li>求職者を求人詳細/スカウトページへ送客（会員登録目的でない）ため登録CVはほぼ0。campaign粒度は数百種→<strong>接頭辞(at_agent/at_direct)で束ねて見る</strong></li>
+                </ul>
+                <h3 className={styles.subTitle}>その他の流入・非UTM</h3>
+                <ul className={styles.list}>
+                    <li>広告: google/yahoo <code>cpc</code>（google-m-CP…）、facebook <code>cpm</code>、youtube <code>influencer</code></li>
+                    <li>CA配信: <code>ca/line/job_propose_202412</code>（67séss）</li>
+                    <li>非UTM: (direct)41,508séss/620CV（登録CV最大源）、organic約23,000、referral（SF管理画面/access.line.me等）、<strong>AIアシスタント（chatgpt.com・新興チャネル）</strong></li>
+                </ul>
+                <p className={styles.note}>
+                    <strong>ダッシュボードで見る</strong>: UTM別（source×medium×campaign）の集計は <Link href="/utm-report" className={styles.subLink}>UTM別レポート</Link>（各UTMの意味・発行タイミング注記つき）。ほかに LINE専用の <Link href="/line-report" className={styles.subLink}>LINEレポート</Link>、チャネルグループ別の <Link href="/cv-types" className={styles.subLink}>求人種別CV分析</Link>。生データの再取得はBQ集計スクリプト（scripts/tmp-utm-inventory.ts）。
+                </p>
+            </Section>
+
             <Section title="データ基盤">
                 <table className={styles.table}>
                     <thead><tr><th>システム</th><th>内容</th></tr></thead>
