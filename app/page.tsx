@@ -9,7 +9,7 @@ import AbTestDonutCharts from '@/components/dashboard/AbTestDonutCharts'
 import PageMetricsChart from '@/components/dashboard/PageMetricsChart'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import type { ChartMetric, DashboardStats, PageMetrics, PageMetricsSeriesPoint, SeriesDataPoint } from '@/app/dashboard/types'
-import { CV_DIMENSION_OPTIONS, QUICK_ACCESS_GROUPS } from '@/app/dashboard/types'
+import { QUICK_ACCESS_GROUPS } from '@/app/dashboard/types'
 import { getChartPeriodLabel, getMonthOptions, getRangeForGranularity, periodToTimestamp } from '@/app/dashboard/utils'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
@@ -35,11 +35,6 @@ export default function DashboardPage() {
     const [customStartDate, setCustomStartDate] = useState<string>('')
     const [customEndDate, setCustomEndDate] = useState<string>('')
     const [pageMetricsLoading, setPageMetricsLoading] = useState(false)
-    const [cvConfig, setCvConfig] = useState<Record<string, { cvEventName: string; cvDimension: string }>>({})
-    const [cvEventInput, setCvEventInput] = useState('')
-    const [cvDimensionInput, setCvDimensionInput] = useState('customEvent:click_label')
-    const [cvLabelOptions, setCvLabelOptions] = useState<string[]>([])
-    const [cvConfigSaving, setCvConfigSaving] = useState(false)
     const selectedPagePathRef = useRef('')
     selectedPagePathRef.current = selectedPagePath
 
@@ -54,8 +49,6 @@ export default function DashboardPage() {
         if (!pageMetrics || !pageMetricsPrev) {
             return {
                 pv: null,
-                cv: null,
-                cvr: null,
                 exitRate: null,
                 newUserRate: null,
                 bounceCount: null,
@@ -66,8 +59,6 @@ export default function DashboardPage() {
         const prev = pageMetricsPrev
         const cur = pageMetrics
         const pv = prev.pv === 0 ? null : (cur.pv - prev.pv) / prev.pv * 100
-        const cv = prev.cv === 0 ? null : (cur.cv - prev.cv) / prev.cv * 100
-        const cvr = prev.cvr === 0 ? null : (cur.cvr - prev.cvr) / prev.cvr * 100
         const exitRate =
             prev.exitRate == null || prev.exitRate === 0
                 ? null
@@ -81,8 +72,6 @@ export default function DashboardPage() {
         const engagementRate = prev.engagementRate === 0 ? null : (cur.engagementRate - prev.engagementRate) / prev.engagementRate * 100
         return {
             pv,
-            cv,
-            cvr,
             exitRate: exitRate ?? null,
             newUserRate,
             bounceCount,
@@ -286,100 +275,6 @@ export default function DashboardPage() {
         return () => { cancelled = true }
     }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate])
 
-    useEffect(() => {
-        if (!currentProduct?.id) {
-            setCvConfig({})
-            return
-        }
-        fetch(`/api/dashboard/page-cv-config?productId=${currentProduct.id}`)
-            .then((r) => parseJsonResponse<{ error?: string; configs?: Record<string, { cvEventName?: string; cvDimension?: string } | string> }>(r))
-            .then((data) => {
-                if (data.error) return
-                const configs = data.configs ?? {}
-                const normalized: Record<string, { cvEventName: string; cvDimension: string }> = {}
-                Object.keys(configs).forEach((path) => {
-                    const c = configs[path]
-                    const rawDim = typeof c === 'object' && c?.cvDimension ? c.cvDimension : 'customEvent:click_label'
-                    normalized[path] = {
-                        cvEventName: typeof c === 'string' ? c : (c?.cvEventName ?? ''),
-                        // eventName 参照は廃止したため、旧保存値はクリックラベルに読み替えて UI 整合を取る
-                        cvDimension: rawDim === 'eventName' ? 'customEvent:click_label' : rawDim,
-                    }
-                })
-                setCvConfig(normalized)
-            })
-            .catch(() => setCvConfig({}))
-    }, [currentProduct?.id])
-
-    useEffect(() => {
-        const c = cvConfig[selectedPagePath]
-        setCvEventInput(c?.cvEventName ?? '')
-        setCvDimensionInput(c?.cvDimension ?? 'customEvent:click_label')
-    }, [selectedPagePath, cvConfig])
-
-    // CVイベント名の検索候補（直近90日のクリック/ビューラベル）。datalistで絞り込み＋自由入力を両立
-    useEffect(() => {
-        if (!currentProduct?.ga4PropertyId) {
-            setCvLabelOptions([])
-            return
-        }
-        let cancelled = false
-        fetch(`/api/ga4/labels?propertyId=${currentProduct.ga4PropertyId}`)
-            .then((r) => parseJsonResponse<{ error?: string; labels?: string[] }>(r))
-            .then((data) => {
-                if (cancelled || data.error) return
-                setCvLabelOptions(data.labels ?? [])
-            })
-            .catch(() => { if (!cancelled) setCvLabelOptions([]) })
-        return () => { cancelled = true }
-    }, [currentProduct?.ga4PropertyId])
-
-    const saveCvConfig = () => {
-        if (!currentProduct?.id || !selectedPagePath) return
-        setCvConfigSaving(true)
-        fetch('/api/dashboard/page-cv-config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                productId: currentProduct.id,
-                pagePath: selectedPagePath,
-                cvEventName: cvEventInput.trim(),
-                cvDimension: cvDimensionInput,
-            }),
-        })
-            .then((r) => parseJsonResponse<{ error?: string; cvEventName?: string; cvDimension?: string }>(r))
-            .then((data) => {
-                if (data.error) throw new Error(data.error)
-                setCvConfig((prev) => {
-                    const next = { ...prev }
-                    if (data.cvEventName) {
-                        next[selectedPagePath] = {
-                            cvEventName: data.cvEventName,
-                            cvDimension: data.cvDimension ?? 'customEvent:click_label',
-                        }
-                    } else delete next[selectedPagePath]
-                    return next
-                })
-                setPageMetrics(null)
-                setPageMetricsLoading(true)
-                fetch('/api/dashboard/page-metrics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        propertyId: currentProduct.ga4PropertyId,
-                        productId: currentProduct.id,
-                        pagePath: selectedPagePath,
-                        month: selectedMonth,
-                    }),
-                })
-                    .then((res) => parseJsonResponse<PageMetrics & { error?: string }>(res))
-                    .then((d) => { if (!d.error) setPageMetrics(d) })
-                    .finally(() => setPageMetricsLoading(false))
-            })
-            .catch(() => {})
-            .finally(() => setCvConfigSaving(false))
-    }
-
     if (loading) {
         return (
             <div className={styles.container}>
@@ -573,46 +468,6 @@ export default function DashboardPage() {
                                 )}
                             </div>
                         </div>
-                        {selectedPagePath && (
-                            <div className={styles.cvEventBlock}>
-                                <div className={styles.cvEventRow}>
-                                    <label className={styles.cvEventLabel}>CVの参照:</label>
-                                    <CustomSelect
-                                        className={styles.cvDimensionSelectWrapper}
-                                        value={cvDimensionInput}
-                                        onChange={setCvDimensionInput}
-                                        options={CV_DIMENSION_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
-                                        triggerClassName={styles.cvDimensionSelect}
-                                        aria-label="CVの参照"
-                                    />
-                                </div>
-                                <div className={styles.cvEventRow}>
-                                    <label className={styles.cvEventLabel}>CVイベント名（このパス）:</label>
-                                    <input
-                                        type="text"
-                                        value={cvEventInput}
-                                        onChange={(e) => setCvEventInput(e.target.value)}
-                                        placeholder="例: EF_StepForm_Step5-連絡先-CVボタン"
-                                        className={styles.cvEventInput}
-                                        list="cv-event-options"
-                                        autoComplete="off"
-                                    />
-                                    <datalist id="cv-event-options">
-                                        {cvLabelOptions.map((label) => (
-                                            <option key={label} value={label} />
-                                        ))}
-                                    </datalist>
-                                    <button
-                                        type="button"
-                                        onClick={saveCvConfig}
-                                        disabled={cvConfigSaving}
-                                        className={styles.cvEventSaveButton}
-                                    >
-                                        {cvConfigSaving ? '保存中...' : '保存'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                     {pageMetricsLoading && selectedPagePath && (
                         <div className={styles.pageMetricsLoader}>
@@ -636,40 +491,6 @@ export default function DashboardPage() {
                                         </p>
                                         <p className={momChanges.pv == null ? styles.momNone : momChanges.pv >= 0 ? styles.momPositive : styles.momNegative}>
                                             {momChanges.pv == null ? '—' : `先月比 ${momChanges.pv >= 0 ? '+' : ''}${momChanges.pv.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'cv' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('cv')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('cv') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>CV<InfoTooltip text="コンバージョン数。設定したCVイベント（応募・会員登録など）が発生した回数。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueGreen}`}>
-                                            {pageMetrics.cv.toLocaleString()}
-                                        </p>
-                                        <p className={momChanges.cv == null ? styles.momNone : momChanges.cv >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.cv == null ? '—' : `先月比 ${momChanges.cv >= 0 ? '+' : ''}${momChanges.cv.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'cvr' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('cvr')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('cvr') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>CVR<InfoTooltip text="コンバージョン率（CV ÷ PV × 100）。このページを見たユーザーのうちCVした割合。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValuePurple}`}>
-                                            {pageMetrics.cvr.toFixed(2)}%
-                                        </p>
-                                        <p className={momChanges.cvr == null ? styles.momNone : momChanges.cvr >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.cvr == null ? '—' : `先月比 ${momChanges.cvr >= 0 ? '+' : ''}${momChanges.cvr.toFixed(1)}%`}
                                         </p>
                                     </span>
                                 </div>
