@@ -16,14 +16,13 @@ Notionの「課題・施策アイディア」DB（プロダクト計画ハブ配
 
 ### 2. データを揃える（施策に応じて取捨選択）
 
-- **GA4実測**（property 534098180）: `docker exec ga4-dashboard-app-local npx tsx scripts/tmp-*.ts` で集計スクリプトを書く（ローカルtsxはesbuildバイナリ不一致で不可）。既存APIの再利用も可: コンテナ内で `node -e 'fetch("http://localhost:3000/api/cv-types", {headers: {Cookie: "ga4_auth=1", ...}})'`
-  - 種別ラベル: 詳細閲覧=`DL__Media__Area__{JobR|JobA|JobH}`、フォーム=`EF__{key}__Area__Header`、完了=クリックラベル `EF__{key}__Btn__{応募する|話を聞いてみる}`（JobR=人材紹介/JobA=求人広告/JobH=ハロワ）
-  - view_labelは50%×1秒視認で1〜2割取りこぼす。完了は送信ボタンクリックが正
-- **本体実装の現状**: `~/dev/drm-front` をExploreエージェントで調査（対象画面の構造・該当機能の有無をファイル:行番号つきで）。施策の「やること」がコードの現実と合っているか必ず確認する
-- **DynamoDB実数**: `drm-front/apps/web/.env.local` のSDK認証情報（値は絶対に表示しない）。`JobDescriptions-prd` は pk=`media_{n}`・画像判定は `images[].path` の非空で見る
-- **Salesforce**: 求職者=CustomObject1__c、マッチング=Matching__c、登録履歴=RegistHistory__c。売上は「7.入社済」の `MA_ClosingFee__c` −返金想定額
-- **CV単価（金額換算）**: `lib/constants/cvUnitValue.ts` の係数を使う（会員登録1.8万円・人材紹介応募5,300円・広告応募7,800円・ハロワ応募2,800円）。施策インパクトは必ず円換算を添える
-- **スクリーンショット**: 現状の課題が視覚的なら Playwright（モバイルは390×844）で撮り、notion-create-file-upload でカードに添付
+各データ源の**アクセス方法・ラベル規則・注意点・コスト/個人情報ルールは `xwork-data-sources` スキルにまとめてある**（GA4 / BigQuery / drm-front / DynamoDB / Salesforce / CV単価 / 求職者サーベイ / Search Console）。まずそれを開き、施策に応じて必要なものだけ使う。
+
+施策準備で特に外さないポイント:
+- 完了CVは送信ボタンの click_label が正（view_label は1〜2割取りこぼす）。遷移率は「検索経由込みか直接遷移か」を必ず明記する。
+- 施策インパクトは必ず円換算を添える（`lib/constants/cvUnitValue.ts` を参照。ハードコードしない）。
+- サーベイ引用は集計値と匿名の自由記述のみ（電話番号・連絡先列は転記しない）。現状課題が視覚的なら Playwright（モバイル390×844）で撮って `notion-create-file-upload` で添付。
+- **進行中作業との重複チェック（必須）**: 施策を提案・起票する前に `gh pr list --repo X-Mile/drm-front --state open` で同領域のオープンPRを確認し、カード内のBacklogチケット番号（`XWORK_PRODUCT-*`）にも目を通す。実装済みギャップを「新施策」として上げると会で恥をかく（例: キープリマインドLINE化は起案時点でPR #3276が実装済みだった）。
 
 ### 3. ABテスト設計の定石
 
