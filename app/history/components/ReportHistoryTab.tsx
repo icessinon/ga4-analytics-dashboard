@@ -154,7 +154,7 @@ export default function ReportHistoryTab({ productId }: ReportHistoryTabProps) {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="レポート名またはプロダクト名で検索（入力中に自動検索）..."
+                        placeholder="レポート名・施策(ABテスト)名で検索（入力中に自動検索）..."
                         className={styles.searchInput}
                     />
                     {searchQuery && (
@@ -203,9 +203,7 @@ export default function ReportHistoryTab({ productId }: ReportHistoryTabProps) {
                             <thead className={styles.tableHead}>
                                 <tr>
                                     <th className={styles.tableHeader}>実行日時</th>
-                                    <th className={styles.tableHeader}>レポート名</th>
-                                    <th className={styles.tableHeader}>プロダクト</th>
-                                    <th className={styles.tableHeader}>ステータス</th>
+                                    <th className={styles.tableHeader}>レポート / 施策</th>
                                     <th className={styles.tableHeader}>操作</th>
                                 </tr>
                             </thead>
@@ -216,15 +214,15 @@ export default function ReportHistoryTab({ productId }: ReportHistoryTabProps) {
                                             {formatDate(exec.createdAt)}
                                         </td>
                                         <td className={styles.tableCell}>
-                                            {exec.reportName}
-                                        </td>
-                                        <td className={styles.tableCell}>
-                                            {exec.productName}
-                                        </td>
-                                        <td className={styles.tableCell}>
-                                            <span className={getStatusBadge(exec.status)}>
-                                                {exec.status === 'completed' ? '完了' : exec.status === 'failed' ? '失敗' : exec.status === 'running' ? '実行中' : exec.status}
-                                            </span>
+                                            <div className={styles.reportNameCell}>
+                                                {exec.abTestName && <span className={styles.abTestBadge}>ABテスト</span>}
+                                                <span className={styles.reportNameMain}>{exec.abTestName ?? exec.reportName}</span>
+                                                {exec.status !== 'completed' && (
+                                                    <span className={getStatusBadge(exec.status)}>
+                                                        {exec.status === 'failed' ? '失敗' : exec.status === 'running' ? '実行中' : exec.status}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className={styles.actionCell}>
                                             <div className={styles.actionContainer}>

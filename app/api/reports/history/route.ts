@@ -45,6 +45,19 @@ export async function GET(request: Request) {
                         },
                     },
                 },
+                // ABテストレポートは施策名(ABテスト名)でも検索できるように
+                {
+                    abTestExecutions: {
+                        some: {
+                            abTest: {
+                                name: {
+                                    contains: search,
+                                    mode: 'insensitive',
+                                },
+                            },
+                        },
+                    },
+                },
             ]
         }
 
@@ -58,6 +71,13 @@ export async function GET(request: Request) {
                         product: true,
                     },
                 },
+                // このレポート実行がABテストのものなら施策名(ABテスト名)を引く
+                abTestExecutions: {
+                    include: {
+                        abTest: { select: { id: true, name: true } },
+                    },
+                    take: 1,
+                },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -68,18 +88,24 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             success: true,
-            executions: executions.map((exec) => ({
-                id: exec.id,
-                reportId: exec.reportId,
-                reportName: exec.report.name,
-                productName: exec.report.product?.name || 'N/A',
-                status: exec.status,
-                startedAt: exec.startedAt,
-                completedAt: exec.completedAt,
-                createdAt: exec.createdAt,
-                hasResultData: !!exec.resultData,
-                errorMessage: exec.errorMessage,
-            })),
+            executions: executions.map((exec) => {
+                const abTest = exec.abTestExecutions[0]?.abTest
+                return {
+                    id: exec.id,
+                    reportId: exec.reportId,
+                    reportName: exec.report.name,
+                    productName: exec.report.product?.name || 'N/A',
+                    // ABテストレポートの場合はどの施策かを示す
+                    abTestId: abTest?.id ?? null,
+                    abTestName: abTest?.name ?? null,
+                    status: exec.status,
+                    startedAt: exec.startedAt,
+                    completedAt: exec.completedAt,
+                    createdAt: exec.createdAt,
+                    hasResultData: !!exec.resultData,
+                    errorMessage: exec.errorMessage,
+                }
+            }),
             pagination: {
                 total,
                 page,

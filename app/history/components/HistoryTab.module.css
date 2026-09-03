@@ -233,6 +233,31 @@
     font-weight: 600;
 }
 
+/* レポート/施策名セル */
+.reportNameCell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.reportNameMain {
+    color: #f9fafb;
+    font-weight: 500;
+}
+
+.abTestBadge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #c7d2fe;
+    background-color: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    white-space: nowrap;
+}
+
 .statusBadgeCompleted {
     background-color: rgba(22, 101, 52, 0.3);
     color: #86efac;

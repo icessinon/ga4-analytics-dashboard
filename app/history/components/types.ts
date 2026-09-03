@@ -20,6 +20,9 @@ export interface ReportExecution {
     reportId: number
     reportName: string
     productName: string
+    /** ABテストレポートの場合、どの施策(ABテスト)かを示す。通常レポートは null */
+    abTestId: number | null
+    abTestName: string | null
     status: string
     startedAt: string | null
     completedAt: string | null
