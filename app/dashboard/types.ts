@@ -165,6 +165,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
     {
         label: 'ユーザー分析',
         items: [
+            { title: '求職者属性・ペルソナ', subtitle: 'Salesforce登録者の年齢層・性別・事業領域(ドライバー等)・転職意欲。領域別にどんな人が来ているかをペルソナ設計用に把握', getHref: () => '/persona' },
             { title: 'CVセッション解剖（BQ）', subtitle: '応募・登録セッションの行動量と求人詳細後の次アクション（BigQuery生イベント）', getHref: () => '/user/flow', productPrefix: true },
             { title: 'セグメント行動分析', subtitle: 'デバイス・ブラウザ・流入元別の行動タイムライン', getHref: () => '/user', productPrefix: true },
             { title: 'コホートリテンション', subtitle: '初回訪問週ごとの継続率マトリクス', getHref: () => '/user/cohort', productPrefix: true },

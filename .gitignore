@@ -47,3 +47,4 @@ service-account-key.json
 # 使い捨ての集計・調査スクリプト（施策検討ごとに生成。恒久管理しない）
 # 再現クエリとして手元には残すが、git の差分ノイズには含めない
 scripts/tmp-*.ts
+scripts/data/persona/

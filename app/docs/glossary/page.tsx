@@ -3,12 +3,21 @@
 import Link from 'next/link'
 import BackLink from '@/components/BackLink'
 import DocsAsk from '@/components/docs/DocsAsk'
+import { CV_UNIT_DERIVATIONS, CV_UNIT_VALUE_ASOF, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './GlossaryPage.module.css'
 
 /**
  * x-work.jp（クロスワーク）のドメイン用語・計測仕様のリファレンス。
  * 2026-07 の一連の調査（bot対策・応募計測検証・DB突合）で確定した内容を集約。
  */
+
+// CV単価は lib/constants/cvUnitValue.ts（ソース・オブ・トゥルース）から算出表示。定数を更新すれば表も自動追従する。
+const fmtUnitYen = (yen: number) => (yen >= 10000 ? `約${(yen / 10000).toFixed(1)}万円` : `約${yen.toLocaleString()}円`)
+// 単価cellに付ける補足（売上主体など。数値でないドメイン注記のみ）
+const CV_UNIT_ROW_NOTE: Record<string, string> = {
+    JobA: '売上主体はCAの人材紹介再マッチ・掲載課金は別',
+    JobH: 'HW自体は手数料ゼロ・売上主体はCAの人材紹介再マッチ',
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
@@ -92,34 +101,46 @@ export default function GlossaryPage() {
             <Section title="CV単価（期待売上換算）">
                 <p className={styles.note}>
                     <strong>CV単価 ＝ そのCVをした人たちが最終的に生んだ確定売上 ÷ CV件数 ＝ 成約率 × 平均紹介手数料</strong>。
-                    決め事や理論値ではなく、Salesforceの過去実績（登録履歴 → 求職者 → マッチング「7.入社済」の受注額−返金想定額）からの逆算値です。
+                    決め事や理論値ではなく、Salesforceの過去実績からの逆算値です。算出は
+                    <strong>登録履歴(RegistHistory__c) → そのCVのCA活動履歴(AgentActivityHistory__c) → 紐づくマッチングのうち「7.入社済」の受注額−返金想定額 ÷ CV件数</strong>。
+                    求職者単位で全マッチングを合算せず（過大評価）、応募求人だけにも絞らない（CAが別求人＝特に人材紹介案件へ再マッチして生んだ成約を取りこぼす）<strong>CA活動履歴基準</strong>の中庸。
                     ダッシュボードの金額表示（<Link href="/cv-value" className={styles.subLink}>CV単価・お金まわり</Link>、求人種別CV分析、会員登録ファネル）はすべてこの係数を使っています。
                 </p>
                 <table className={styles.table}>
                     <thead><tr><th>CV種別</th><th>成約率</th><th>平均手数料（純額）</th><th>単価</th></tr></thead>
                     <tbody>
-                        <tr><td>会員登録（応募を伴わない単独登録）</td><td>2.2% /件</td><td>約83万円</td><td><strong>約1.8万円</strong></td></tr>
-                        <tr><td>人材紹介 応募</td><td>0.7% /件</td><td>約75万円</td><td><strong>約5,300円</strong></td></tr>
-                        <tr><td>求人広告 応募</td><td>1.7% /件</td><td>約46万円</td><td><strong>約7,800円</strong>（紹介パスアップ分のみ。掲載課金は別）</td></tr>
-                        <tr><td>ハローワーク 応募</td><td>0.39% /件</td><td>約73万円</td><td><strong>約2,800円</strong></td></tr>
+                        {CV_UNIT_DERIVATIONS.map((d) => {
+                            const rate = d.events > 0 ? (d.hires / d.events) * 100 : 0
+                            const netFeePerHire = d.hires > 0 ? (d.grossFeeYen - d.refundYen) / d.hires : 0
+                            const rowNote = CV_UNIT_ROW_NOTE[d.key]
+                            return (
+                                <tr key={d.key}>
+                                    <td>{d.label}</td>
+                                    <td>{rate.toFixed(1)}% /件</td>
+                                    <td>{formatYenApprox(netFeePerHire)}</td>
+                                    <td><strong>{fmtUnitYen(d.unitYen)}</strong>（¥{d.unitYen.toLocaleString()}{rowNote ? `。${rowNote}` : ''}）</td>
+                                </tr>
+                            )
+                        })}
                     </tbody>
                 </table>
                 <p className={styles.note}>
                     <strong>読み方の注意（誤読しやすいポイント）</strong>: これは期待値（平均）であり、個々のCVに値札がつくわけではない。
-                    例えば登録100件のうち約98件は売上ゼロで、2件強が約83万円の成約を生む——均すと1件1.8万円。
-                    正しい使い方は「登録を月100件増やす施策 ＝ 月180万円の売上増と同等の価値」のように<strong>件数×単価で施策同士を比較する</strong>こと。
-                    会員登録がハロワ応募の6.5倍なのは手数料の差ではなく<strong>成約率の差</strong>（登録者は架電→面談→CA提案のエンジンに乗り、featured配信対象にもなる。
+                    例えば登録100件のうち約98件は売上ゼロで、2件強が約89万円の成約を生む——均すと1件約2.0万円。
+                    正しい使い方は「登録を月100件増やす施策 ＝ 月約200万円の売上増と同等の価値」のように<strong>件数×単価で施策同士を比較する</strong>こと。
+                    会員登録がハロワ応募の約2.3倍なのは主に<strong>成約率の差</strong>（登録者は架電→面談→CA提案のエンジンに乗り、featured配信対象にもなる。
                     ハロワ応募者はゲストのまま会員化されない）。
+                    応募3種別（JobR/JobA/JobH）は<strong>同一入社の二重計上を除去済み</strong>（優先度 人材紹介＞求人広告＞ハローワーク）。会員登録は「登録の下流価値」指標のため応募との重複を許容し据え置き（＝応募と合算しない前提。¥19,760＝純登録¥13,650＋下流価値¥6,110）。
                 </p>
                 <p className={styles.note}>
                     <strong>参考: 事業全体の平均手数料は約100万円/件</strong>（直近12ヶ月の入社済、月400〜600件。95万→105万円と緩やかな上昇傾向。2026-08時点）。
-                    Web経由CVコホートの平均（73万〜83万円）が全体より2〜3割低いのは、DRスカウト・エージェント経由など高単価領域の成約が全体には含まれるため。
+                    Web経由CVコホートの平均（81万〜98万円）が全体よりやや低いのは、DRスカウト・エージェント経由など高単価領域の成約が全体には含まれるため。
                     単価を再算出するときは<strong>成約率とこの手数料相場の両方</strong>が動いていないかを確認する。
                 </p>
                 <p className={styles.note}>
-                    <strong>前提と更新ルール</strong>: 受注額ベース（検収・入金ベースではない）。成約リードタイム確保のため直近2ヶ月のCVはコホートから除外して算出。
+                    <strong>前提と更新ルール</strong>: 受注額ベース（検収・入金ベースではない）。コホートは登録日2025-01〜2025-12（会員登録のみ2025-08〜2025-12）で、成約リードタイム確保のため直近2ヶ月のCVは除外して算出。
                     内定・内定承諾のパイプラインは分子に含めない保守的な値。市況・CA運用・手数料相場で動くため<strong>四半期に1回程度の再算出を推奨</strong>。
-                    係数の実体は lib/constants/cvUnitValue.ts（算出根拠コメントつき）で、ここを更新すれば全ページに反映される（2026-08-07算出）。
+                    係数の実体は lib/constants/cvUnitValue.ts（算出根拠コメントつき）で、ここを更新すればこの表も含め全ページに自動反映される（<strong>{CV_UNIT_VALUE_ASOF}算出・CA活動履歴基準</strong>）。
                 </p>
             </Section>
 
@@ -250,11 +271,18 @@ export default function GlossaryPage() {
                     <thead><tr><th>システム</th><th>内容</th></tr></thead>
                     <tbody>
                         <tr><td>DynamoDB（本体AWS 662907192686）</td><td>JobApplication-prd（会員応募）/ GuestJobApplication-prd（ゲスト応募、articleIdのみ）/ JobDescriptions-prd（求人。pk=media_id, sk=&apos;info&apos;、contractType保持）</td></tr>
-                        <tr><td>Salesforce</td><td>Matching__c（紹介の応募・成約管理。種別=Field65__c）/ Order__c（求人）/ CustomObject1__c（求職者）。応募→SF連携はZapier経由（停止事故歴あり・死活監視推奨）</td></tr>
+                        <tr><td>Salesforce</td><td>Matching__c（紹介の応募・成約管理。種別=Field65__c）/ Order__c（求人）/ CustomObject1__c（求職者。約130万件。属性: 年齢層Field90__c・性別Field13__c・<strong>登録サービス=事業領域Field5__c</strong>・希望職種DesiredOccupation__c・転職時期Field27__c・仕事の状況Field29__c）。応募→SF連携はZapier経由（停止事故歴あり・死活監視推奨）</td></tr>
                         <tr><td>BigQuery</td><td>hrs-div.ga4_analytics_dashboard（このダッシュボードの実行履歴・AB結果・AI最終レポート蓄積）</td></tr>
                         <tr><td>x-work.jp本体</td><td>Amplify Hosting（appId d3egkdlj4m310n）。アクセスログは generate-access-logs で取得可能。ソースは drm-front リポジトリ</td></tr>
                     </tbody>
                 </table>
+                <p className={styles.note}>
+                    <strong>求職者属性でペルソナを見るときの注意（事業領域 vs 希望職種）</strong>: 登録者の職種軸は
+                    <strong>登録サービス(Field5__c＝事業領域)を使う</strong>。全130万件に付与され、<strong>ドライバーが最大（約83万人）</strong>。
+                    一方 <strong>希望職種(DesiredOccupation__c) は約2万件しか埋まっておらず施工・製造系に偏り、ドライバー系の値が構造的に存在しない</strong>ため、これで全体像を見るとドライバーが丸ごと消える。
+                    また<strong>性別(Field13__c)は63%しか付与されていない</strong>（ドライバーは約56%）ので女性比は回答者の部分集合上の値。属性の可視化は
+                    <Link href="/persona" className={styles.subLink}>求職者属性・ペルソナ</Link>（スナップショット lib/constants/personaSnapshot.ts）。
+                </p>
             </Section>
 
             <Section title="過去の重要インシデント（数字を読む前提知識）">
