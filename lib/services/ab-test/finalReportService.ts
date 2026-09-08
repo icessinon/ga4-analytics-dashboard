@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db/client'
 import { generateAbTestFinalReport, type FinalReportVariant, type FinalReportFunnel } from '@/lib/api/gemini/abTestFinalReport'
 import { computeAbTestFunnel } from '@/lib/services/ab-test/abTestFunnelService'
+import { fetchAbTestCardContext } from '@/lib/services/ab-test/notionCardService'
 import { insertAbTestFinalReportLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 
 type CvrResult = { pv: number; cv: number; cvr: number }
@@ -92,6 +93,9 @@ export async function generateAndStoreFinalReport(
             }
         }
 
+        // Notion施策カードの企画背景・狙い（取れなくても続行）
+        const cardContext = await fetchAbTestCardContext({ name: abTest.name, issueUrl: abTest.issueUrl })
+
         const report = await generateAbTestFinalReport({
             testName: abTest.name,
             hypothesis: abTest.hypothesis,
@@ -107,6 +111,7 @@ export async function generateAndStoreFinalReport(
             defeatFactors: abTest.defeatFactors,
             funnel,
             additionalPerspective: perspective,
+            notionContext: cardContext?.text ?? null,
         }, abTest.productId)
         if (!report) return null
 

@@ -36,6 +36,8 @@ export interface AbTestFinalReportRequest {
     funnel?: FinalReportFunnel | null
     /** 担当者が再生成時に指定した追加観点。指定時はレポート全体でこの観点を重点的に反映させる */
     additionalPerspective?: string | null
+    /** Notion施策カードから取得した企画背景・狙い・期待効果などの文脈 */
+    notionContext?: string | null
 }
 
 export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, productId?: number): Promise<string | null> {
@@ -81,6 +83,11 @@ export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, p
         ? `\n※ 冒頭の「最重要指示」で指定された観点を、全体を通して主軸として反映すること。表面的な一言で済ませず、その観点に沿って分析を掘り下げる。`
         : ''
 
+    const notion = req.notionContext?.trim()
+    const notionSection = notion
+        ? `\n【施策カード（企画の背景・狙い・期待効果）】※Notionの施策カードから取得。この施策が「何を狙って作られたか」の一次情報。仮説検証・勝因敗因・学びの各セクションで、カードに書かれた狙い/想定インパクト/ガードレールと実測結果を突き合わせて評価すること。\n${notion}\n`
+        : ''
+
     const prompt = `あなたはWebマーケティング・CRO（コンバージョン率最適化）の専門家です。以下は求人転職サービス(x-work.jp)で実施したABテストの終了時データです。最終レポートを作成してください。
 ${perspectiveDirective}
 
@@ -95,7 +102,7 @@ ${variantLines}
 
 【判定】
 ${resultLines}
-${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}
+${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}${notionSection}
 以下の構成で最終レポートを作成してください:
 1. **結果サマリー** — 数値ベースで結果を簡潔にまとめる
 2. **仮説検証** — 事前仮説と期待改善率に対して結果はどうだったか（仮説が未記入の場合はテスト名から推測される意図に対して評価）
