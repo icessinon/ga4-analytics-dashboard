@@ -1,0 +1,42 @@
+name: Notion env sync (一時・手動実行)
+
+# 本番EC2の .env に Notion 施策カード連携キー（NOTION_API_KEY）を追記する一時ワークフロー。
+# 値は Actions secrets 経由で渡すためログには出ない（GitHubが自動マスク）。
+# レポート生成は app コンテナのAPIルートで走るため app のみ再作成すればよい。
+# 実行後は不要（削除してよい）。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: EC2の.envにNOTION_API_KEYを追記してapp再作成
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          NOTION_KEY: ${{ secrets.NOTION_API_KEY }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: NOTION_KEY
+          script: |
+            set -e
+            cd /var/www/ga4-analytics-dashboard
+            if grep -q "^NOTION_API_KEY=" .env; then
+              echo "既にNOTION_API_KEYが存在します。スキップ"
+            else
+              {
+                echo ""
+                echo "# Notion施策カード連携（AB最終レポート）2026-09-08 追加"
+                echo "NOTION_API_KEY=$NOTION_KEY"
+              } >> .env
+              echo ".env に追記しました"
+            fi
+            echo "NOTION_API_KEY in .env: $(grep -c '^NOTION_API_KEY=' .env)"
+            docker compose up -d --force-recreate app
+            sleep 5
+            docker exec ga4-dashboard-app node -e 'console.log("container env check: KEY len =", (process.env.NOTION_API_KEY || "").length)'
