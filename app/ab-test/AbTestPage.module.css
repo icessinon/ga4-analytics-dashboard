@@ -20,6 +20,7 @@
 
 .headerActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
@@ -35,6 +36,7 @@
     font-size: 0.875rem;
     letter-spacing: 0.05em;
     box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .buttonPrimary {
@@ -112,6 +114,18 @@
 @media (min-width: 768px) {
     .productSelect {
         width: auto;
+    }
+}
+
+/* 画面が狭いとき: ボタンの過大な左右パディングを詰め、はみ出しを防ぐ */
+@media (max-width: 640px) {
+    .headerActions {
+        width: 100%;
+    }
+
+    .button {
+        padding: 0 1rem;
+        flex: 1 1 auto;
     }
 }
 
