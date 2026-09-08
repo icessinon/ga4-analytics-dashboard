@@ -362,7 +362,7 @@ export default function AbTestDetailPage() {
         }
     }
 
-    async function handleCompletionSubmit(victoryFactors: string, defeatFactors: string) {
+    async function handleCompletionSubmit(winnerVariant: string | null, victoryFactors: string, defeatFactors: string) {
         if (!abTest) return
         setUpdatingStatus(true)
         try {
@@ -371,6 +371,7 @@ export default function AbTestDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     status: 'completed',
+                    winnerVariant, // ユーザーが選択した勝者（null=判定なし）。数値だけで測れない場合に上書き
                     victoryFactors: victoryFactors || undefined,
                     defeatFactors: defeatFactors || undefined,
                 }),
@@ -1252,6 +1253,7 @@ export default function AbTestDetailPage() {
                 onSubmit={handleCompletionSubmit}
                 testName={abTest?.name}
                 winnerVariant={abTest?.winnerVariant ?? winnerFromLastRun}
+                availableVariants={currentResult?.variants?.map((v) => v.key)}
                 initialVictoryFactors={abTest?.victoryFactors ?? ''}
                 initialDefeatFactors={abTest?.defeatFactors ?? ''}
             />

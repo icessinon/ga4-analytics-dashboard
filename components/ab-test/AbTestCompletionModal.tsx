@@ -7,14 +7,18 @@ import styles from './AbTestCompletionModal.module.css'
 export interface AbTestCompletionModalProps {
     isOpen: boolean
     onClose: () => void
-    onSubmit: (victoryFactors: string, defeatFactors: string) => void | Promise<void>
+    onSubmit: (winnerVariant: string | null, victoryFactors: string, defeatFactors: string) => void | Promise<void>
     testName?: string
+    /** 自動判定（CVR1位）の勝者。勝者セレクトの初期値になる */
     winnerVariant?: string | null
+    /** 選択肢に出すバリアントキー（例: ['A','B','C']）。未指定時は A/B にフォールバック */
+    availableVariants?: string[]
     initialVictoryFactors?: string
     initialDefeatFactors?: string
 }
 
 const isWinVariant = (v: string | null | undefined) => v != null && ['B', 'C', 'D'].includes(v)
+const NO_WINNER = '' // 「判定なし」を表す値
 
 export default function AbTestCompletionModal({
     isOpen,
@@ -22,26 +26,36 @@ export default function AbTestCompletionModal({
     onSubmit,
     testName,
     winnerVariant = null,
+    availableVariants,
     initialVictoryFactors = '',
     initialDefeatFactors = '',
 }: AbTestCompletionModalProps) {
+    const variantOptions = availableVariants && availableVariants.length > 0 ? availableVariants : ['A', 'B']
+    const [selectedWinner, setSelectedWinner] = useState<string>(winnerVariant ?? NO_WINNER)
     const [victoryFactors, setVictoryFactors] = useState(initialVictoryFactors)
     const [defeatFactors, setDefeatFactors] = useState(initialDefeatFactors)
     const [submitting, setSubmitting] = useState(false)
-    const showDefeatFactors = !isWinVariant(winnerVariant)
+    // チャレンジャー(B/C/D)が勝った場合は負け要因欄を隠す（従来挙動を選択結果ベースで踏襲）
+    const showDefeatFactors = !isWinVariant(selectedWinner)
+    const autoWinner = winnerVariant ?? null
 
     useEffect(() => {
         if (isOpen) {
+            setSelectedWinner(winnerVariant ?? NO_WINNER)
             setVictoryFactors(initialVictoryFactors)
             setDefeatFactors(initialDefeatFactors)
         }
-    }, [isOpen, initialVictoryFactors, initialDefeatFactors])
+    }, [isOpen, winnerVariant, initialVictoryFactors, initialDefeatFactors])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setSubmitting(true)
         try {
-            await onSubmit(victoryFactors.trim(), showDefeatFactors ? defeatFactors.trim() : '')
+            await onSubmit(
+                selectedWinner === NO_WINNER ? null : selectedWinner,
+                victoryFactors.trim(),
+                showDefeatFactors ? defeatFactors.trim() : '',
+            )
             onClose()
         } finally {
             setSubmitting(false)
@@ -58,6 +72,37 @@ export default function AbTestCompletionModal({
                     {testName && <span className={styles.testName}>{testName}</span>}
                 </h2>
                 <form onSubmit={handleSubmit} className={styles.form}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>勝者バリアント</label>
+                        <div className={styles.winnerOptions} role="radiogroup" aria-label="勝者バリアント">
+                            {variantOptions.map((v) => (
+                                <button
+                                    key={v}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={selectedWinner === v}
+                                    className={`${styles.winnerOption} ${selectedWinner === v ? styles.winnerOptionActive : ''}`}
+                                    onClick={() => setSelectedWinner(v)}
+                                >
+                                    {v}
+                                    {autoWinner === v && <span className={styles.autoTag}>推奨</span>}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked={selectedWinner === NO_WINNER}
+                                className={`${styles.winnerOption} ${selectedWinner === NO_WINNER ? styles.winnerOptionActive : ''}`}
+                                onClick={() => setSelectedWinner(NO_WINNER)}
+                            >
+                                判定なし
+                            </button>
+                        </div>
+                        <p className={styles.hint}>
+                            数値だけでは測れない要素も踏まえ、実際に採用する勝者を選べます
+                            {autoWinner && `（CVR1位は ${autoWinner}）`}
+                        </p>
+                    </div>
                     <div className={styles.field}>
                         <label htmlFor="victory-factors" className={styles.label}>
                             勝利要因（任意）

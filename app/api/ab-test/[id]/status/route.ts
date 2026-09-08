@@ -27,6 +27,20 @@ function getWinnerFromResultData(resultData: unknown): { winnerVariant: string |
 }
 
 /**
+ * 指定バリアントのA比改善率を算出（A勝ち・算出不能時はnull）
+ */
+function getImprovementForVariant(resultData: unknown, variant: string): number | null {
+    if (variant === 'A') return null
+    const data = resultData as { cvrResults?: Record<string, { cvr: number }> } | null
+    const cvrResults = data?.cvrResults
+    if (!cvrResults) return null
+    const winnerCvr = cvrResults[`data${variant}`]?.cvr
+    const aCvr = cvrResults.dataA?.cvr
+    if (winnerCvr == null || aCvr == null || aCvr <= 0) return null
+    return (winnerCvr - aCvr) / aCvr * 100
+}
+
+/**
  * ABテストのステータスを更新
  */
 export async function PUT(
@@ -45,7 +59,7 @@ export async function PUT(
         }
 
         const body = await request.json()
-        const { status, victoryFactors, defeatFactors } = body
+        const { status, victoryFactors, defeatFactors, winnerVariant } = body
 
         if (!status || !['running', 'completed', 'paused'].includes(status)) {
             return NextResponse.json(
@@ -54,10 +68,18 @@ export async function PUT(
             )
         }
 
+        // winnerVariantが明示指定された場合は妥当性チェック（null=判定なしは許可）
+        if (winnerVariant !== undefined && winnerVariant !== null && !['A', 'B', 'C', 'D'].includes(winnerVariant)) {
+            return NextResponse.json(
+                { error: 'Invalid winnerVariant. Must be one of: A, B, C, D or null' },
+                { status: 400 }
+            )
+        }
+
         const updateData: {
             status: string
-            winnerVariant?: string
-            improvementVsAPercent?: number
+            winnerVariant?: string | null
+            improvementVsAPercent?: number | null
             victoryFactors?: string | null
             defeatFactors?: string | null
         } = { status }
@@ -70,11 +92,16 @@ export async function PUT(
                 orderBy: { completedAt: 'desc' },
                 select: { resultData: true },
             })
-            if (lastExec?.resultData) {
-                const { winnerVariant, improvementVsAPercent } = getWinnerFromResultData(lastExec.resultData)
-                if (winnerVariant) updateData.winnerVariant = winnerVariant
-                if (improvementVsAPercent != null) updateData.improvementVsAPercent = improvementVsAPercent
-            }
+            const auto = lastExec?.resultData
+                ? getWinnerFromResultData(lastExec.resultData)
+                : { winnerVariant: null, improvementVsAPercent: null }
+            // ユーザーが勝者を選択していればそれを優先（数値だけで測れない場合の上書き）。
+            // 未指定(undefined)なら自動判定（CVR1位）にフォールバック。null=判定なし。
+            const finalWinner = winnerVariant !== undefined ? winnerVariant : auto.winnerVariant
+            updateData.winnerVariant = finalWinner
+            updateData.improvementVsAPercent = finalWinner
+                ? getImprovementForVariant(lastExec?.resultData, finalWinner)
+                : null
         }
 
         const abTest = await prisma.abTest.update({
