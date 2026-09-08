@@ -458,15 +458,28 @@ export default function AbTestDetailPage() {
                     <p className={styles.reportRegenerateHint}>
                         例:「モバイルユーザーへの影響を重点的に」「統計的有意差の確度を厳しめに評価して」など。指定した観点は保存され、以降の再生成にも反映されます。
                     </p>
-                    <textarea
-                        id="report-perspective"
-                        className={styles.reportPerspectiveInput}
-                        value={perspectiveInput}
-                        onChange={(e) => setPerspectiveInput(e.target.value)}
-                        placeholder="このレポートで特に掘り下げてほしい観点を入力"
-                        rows={3}
-                        disabled={regeneratingReport}
-                    />
+                    <div className={styles.reportPerspectiveField}>
+                        <textarea
+                            id="report-perspective"
+                            className={styles.reportPerspectiveInput}
+                            value={perspectiveInput}
+                            onChange={(e) => setPerspectiveInput(e.target.value)}
+                            placeholder="このレポートで特に掘り下げてほしい観点を入力"
+                            rows={3}
+                            disabled={regeneratingReport}
+                        />
+                        {perspectiveInput !== '' && !regeneratingReport && (
+                            <button
+                                type="button"
+                                className={styles.reportPerspectiveClearIcon}
+                                onClick={() => setPerspectiveInput('')}
+                                aria-label="観点を消去"
+                                title="観点を消去"
+                            >
+                                −
+                            </button>
+                        )}
+                    </div>
                     <div className={styles.reportRegenerateActions}>
                         <button
                             className={styles.reportRegenerateButton}
@@ -477,14 +490,6 @@ export default function AbTestDetailPage() {
                                 ? <span className={styles.buttonInner}><AISpinner /> 再生成中...</span>
                                 : 'この観点で再生成'}
                         </button>
-                        {perspectiveInput.trim() && !regeneratingReport && (
-                            <button
-                                className={styles.reportPerspectiveClear}
-                                onClick={() => setPerspectiveInput('')}
-                            >
-                                観点をクリア
-                            </button>
-                        )}
                     </div>
                     {reportError && <p className={styles.reportError}>{reportError}</p>}
                 </div>

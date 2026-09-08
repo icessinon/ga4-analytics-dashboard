@@ -1,0 +1,153 @@
+<style>
+:root{
+  --bg:#FAFAFC; --surface:#FFFFFF; --surface-2:#F4F5F8; --ink:#14161C; --muted:#5B6270; --faint:#8A909C;
+  --line:#E6E8EE; --accent:#4B54C6; --accent-soft:#EEEFFB; --good:#17915E; --warn:#B9791A; --crit:#CC4033;
+  --good-soft:#E7F4EE; --warn-soft:#F8F0E1; --crit-soft:#FaEbE9;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0E1014; --surface:#161920; --surface-2:#1D212A; --ink:#E6E8EE; --muted:#9AA1AE; --faint:#6C7382;
+  --line:#262B34; --accent:#8A90F0; --accent-soft:#20233A; --good:#3BB985; --warn:#D6982F; --crit:#E5675C;
+  --good-soft:#13251F; --warn-soft:#251E12; --crit-soft:#271614;
+}}
+:root[data-theme="light"]{--bg:#FAFAFC;--surface:#FFFFFF;--surface-2:#F4F5F8;--ink:#14161C;--muted:#5B6270;--faint:#8A909C;--line:#E6E8EE;--accent:#4B54C6;--accent-soft:#EEEFFB;--good:#17915E;--warn:#B9791A;--crit:#CC4033;--good-soft:#E7F4EE;--warn-soft:#F8F0E1;--crit-soft:#FaEbE9;}
+:root[data-theme="dark"]{--bg:#0E1014;--surface:#161920;--surface-2:#1D212A;--ink:#E6E8EE;--muted:#9AA1AE;--faint:#6C7382;--line:#262B34;--accent:#8A90F0;--accent-soft:#20233A;--good:#3BB985;--warn:#D6982F;--crit:#E5675C;--good-soft:#13251F;--warn-soft:#251E12;--crit-soft:#271614;}
+*{box-sizing:border-box}
+.wrap{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;padding:32px 20px 64px;min-height:100vh}
+.page{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
+h1{font-size:26px;line-height:1.25;margin:6px 0 2px;font-weight:700;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:15px;margin:0;font-weight:700;letter-spacing:-.005em}
+.sub{color:var(--muted);font-size:13.5px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.meta b{color:var(--ink);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.card-h{display:flex;flex-direction:column;gap:3px}
+.card-h .note{font-size:12.5px;color:var(--muted)}
+.verdict{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.verdict{grid-template-columns:1fr}}
+.vbox{border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
+.vbox .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.vbox .v{font-size:20px;font-weight:700;font-family:var(--mono);display:flex;align-items:center;gap:9px}
+.vbox .d{font-size:12.5px;color:var(--muted)}
+.pill{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;font-family:var(--sans);letter-spacing:.02em;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.hi td{background:var(--accent-soft)}
+.tag{font-family:var(--sans);font-size:11px;color:var(--muted)}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-family:var(--mono)}
+.flow .step{background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:5px 10px}
+.flow .step.skip{opacity:.4;text-decoration:line-through}
+.flow .arw{color:var(--faint)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:22px;font-weight:700;font-family:var(--mono)}
+.spark{width:100%;height:40px;display:block;margin-top:4px}
+.callout{border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 8px 8px 0;padding:11px 14px;font-size:13px;color:var(--ink)}
+.callout.good{border-color:var(--good);background:var(--good-soft)}
+.callout b{font-weight:700}
+.foot{font-size:12px;color:var(--faint);line-height:1.7;border-top:1px solid var(--line);padding-top:16px}
+.foot code{font-family:var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--muted)}
+.scroll{overflow-x:auto}
+ul.tight{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px}
+ul.tight b{color:var(--ink)}
+</style>
+<div class="wrap"><div class="page">
+
+  <header class="card-h">
+    <div class="eyebrow">AB1802 ・ カードCTA 効果検証</div>
+    <h1>一覧カードCTAは応募完了を生むか — クリック→完了で見た A / B</h1>
+    <p class="sub">「求人詳細を飛ばしてフォームへ直行させるCTA」を、クリックあたりの応募完了で評価。ABツールの CV=クリック総数 では測れない“完了の価値”を推定する。</p>
+    <div class="meta" style="margin-top:8px">
+      <span>期間 <b>08/28〜09/07</b>（CTA稼働後）</span>
+      <span>最終更新 <b>2026/09/08 11:15</b></span>
+      <span>スキャン <b>0.65GB≈0.6円</b></span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-h"><h2>結論</h2><span class="note">指標の取り方で勝者が変わる。</span></div>
+    <div class="verdict">
+      <div class="vbox">
+        <span class="k">クリック指標（ABツールのCV）</span>
+        <span class="v">A <span class="pill accent">99%有意</span></span>
+        <span class="d">A 89.68% vs B 84.81%。ただし“クリック総数”での勝敗。</span>
+      </div>
+      <div class="vbox">
+        <span class="k">応募完了 指標</span>
+        <span class="v">B 優勢（点推定） <span class="pill warn">有意でない</span></span>
+        <span class="d">1PVあたり完了 A 1.54% / B 1.81%。p≈0.59、標本薄く決着不能。</span>
+      </div>
+    </div>
+    <div class="callout"><b>要点：</b>相談CTA（話を聞いてみる）は1クリックあたり完了 <b>10.0%</b> と、詳細遷移クリック <b>1.79%</b> より効率が高い。だが完了の絶対数が少なく、B優勢は<b>点推定どまり</b>。<span class="tag">※応募CTA（応募する）は今回対象外</span></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>2つの計測ポイント</h2><span class="note">CTAは詳細ページをスキップする導線。</span></div>
+    <div class="grid2">
+      <div class="stat"><span class="k">通常（CTA無し）</span>
+        <div class="flow"><span class="step">一覧</span><span class="arw">→</span><span class="step">詳細</span><span class="arw">→</span><span class="step">フォーム</span><span class="arw">→</span><span class="step">完了</span></div></div>
+      <div class="stat"><span class="k">カードCTA（B-1802）</span>
+        <div class="flow"><span class="step">一覧</span><span class="arw">→</span><span class="step skip">詳細</span><span class="arw">→</span><span class="step">フォーム</span><span class="arw">→</span><span class="step">完了</span></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>クリック → 応募完了 CVR</h2><span class="note">全てクリックしたセッションが分母。土俵を揃えた比較。</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>アクション（分母のクリック）</th><th>遷移先</th><th class="num">クリック</th><th class="num">応募完了</th><th class="num">CVR</th></tr></thead>
+      <tbody>
+        <tr><td>通常：詳細遷移（求人を見る＋求人カード）</td><td class="tag">詳細ページ</td><td class="num">3,845</td><td class="num">69</td><td class="num">1.79%</td></tr>
+        <tr class="hi"><td>相談CTA：話を聞いてみる</td><td class="tag">フォーム直行</td><td class="num">100</td><td class="num">10</td><td class="num">10.0%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout good">詳細遷移クリックは「詳細→フォーム→完了」と長く途中で大量に脱落するため、クリック→完了では相談CTA（詳細スキップ）が上回る。</div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>1PVあたりの期待応募完了（A vs B）</h2><span class="note">ABツールのクリック構成 × 上のCVR。値はスクショ（2026-09-07）基準の推定。</span></div>
+    <div class="grid2">
+      <div class="vbox"><span class="k">A（CTA無し）</span><span class="v">1.54%</span><span class="d">PV 1,366 ／ 期待完了 ≈ 21.0件（詳細1173×1.79%）</span></div>
+      <div class="vbox"><span class="k">B（カードCTA）</span><span class="v">1.81% <span class="pill good">＞A</span></span><span class="d">PV 1,284 ／ 期待完了 ≈ 23.2件（詳細972×1.79%＋相談58×10.0%）</span></div>
+    </div>
+    <div class="callout"><b>有意差：</b>完了推定 A≈21 / B≈23 件では z=0.54・<b>p≈0.59</b>＝有意でない。ABツールの99%有意は“クリック数千件”で出た別指標。完了で決着させるには完了数の蓄積が要る。</div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>入力の安定性チェック</h2><span class="note">点推定を反映してよいかの前提。PV量と主要CVRが暴れていないか。</span></div>
+    <div class="grid2">
+      <div class="stat"><span class="k">一覧PV／日（トラフィック）</span><span class="v">740–1,460</span><svg viewBox="0 0 220 40" preserveAspectRatio="none" class="spark"><path d="M0,40 L0.0,15.0 L22.0,19.8 L44.0,18.8 L66.0,11.5 L88.0,3.0 L110.0,5.6 L132.0,3.8 L154.0,13.1 L176.0,18.3 L198.0,18.1 L220.0,7.3 L220,40 Z" fill="var(--accent)" fill-opacity="0.12"/><polyline points="0.0,15.0 22.0,19.8 44.0,18.8 66.0,11.5 88.0,3.0 110.0,5.6 132.0,3.8 154.0,13.1 176.0,18.3 198.0,18.1 220.0,7.3" fill="none" stroke="var(--accent)" stroke-width="1.5"/><circle cx="220" cy="7.3" r="2.5" fill="var(--accent)"/></svg><span class="tag">断層なし・曜日変動のみ <span class="pill good">安定</span></span></div>
+      <div class="stat"><span class="k">詳細CVR／日</span><span class="v">1.80% <span class="tag" style="font-size:12px">±0.66pt</span></span><svg viewBox="0 0 220 40" preserveAspectRatio="none" class="spark"><path d="M0,40 L0.0,30.1 L22.0,15.1 L44.0,18.2 L66.0,3.0 L88.0,24.3 L110.0,25.0 L132.0,12.3 L154.0,10.4 L176.0,17.1 L198.0,19.4 L220.0,17.1 L220,40 Z" fill="var(--good)" fill-opacity="0.12"/><polyline points="0.0,30.1 22.0,15.1 44.0,18.2 66.0,3.0 88.0,24.3 110.0,25.0 132.0,12.3 154.0,10.4 176.0,17.1 198.0,19.4 220.0,17.1" fill="none" stroke="var(--good)" stroke-width="1.5"/><circle cx="220" cy="17.1" r="2.5" fill="var(--good)"/></svg><span class="tag">トレンド無し・変動係数36% <span class="pill good">安定</span></span></div>
+    </div>
+    <div class="callout"><b>相談CTAだけは薄い：</b>クリック計 100・完了計 10（約9件/日）。B優勢を駆動する 10.0% の安定性は未確認＝<span class="pill warn">暫定値</span>。</div>
+    <div class="scroll"><table>
+      <thead><tr><th>日</th><th class="num">一覧PV</th><th class="num">詳細click</th><th class="num">詳細完了</th><th class="num">詳細CVR</th><th class="num">相談click</th><th class="num">相談完了</th></tr></thead>
+      <tbody><tr><td>08/28</td><td class="num">945</td><td class="num">314</td><td class="num">2</td><td class="num">0.64%</td><td class="num">4</td><td class="num">1</td></tr><tr><td>08/29</td><td class="num">740</td><td class="num">297</td><td class="num">6</td><td class="num">2.02%</td><td class="num">7</td><td class="num">1</td></tr><tr><td>08/30</td><td class="num">781</td><td class="num">289</td><td class="num">5</td><td class="num">1.73%</td><td class="num">7</td><td class="num">1</td></tr><tr><td>08/31</td><td class="num">1,097</td><td class="num">383</td><td class="num">12</td><td class="num">3.13%</td><td class="num">14</td><td class="num">2</td></tr><tr><td>09/01</td><td class="num">1,460</td><td class="num">426</td><td class="num">5</td><td class="num">1.17%</td><td class="num">12</td><td class="num">1</td></tr><tr><td>09/02</td><td class="num">1,349</td><td class="num">453</td><td class="num">5</td><td class="num">1.10%</td><td class="num">12</td><td class="num">2</td></tr><tr><td>09/03</td><td class="num">1,425</td><td class="num">395</td><td class="num">9</td><td class="num">2.28%</td><td class="num">11</td><td class="num">0</td></tr><tr><td>09/04</td><td class="num">1,028</td><td class="num">326</td><td class="num">8</td><td class="num">2.45%</td><td class="num">11</td><td class="num">1</td></tr><tr><td>09/05</td><td class="num">804</td><td class="num">272</td><td class="num">5</td><td class="num">1.84%</td><td class="num">6</td><td class="num">0</td></tr><tr><td>09/06</td><td class="num">813</td><td class="num">308</td><td class="num">5</td><td class="num">1.62%</td><td class="num">7</td><td class="num">0</td></tr><tr><td>09/07</td><td class="num">1,275</td><td class="num">382</td><td class="num">7</td><td class="num">1.83%</td><td class="num">9</td><td class="num">1</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <div class="card-h"><h2>読み方と次の一手</h2></div>
+    <ul class="tight">
+      <li><b>今：</b>PV・詳細CVRは安定＝反映可。相談CTAは暫定。<b>「Bが完了ではやや優勢（仮説）」</b>として運用。</li>
+      <li><b>決着：</b>ABツールのCVを<b>クリック総数→応募完了イベント</b>に差し替え、相談完了が数十件貯まるまで継続すると有意判定に到達。</li>
+      <li><b>Bを活かすなら：</b>詳細スキップの代償（動機・求人情報の欠落）を<b>フォーム側に求人情報を載せて</b>補う前提で再テスト。</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    計測メモ：完了＝送信クリック <code>EF__*__Btn__(応募する|話を聞いてみる)</code> または <code>/entry/(thanks|complete)</code> 到達（セッション単位・近似）。CTA稼働 <b>08/28</b>／jobCardCtaパラメータ実装 <b>09/04</b>（パラメータは離脱前に落ちるため計測はクリックイベント起点）。AB群のGA4露出は識別不可のため、通常＝クリック分母で対等化。ABのPV・クリック構成は外部ABツール（2026-09-07）のスナップショット固定値。<br>
+    データ源：GA4 BigQuery Export <code>x-work-ga.analytics_534098180</code>。再生成：<code>tsx scripts/tmp-cta-artifact.ts</code> → Artifact再デプロイ（同一URL）。
+  </div>
+
+</div></div>

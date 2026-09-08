@@ -73,11 +73,16 @@ export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, p
     }
 
     const perspective = req.additionalPerspective?.trim()
-    const perspectiveSection = perspective
-        ? `\n【担当者が指定した重点観点】\n以下の観点を最優先で織り込み、各セクションの分析をこの観点に沿って掘り下げてください。データから読み取れる範囲で具体的に言及すること。\n${perspective}\n`
+    // 観点はレポート全体を方向づける最重要指示として先頭に置く
+    const perspectiveDirective = perspective
+        ? `\n★最重要指示（担当者が指定した重点観点）★\n今回のレポートは次の観点を主軸に据えて書き直すこと。全セクションをこの観点から捉え直し、関連する数値・ファネル・メモを結びつけて具体的に論じる。観点に関係する発見は各セクションで必ず言及し、必要なら独立した見出しを立ててよい。\n観点: ${perspective}\n`
+        : ''
+    const perspectiveReminder = perspective
+        ? `\n※ 冒頭の「最重要指示」で指定された観点を、全体を通して主軸として反映すること。表面的な一言で済ませず、その観点に沿って分析を掘り下げる。`
         : ''
 
     const prompt = `あなたはWebマーケティング・CRO（コンバージョン率最適化）の専門家です。以下は求人転職サービス(x-work.jp)で実施したABテストの終了時データです。最終レポートを作成してください。
+${perspectiveDirective}
 
 【テスト概要】
 テスト名: ${req.testName}
@@ -90,7 +95,7 @@ ${variantLines}
 
 【判定】
 ${resultLines}
-${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}${perspectiveSection}
+${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}
 以下の構成で最終レポートを作成してください:
 1. **結果サマリー** — 数値ベースで結果を簡潔にまとめる
 2. **仮説検証** — 事前仮説と期待改善率に対して結果はどうだったか（仮説が未記入の場合はテスト名から推測される意図に対して評価）
@@ -98,7 +103,7 @@ ${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}${perspectiveSection}
 4. **学び（今後に活かせる知見）** — 求人転職サービスの改善に汎用的に使える教訓を抽出する
 5. **次のアクション** — このテスト結果を受けて次に試すべき施策を具体的に2〜3個提案する
 
-700文字程度で、箇条書きと短い段落を使って読みやすくまとめてください。`
+700文字程度で、箇条書きと短い段落を使って読みやすくまとめてください。${perspectiveReminder}`
 
     return callGemini(prompt, 'generateAbTestFinalReport', productId)
 }

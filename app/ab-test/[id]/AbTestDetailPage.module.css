@@ -742,9 +742,38 @@
     line-height: 1.6;
 }
 
+.reportPerspectiveField {
+    position: relative;
+}
+
+.reportPerspectiveClearIcon {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 1.125rem;
+    line-height: 1;
+    color: #9ca3af;
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 9999px;
+    cursor: pointer;
+}
+
+.reportPerspectiveClearIcon:hover {
+    color: #fff;
+    background-color: #ef4444;
+    border-color: #ef4444;
+}
+
 .reportPerspectiveInput {
     width: 100%;
-    padding: 0.625rem 0.75rem;
+    padding: 0.625rem 2.25rem 0.625rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.6;
     color: #e5e7eb;
@@ -790,21 +819,6 @@
 .reportRegenerateButton:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-.reportPerspectiveClear {
-    background-color: transparent;
-    color: #9ca3af;
-    border: 1px solid #4b5563;
-    font-size: 0.8125rem;
-    padding: 0.5rem 0.875rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-}
-
-.reportPerspectiveClear:hover {
-    background-color: #374151;
-    color: #e5e7eb;
 }
 
 .reportError {
