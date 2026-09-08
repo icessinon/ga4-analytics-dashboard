@@ -99,7 +99,12 @@ export async function PUT(
             // 未指定(undefined)なら自動判定（CVR1位）にフォールバック。null=判定なし。
             const finalWinner = winnerVariant !== undefined ? winnerVariant : auto.winnerVariant
             updateData.winnerVariant = finalWinner
-            updateData.improvementVsAPercent = finalWinner
+            // 改善率は自動判定(CVR1位)と一致する勝者のときのみ算出する。
+            // 手動で別バリアントに上書きした場合、単体対Aのマイナス改善率は誤解を招く
+            // （例: B+C合算を勝ちにしたいがBを選択 → 単体BはA未満）ため空にし、
+            // 合算などの勝敗・改善はAIレポート本文＋観点で表現させる。
+            const isManualOverride = winnerVariant !== undefined && winnerVariant !== auto.winnerVariant
+            updateData.improvementVsAPercent = finalWinner && !isManualOverride
                 ? getImprovementForVariant(lastExec?.resultData, finalWinner)
                 : null
         }

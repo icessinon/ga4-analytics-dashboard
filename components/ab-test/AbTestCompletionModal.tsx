@@ -102,6 +102,11 @@ export default function AbTestCompletionModal({
                             数値だけでは測れない要素も踏まえ、実際に採用する勝者を選べます
                             {autoWinner && `（CVR1位は ${autoWinner}）`}
                         </p>
+                        {selectedWinner !== NO_WINNER && autoWinner && selectedWinner !== autoWinner && (
+                            <p className={styles.hint}>
+                                ※ 自動判定と異なる勝者のため、A比改善率は記録しません。合算比較（例: B+C統合）などはレポート再生成時の「観点」で反映してください
+                            </p>
+                        )}
                     </div>
                     <div className={styles.field}>
                         <label htmlFor="victory-factors" className={styles.label}>
