@@ -1,4 +1,22 @@
 import { callGemini } from './callGemini'
+import { CV_UNIT_VALUE_YEN, CV_UNIT_VALUE_ASOF, CV_UNIT_DERIVATIONS } from '@/lib/constants/cvUnitValue'
+
+/** CV単価（1件あたり期待売上）＋算出根拠。金額換算の唯一の正データとしてプロンプトに注入する */
+function cvUnitValueSection(): string {
+    const lines = [
+        `【CV単価（1件あたり期待売上・${CV_UNIT_VALUE_ASOF}にSalesforce実測から算出。金額換算は必ずこの単価のみを使い、他の金額を推測・捏造しない）】`,
+        `- 会員登録（応募を伴わない単独登録）: ¥${CV_UNIT_VALUE_YEN.signup.toLocaleString()}`,
+        `- 人材紹介 応募: ¥${CV_UNIT_VALUE_YEN.JobR.toLocaleString()}`,
+        `- 求人広告 応募: ¥${CV_UNIT_VALUE_YEN.JobA.toLocaleString()}（紹介パスアップ成約分のみ）`,
+        `- ハローワーク 応募: ¥${CV_UNIT_VALUE_YEN.JobH.toLocaleString()}`,
+        `【単価の算出根拠】`,
+        ...CV_UNIT_DERIVATIONS.map((d) =>
+            `- ${d.label}: コホート${d.cohort}／CV${d.events.toLocaleString()}件・入社${d.hires}件・受注−返金¥${(d.grossFeeYen - d.refundYen).toLocaleString()} → 単価¥${d.unitYen.toLocaleString()}${d.note ? `（${d.note}）` : ''}`
+        ),
+        `※期待値（平均）。応募CVは求人種別で単価が異なる（人材紹介/求人広告/ハローワーク）ので、対象テストがどの種別の応募かを踏まえて単価を選ぶ。会員登録は下流価値込みで応募と重複を許容し合算しない前提。金額換算は「CV件数 × 単価」で行う`,
+    ]
+    return lines.join('\n')
+}
 
 export interface FinalReportVariant {
     name: string
@@ -102,7 +120,9 @@ ${variantLines}
 
 【判定】
 ${resultLines}
-${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}${notionSection}
+${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}
+${cvUnitValueSection()}
+${notionSection}
 以下の構成で最終レポートを作成してください:
 1. **結果サマリー** — 数値ベースで結果を簡潔にまとめる
 2. **仮説検証** — 事前仮説と期待改善率に対して結果はどうだったか（仮説が未記入の場合はテスト名から推測される意図に対して評価）
