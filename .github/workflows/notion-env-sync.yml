@@ -26,8 +26,14 @@ jobs:
           script: |
             set -e
             cd /var/www/ga4-analytics-dashboard
+            if [ -z "$NOTION_KEY" ]; then
+              echo "ERROR: NOTION_API_KEY secret が空です。GitHubの Repository secrets に NOTION_API_KEY を設定してください"
+              exit 1
+            fi
             if grep -q "^NOTION_API_KEY=" .env; then
-              echo "既にNOTION_API_KEYが存在します。スキップ"
+              # 既存行を上書き（空値のまま残った場合も更新できるように）。区切りは # を使用（トークンに#は含まれない）
+              sed -i "s#^NOTION_API_KEY=.*#NOTION_API_KEY=$NOTION_KEY#" .env
+              echo "既存の NOTION_API_KEY を更新しました"
             else
               {
                 echo ""
