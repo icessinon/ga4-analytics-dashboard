@@ -53,6 +53,7 @@ export interface AbTest {
     defeatFactors?: string | null
     finalAiReport?: string | null
     finalAiReportAt?: string | null
+    finalReportPerspective?: string | null
     product: {
         id: number
         name: string

@@ -34,6 +34,8 @@ export interface AbTestFinalReportRequest {
     victoryFactors: string | null
     defeatFactors: string | null
     funnel?: FinalReportFunnel | null
+    /** 担当者が再生成時に指定した追加観点。指定時はレポート全体でこの観点を重点的に反映させる */
+    additionalPerspective?: string | null
 }
 
 export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, productId?: number): Promise<string | null> {
@@ -70,6 +72,11 @@ export async function generateAbTestFinalReport(req: AbTestFinalReportRequest, p
         funnelSection = `\n【ステップファネル】※${basisNote}\n${stepLines}\n`
     }
 
+    const perspective = req.additionalPerspective?.trim()
+    const perspectiveSection = perspective
+        ? `\n【担当者が指定した重点観点】\n以下の観点を最優先で織り込み、各セクションの分析をこの観点に沿って掘り下げてください。データから読み取れる範囲で具体的に言及すること。\n${perspective}\n`
+        : ''
+
     const prompt = `あなたはWebマーケティング・CRO（コンバージョン率最適化）の専門家です。以下は求人転職サービス(x-work.jp)で実施したABテストの終了時データです。最終レポートを作成してください。
 
 【テスト概要】
@@ -83,7 +90,7 @@ ${variantLines}
 
 【判定】
 ${resultLines}
-${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}
+${funnelSection}${memoLines ? `\n${memoLines}\n` : ''}${perspectiveSection}
 以下の構成で最終レポートを作成してください:
 1. **結果サマリー** — 数値ベースで結果を簡潔にまとめる
 2. **仮説検証** — 事前仮説と期待改善率に対して結果はどうだったか（仮説が未記入の場合はテスト名から推測される意図に対して評価）

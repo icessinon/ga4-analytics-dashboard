@@ -152,6 +152,7 @@ model AbTest {
   defeatFactors         String?   @db.Text         // 完了時メモ：負け要因
   finalAiReport         String?   @db.Text         // 終了時AI最終レポート
   finalAiReportAt       DateTime? // 最終レポート生成日時
+  finalReportPerspective String?  @db.Text         // 再生成時に加味する追加観点（担当者が指定。以降の再生成にも反映）
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   

@@ -24,12 +24,17 @@ function toDateStr(d: Date | null): string | null {
  */
 export async function generateAndStoreFinalReport(
     abTestId: number,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; additionalPerspective?: string | null } = {},
 ): Promise<string | null> {
     try {
         const abTest = await prisma.abTest.findUnique({ where: { id: abTestId } })
         if (!abTest) return null
         if (abTest.finalAiReport && !options.force) return abTest.finalAiReport
+
+        // 追加観点: 明示指定があればそれを採用（空文字はクリア）、なければ保存済みの観点を引き継ぐ
+        const perspective = options.additionalPerspective !== undefined
+            ? (options.additionalPerspective?.trim() || null)
+            : (abTest.finalReportPerspective ?? null)
 
         const lastExec = await prisma.abTestReportExecution.findFirst({
             where: { abTestId, status: 'completed' },
@@ -101,12 +106,13 @@ export async function generateAndStoreFinalReport(
             victoryFactors: abTest.victoryFactors,
             defeatFactors: abTest.defeatFactors,
             funnel,
+            additionalPerspective: perspective,
         }, abTest.productId)
         if (!report) return null
 
         await prisma.abTest.update({
             where: { id: abTestId },
-            data: { finalAiReport: report, finalAiReportAt: new Date() },
+            data: { finalAiReport: report, finalAiReportAt: new Date(), finalReportPerspective: perspective },
         })
 
         await insertAbTestFinalReportLog({

@@ -126,6 +126,10 @@ export default function AbTestDetailPage() {
     const [funnelError, setFunnelError] = useState<string | null>(null)
     const [funnelBasis, setFunnelBasis] = useState<'view' | 'click'>('view')
     const [funnelExclude, setFunnelExclude] = useState(false)
+    // AI最終レポートを追加観点付きで再生成する
+    const [perspectiveInput, setPerspectiveInput] = useState('')
+    const [regeneratingReport, setRegeneratingReport] = useState(false)
+    const [reportError, setReportError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!abTestId) {
@@ -142,6 +146,11 @@ export default function AbTestDetailPage() {
             loadNextExecutionDate()
         }
     }, [abTest])
+
+    useEffect(() => {
+        // 保存済みの観点を入力欄の初期値に反映（テスト切替時のみ）
+        setPerspectiveInput(abTest?.finalReportPerspective ?? '')
+    }, [abTest?.id])
 
     useEffect(() => {
         // completed でも最終結果（期間確定値）として同じ集計を表示する
@@ -292,6 +301,39 @@ export default function AbTestDetailPage() {
         }
     }
 
+    async function handleRegenerateReport() {
+        if (!abTest || regeneratingReport) return
+        setRegeneratingReport(true)
+        setReportError(null)
+        try {
+            const response = await fetch(`/api/ab-test/${abTest.id}/final-report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ perspective: perspectiveInput }),
+            })
+            const data = await parseJsonResponse<{
+                error?: string
+                message?: string
+                finalAiReport?: string
+                finalAiReportAt?: string
+                finalReportPerspective?: string | null
+            }>(response)
+            if (!response.ok || data.error) {
+                throw new Error(data.message || data.error || 'レポートの再生成に失敗しました')
+            }
+            setAbTest((prev) => prev ? {
+                ...prev,
+                finalAiReport: data.finalAiReport ?? prev.finalAiReport,
+                finalAiReportAt: data.finalAiReportAt ?? prev.finalAiReportAt,
+                finalReportPerspective: data.finalReportPerspective ?? null,
+            } : prev)
+        } catch (err) {
+            setReportError(err instanceof Error ? err.message : 'レポートの再生成に失敗しました')
+        } finally {
+            setRegeneratingReport(false)
+        }
+    }
+
     async function handleStatusChange(newStatus: string) {
         if (!abTest) return
         if (newStatus === 'completed') {
@@ -393,6 +435,63 @@ export default function AbTestDetailPage() {
         )
     }
 
+    function renderFinalReportSection() {
+        if (!abTest?.finalAiReport) return null
+        return (
+            <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>AI最終レポート</h2>
+                {abTest.finalAiReportAt && (
+                    <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
+                )}
+                {abTest.finalReportPerspective && (
+                    <p className={styles.reportPerspectiveApplied}>
+                        適用中の観点: {abTest.finalReportPerspective}
+                    </p>
+                )}
+                <div className={styles.aiReport}>
+                    {abTest.finalAiReport.split('\n').map((line, i) => renderAiReportLine(line, i, styles.aiReportLine))}
+                </div>
+                <div className={styles.reportRegenerate}>
+                    <label className={styles.reportRegenerateLabel} htmlFor="report-perspective">
+                        観点を加えて再レポート
+                    </label>
+                    <p className={styles.reportRegenerateHint}>
+                        例:「モバイルユーザーへの影響を重点的に」「統計的有意差の確度を厳しめに評価して」など。指定した観点は保存され、以降の再生成にも反映されます。
+                    </p>
+                    <textarea
+                        id="report-perspective"
+                        className={styles.reportPerspectiveInput}
+                        value={perspectiveInput}
+                        onChange={(e) => setPerspectiveInput(e.target.value)}
+                        placeholder="このレポートで特に掘り下げてほしい観点を入力"
+                        rows={3}
+                        disabled={regeneratingReport}
+                    />
+                    <div className={styles.reportRegenerateActions}>
+                        <button
+                            className={styles.reportRegenerateButton}
+                            onClick={handleRegenerateReport}
+                            disabled={regeneratingReport}
+                        >
+                            {regeneratingReport
+                                ? <span className={styles.buttonInner}><AISpinner /> 再生成中...</span>
+                                : 'この観点で再生成'}
+                        </button>
+                        {perspectiveInput.trim() && !regeneratingReport && (
+                            <button
+                                className={styles.reportPerspectiveClear}
+                                onClick={() => setPerspectiveInput('')}
+                            >
+                                観点をクリア
+                            </button>
+                        )}
+                    </div>
+                    {reportError && <p className={styles.reportError}>{reportError}</p>}
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -485,17 +584,7 @@ export default function AbTestDetailPage() {
                 </div>
             )}
 
-            {abTest.status === 'completed' && abTest.finalAiReport && (
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>AI最終レポート</h2>
-                    {abTest.finalAiReportAt && (
-                        <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
-                    )}
-                    <div className={styles.aiReport}>
-                        {abTest.finalAiReport.split('\n').map((line, i) => renderAiReportLine(line, i, styles.aiReportLine))}
-                    </div>
-                </div>
-            )}
+            {abTest.status === 'completed' && renderFinalReportSection()}
 
             <div className={styles.section}>
                 <h2 className={styles.sectionTitle}>基本情報</h2>
@@ -566,17 +655,7 @@ export default function AbTestDetailPage() {
                 </div>
             </div>
 
-            {abTest.status !== 'completed' && abTest.finalAiReport && (
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>AI最終レポート</h2>
-                    {abTest.finalAiReportAt && (
-                        <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
-                    )}
-                    <div className={styles.aiReport}>
-                        {abTest.finalAiReport.split('\n').map((line, i) => renderAiReportLine(line, i, styles.aiReportLine))}
-                    </div>
-                </div>
-            )}
+            {abTest.status !== 'completed' && renderFinalReportSection()}
 
             {abTest.ga4Config && (
                 <div className={styles.section}>
@@ -768,16 +847,17 @@ export default function AbTestDetailPage() {
                                                     <th>ラベル</th>
                                                     <th>件数</th>
                                                     <th>構成比</th>
+                                                    <th title="そのバリアントのPVに対する割合（どれくらい押されたか）">PV比</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {display.variants.flatMap((v) => {
-                                                    const rows: Array<{ kind: string; label: string; value: number; total: number }> = []
+                                                    const rows: Array<{ kind: string; label: string; value: number; total: number; pv: number }> = []
                                                     if ((v.pvByLabel?.length ?? 0) > 1) {
-                                                        for (const l of v.pvByLabel!) rows.push({ kind: 'PV（分母）', label: l.label, value: l.value, total: v.pv })
+                                                        for (const l of v.pvByLabel!) rows.push({ kind: 'PV（分母）', label: l.label, value: l.value, total: v.pv, pv: v.pv })
                                                     }
                                                     if ((v.cvByLabel?.length ?? 0) > 1) {
-                                                        for (const l of v.cvByLabel!) rows.push({ kind: 'CV（分子）', label: l.label, value: l.value, total: v.cv })
+                                                        for (const l of v.cvByLabel!) rows.push({ kind: 'CV（分子）', label: l.label, value: l.value, total: v.cv, pv: v.pv })
                                                     }
                                                     return rows.map((r, i) => (
                                                         <tr key={`${v.key}-${r.kind}-${r.label}`}>
@@ -786,6 +866,7 @@ export default function AbTestDetailPage() {
                                                             <td className={styles.labelBreakdownLabel}>{r.label}</td>
                                                             <td>{r.value.toLocaleString()}</td>
                                                             <td>{r.total > 0 ? `${((r.value / r.total) * 100).toFixed(1)}%` : '－'}</td>
+                                                            <td>{r.pv > 0 ? `${((r.value / r.pv) * 100).toFixed(1)}%` : '－'}</td>
                                                         </tr>
                                                     ))
                                                 })}

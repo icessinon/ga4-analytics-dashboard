@@ -710,6 +710,109 @@
     cursor: not-allowed;
 }
 
+.reportPerspectiveApplied {
+    margin: 0.5rem 0 0;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    color: #a5b4fc;
+    background-color: rgba(99, 102, 241, 0.12);
+    border-left: 3px solid #6366f1;
+    border-radius: 0.25rem;
+    line-height: 1.6;
+}
+
+.reportRegenerate {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #374151;
+}
+
+.reportRegenerateLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 0.25rem;
+}
+
+.reportRegenerateHint {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    line-height: 1.6;
+}
+
+.reportPerspectiveInput {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #e5e7eb;
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.reportPerspectiveInput:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+.reportPerspectiveInput:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.reportRegenerateActions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.625rem;
+}
+
+.reportRegenerateButton {
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.reportRegenerateButton:hover:not(:disabled) {
+    background-color: #1d4ed8;
+}
+
+.reportRegenerateButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.reportPerspectiveClear {
+    background-color: transparent;
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.reportPerspectiveClear:hover {
+    background-color: #374151;
+    color: #e5e7eb;
+}
+
+.reportError {
+    margin: 0.625rem 0 0;
+    font-size: 0.8125rem;
+    color: #f87171;
+}
+
 .buttonInner {
     display: inline-flex;
     align-items: center;
