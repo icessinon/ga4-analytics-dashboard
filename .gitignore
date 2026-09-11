@@ -48,3 +48,7 @@ service-account-key.json
 # 再現クエリとして手元には残すが、git の差分ノイズには含めない
 scripts/tmp-*
 scripts/data/persona/
+
+# scout attribute snapshot inputs (per-candidate, regenerated via MCP/DDB — do not commit)
+scripts/_scout_dump.json
+scripts/_scout_attrs.json
