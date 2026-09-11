@@ -5,6 +5,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
+import ScoutAttributeSections from '@/components/scout/ScoutAttributeSections'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
 import { PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
@@ -105,6 +106,8 @@ export default function ScoutFunnelPage() {
     const [companyQuery, setCompanyQuery] = useState('')
     const [companyPage, setCompanyPage] = useState(0)
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
+    // 今日(速報)を含める: GA4当日は暫定だが送信(DDB)は当日ライブ
+    const [includeToday, setIncludeToday] = useState(false)
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId || !range) return
@@ -117,7 +120,7 @@ export default function ScoutFunnelPage() {
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     startDate: range.startDate,
-                    endDate: range.endDate,
+                    endDate: includeToday ? 'today' : range.endDate,
                 }),
             })
             const json = await parseJsonResponse<ScoutFunnelResponse & { error?: string; message?: string }>(res)
@@ -129,7 +132,7 @@ export default function ScoutFunnelPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, range])
+    }, [currentProduct?.ga4PropertyId, range, includeToday])
 
     useEffect(() => { load() }, [load])
 
@@ -229,6 +232,10 @@ export default function ScoutFunnelPage() {
                     noteClassName={styles.periodNote}
                     resolved={data}
                 />
+                <label className={styles.todayToggle}>
+                    <input type="checkbox" checked={includeToday} onChange={(e) => setIncludeToday(e.target.checked)} />
+                    今日（速報）を含む
+                </label>
             </div>
 
             {loading && <p className={styles.loading}>DB・GA4から集計中...</p>}
@@ -391,6 +398,8 @@ export default function ScoutFunnelPage() {
                     </p>
                 </>
             )}
+
+            <ScoutAttributeSections />
         </div>
     )
 }
