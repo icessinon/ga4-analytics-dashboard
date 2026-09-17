@@ -6,6 +6,8 @@ import BackLink from '@/components/BackLink'
 import RelatedPages from '@/components/RelatedPages/RelatedPages'
 import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
 import ScoutAttributeSections from '@/components/scout/ScoutAttributeSections'
+import ScoutFunnelStages from '@/components/scout/ScoutFunnelStages'
+import ScoutHourlyClickRate from '@/components/scout/ScoutHourlyClickRate'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
 import { PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
@@ -35,6 +37,13 @@ interface CompanyDailyRow {
     applied: number[]
 }
 
+interface HourlyRow {
+    hour: number
+    sent: number
+    viewed: number
+    topCompanyName: string | null
+}
+
 interface ScoutFunnelResponse {
     startDate: string
     endDate: string
@@ -44,12 +53,15 @@ interface ScoutFunnelResponse {
         failed: number
         skipped?: number
         viewedUsers: number
+        viewedSessions?: number
         viewedScoutIds: number
+        formReachedUsers?: number
         appliedUsers: number
     }
     daily: DailyRow[]
     companies: CompanyRow[]
     companyDaily?: CompanyDailyRow[]
+    hourly?: HourlyRow[]
     fetchedAt: string
 }
 
@@ -106,8 +118,8 @@ export default function ScoutFunnelPage() {
     const [companyQuery, setCompanyQuery] = useState('')
     const [companyPage, setCompanyPage] = useState(0)
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
-    // 今日(速報)を含める: GA4当日は暫定だが送信(DDB)は当日ライブ
-    const [includeToday, setIncludeToday] = useState(false)
+    // 今日(速報)を含める: GA4当日は暫定だが送信(DDB)は当日ライブ。既定でオン。
+    const [includeToday, setIncludeToday] = useState(true)
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId || !range) return
@@ -243,37 +255,25 @@ export default function ScoutFunnelPage() {
 
             {data && !loading && (
                 <>
-                    <div className={styles.summaryRow}>
-                        <div className={styles.summaryCard} style={{ borderTopColor: '#60a5fa' }}>
-                            <span className={styles.summaryLabel}>送信リクエスト</span>
-                            <span className={styles.summaryValue}>{data.summary.requested.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>
-                                ScoutHistories（期間内attempt数{(data.summary.skipped ?? 0) > 0 ? `・うちスキップ${data.summary.skipped}件` : ''}）
-                            </span>
-                        </div>
-                        <div className={styles.summaryCard} style={{ borderTopColor: '#94a3b8' }}>
-                            <span className={styles.summaryLabel}>送達（sent）</span>
-                            <span className={styles.summaryValue}>{data.summary.sent.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>
-                                {data.summary.sent === 0 ? '未計測（送信結果の書き戻し実装待ち）' : `送達率 ${pct(data.summary.sent, data.summary.requested)}`}
-                            </span>
-                        </div>
-                        <div className={styles.summaryCard} style={{ borderTopColor: '#fbbf24' }}>
-                            <span className={styles.summaryLabel}>スカウトページ閲覧</span>
-                            <span className={styles.summaryValue}>{data.summary.viewedUsers.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>ユニークユーザー ／ {data.summary.viewedScoutIds}スカウトID</span>
-                        </div>
-                        <div className={styles.summaryCard} style={{ borderTopColor: '#4ade80' }}>
-                            <span className={styles.summaryLabel}>応募（クリック）</span>
-                            <span className={styles.summaryValue}>{data.summary.appliedUsers.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>閲覧→応募 {pct(data.summary.appliedUsers, data.summary.viewedUsers)}</span>
-                        </div>
+                    <div className={styles.card}>
+                        <h2 className={styles.sectionTitle}>全体ファネル</h2>
+                        <ScoutFunnelStages summary={data.summary} />
+                        <p className={styles.tableNote}>
+                            ※ バー幅＝直前段からの通過率。崖①=送達→クリック（最大の漏れ）、崖②=クリック→フォーム到達。
+                        </p>
                     </div>
 
                     {trendChart && (
                         <div className={styles.card}>
                             <h2 className={styles.sectionTitle}>推移（送信・閲覧・応募）{isWeekly && ' — 週次'}</h2>
                             <SignupTrendChart labels={trendChart.labels} series={trendChart.series} />
+                        </div>
+                    )}
+
+                    {data.hourly && data.hourly.some((h) => h.sent > 0) && (
+                        <div className={styles.card}>
+                            <h2 className={styles.sectionTitle}>時間別 送信数・クリック率（送信時刻・JST）</h2>
+                            <ScoutHourlyClickRate hourly={data.hourly} />
                         </div>
                     )}
 
@@ -296,6 +296,7 @@ export default function ScoutFunnelPage() {
                                         <th className={styles.num}>送信リクエスト</th>
                                         <th className={styles.num}>送達</th>
                                         <th className={styles.num}>閲覧UU</th>
+                                        <th className={styles.num}>クリック率</th>
                                         <th className={styles.num}>応募</th>
                                         <th className={styles.num}>閲覧→応募</th>
                                     </tr>
@@ -311,12 +312,13 @@ export default function ScoutFunnelPage() {
                                             <td className={styles.num}>{c.requested.toLocaleString()}</td>
                                             <td className={styles.num}>{c.sent > 0 ? c.sent.toLocaleString() : '－'}</td>
                                             <td className={styles.num}>{c.viewed.toLocaleString()}</td>
+                                            <td className={styles.num}>{c.sent > 0 ? pct(c.viewed, c.sent) : '－'}</td>
                                             <td className={styles.num}>{c.applied.toLocaleString()}</td>
                                             <td className={styles.num}>{pct(c.applied, c.viewed)}</td>
                                         </tr>
                                     ))}
                                     {pagedCompanies.length === 0 && (
-                                        <tr><td colSpan={6}>該当する企業がありません</td></tr>
+                                        <tr><td colSpan={7}>該当する企業がありません</td></tr>
                                     )}
                                 </tbody>
                             </table>
