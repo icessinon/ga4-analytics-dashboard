@@ -357,17 +357,6 @@
     border-radius: 8px;
     background: rgba(148, 163, 184, 0.05);
 }
-.todayToggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-left: 14px;
-    font-size: 13px;
-    color: var(--text-secondary, #cbd5e1);
-    cursor: pointer;
-    white-space: nowrap;
-}
-
 .usageGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

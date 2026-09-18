@@ -110,7 +110,7 @@ function pct(num: number, den: number): string {
 export default function ScoutFunnelPage() {
     const { currentProduct } = useProduct()
     const periodState = usePeriodRange('30daysAgo')
-    const { range } = periodState
+    const { range, period } = periodState
     const [data, setData] = useState<ScoutFunnelResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -118,21 +118,21 @@ export default function ScoutFunnelPage() {
     const [companyQuery, setCompanyQuery] = useState('')
     const [companyPage, setCompanyPage] = useState(0)
     const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
-    // 今日(速報)を含める: GA4当日は暫定だが送信(DDB)は当日ライブ。既定でオン。
-    const [includeToday, setIncludeToday] = useState(true)
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId || !range) return
         setLoading(true)
         setError(null)
         try {
+            // 相対期間（過去N日・今月）は当日速報まで含める。前月・カスタムは指定期間を尊重。
+            const endDate = period === 'lastMonth' || period === 'custom' ? range.endDate : 'today'
             const res = await fetch('/api/scout/funnel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     propertyId: currentProduct.ga4PropertyId,
                     startDate: range.startDate,
-                    endDate: includeToday ? 'today' : range.endDate,
+                    endDate,
                 }),
             })
             const json = await parseJsonResponse<ScoutFunnelResponse & { error?: string; message?: string }>(res)
@@ -144,7 +144,7 @@ export default function ScoutFunnelPage() {
         } finally {
             setLoading(false)
         }
-    }, [currentProduct?.ga4PropertyId, range, includeToday])
+    }, [currentProduct?.ga4PropertyId, range, period])
 
     useEffect(() => { load() }, [load])
 
@@ -244,10 +244,6 @@ export default function ScoutFunnelPage() {
                     noteClassName={styles.periodNote}
                     resolved={data}
                 />
-                <label className={styles.todayToggle}>
-                    <input type="checkbox" checked={includeToday} onChange={(e) => setIncludeToday(e.target.checked)} />
-                    今日（速報）を含む
-                </label>
             </div>
 
             {loading && <p className={styles.loading}>DB・GA4から集計中...</p>}
