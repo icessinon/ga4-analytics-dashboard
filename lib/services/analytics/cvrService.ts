@@ -1,7 +1,10 @@
 /**
  * CVR計算サービス
  * 元のGASコードのcalculateCVR関数を参考に実装
+ * ラベルは完全一致に加え * ワイルドカードに対応（labelMatcher.ts）
  */
+
+import { createLabelMatcher, type LabelMatcher } from './labelMatcher'
 
 export interface CvrConfig {
     denominatorDimension: string
@@ -79,8 +82,8 @@ export function calculateCVR(
         if (val === '' || val === '(not set)') return '(not set)'
         return val.trim()
     }
-    const normalizedDenominatorLabels = cvrConfig.denominatorLabels.map(normalize)
-    const normalizedNumeratorLabels = cvrConfig.numeratorLabels.map(normalize)
+    const denMatcher = createLabelMatcher(cvrConfig.denominatorLabels.map(normalize))
+    const numMatcher = createLabelMatcher(cvrConfig.numeratorLabels.map(normalize))
 
     const applyFilters = (row: GA4ReportRow, filters?: Array<{ dimension: string; operator: string; expression: string }>) => {
         if (!filters || filters.length === 0) return true
@@ -100,22 +103,23 @@ export function calculateCVR(
         return true
     }
 
-    const pvByLabel = new Map<string, number>(normalizedDenominatorLabels.map((l) => [l, 0]))
-    const cvByLabel = new Map<string, number>(normalizedNumeratorLabels.map((l) => [l, 0]))
+    // 完全一致ラベルのみ0件シード（ワイルドカード一致分は実ラベルで動的に追加）
+    const pvByLabel = new Map<string, number>(denMatcher.exactLabels.map((l) => [l, 0]))
+    const cvByLabel = new Map<string, number>(numMatcher.exactLabels.map((l) => [l, 0]))
 
     for (const row of report.rows) {
         const denValue = normalize(row.dimensionValues[denDimIndex]?.value || '')
         const numValue = normalize(row.dimensionValues[numDimIndex]?.value || '')
         const metricValue = parseFloat(row.metricValues[metricIndex]?.value || '0')
 
-        if (normalizedDenominatorLabels.includes(denValue)) {
+        if (denMatcher.match(denValue)) {
             if (applyFilters(row, cvrConfig.denominatorFilters)) {
                 result.pv += metricValue
                 pvByLabel.set(denValue, (pvByLabel.get(denValue) ?? 0) + metricValue)
             }
         }
 
-        if (normalizedNumeratorLabels.includes(numValue)) {
+        if (numMatcher.match(numValue)) {
             if (applyFilters(row, cvrConfig.numeratorFilters)) {
                 result.cv += metricValue
                 cvByLabel.set(numValue, (cvByLabel.get(numValue) ?? 0) + metricValue)
@@ -124,7 +128,32 @@ export function calculateCVR(
     }
 
     result.cvr = result.pv > 0 ? result.cv / result.pv : 0
-    result.pvByLabel = [...pvByLabel.entries()].map(([label, value]) => ({ label, value }))
-    result.cvByLabel = [...cvByLabel.entries()].map(([label, value]) => ({ label, value }))
+    result.pvByLabel = toLabelCounts(pvByLabel, denMatcher)
+    result.cvByLabel = toLabelCounts(cvByLabel, numMatcher)
     return result
+}
+
+/**
+ * 内訳Mapを配列化する。
+ * 完全一致ラベル（シード分）は設定順を維持し、ワイルドカード一致で動的に増えた
+ * 実ラベルは名前昇順で後置。1行も拾えなかったワイルドカードパターンは
+ * 0件エントリとして末尾に追加し「何も一致していない」ことを可視化する。
+ */
+function toLabelCounts(byLabel: Map<string, number>, matcher: LabelMatcher): LabelCount[] {
+    const exactSet = new Set(matcher.exactLabels)
+    const seeded: LabelCount[] = []
+    const dynamic: LabelCount[] = []
+    for (const [label, value] of byLabel.entries()) {
+        if (exactSet.has(label)) {
+            seeded.push({ label, value })
+        } else {
+            dynamic.push({ label, value })
+        }
+    }
+    dynamic.sort((a, b) => a.label.localeCompare(b.label, 'ja'))
+    const matched = [...seeded, ...dynamic]
+    const unmatched = matcher.wildcardPatterns
+        .filter((p) => !matched.some((d) => p.regexp.test(d.label)))
+        .map((p) => ({ label: p.pattern, value: 0 }))
+    return [...matched, ...unmatched]
 }

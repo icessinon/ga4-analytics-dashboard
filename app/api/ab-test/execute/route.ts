@@ -143,7 +143,8 @@ export async function POST(request: Request) {
                     dateRanges: [{ startDate, endDate }],
                     dimensions: dimensions,
                     metrics: metrics,
-                    limit: ga4Config.limit || 10000,
+                    // ワイルドカードラベルは職種横断で多数の行を拾うため底上げ（limit到達＝サイレント欠測）
+                    limit: Math.max(ga4Config.limit || 0, 50000),
                 }
 
                 ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)

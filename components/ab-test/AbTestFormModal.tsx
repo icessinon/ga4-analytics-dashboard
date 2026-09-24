@@ -230,6 +230,27 @@ export default function AbTestFormModal({
         }))
     }
 
+    // ワイルドカードラベルの危険パターン（*のみ / 末尾*）を検出。保存はブロックせず警告のみ
+    const wildcardLabelWarning = (labelGroups: string[][]): string | null => {
+        const labels = labelGroups
+            .flat()
+            .map((l) => l.replace(/＊/g, '*').trim())
+            .filter((l) => l.length > 0 && l.includes('*'))
+        if (labels.some((l) => l.replace(/\*/g, '') === '')) {
+            return '⚠ 「*」のみのラベルは全ラベルに一致してしまいます。パターンを絞ってください。'
+        }
+        if (labels.some((l) => l.endsWith('*'))) {
+            return '⚠ 末尾が「*」のラベルは __B-xxxx などサフィックス付きラベルにも一致し、A/Bが混在する恐れがあります。'
+        }
+        return null
+    }
+    const cvrWildcardWarnings = {
+        A: wildcardLabelWarning([ga4Config.cvrA.denominatorLabels, ga4Config.cvrA.numeratorLabels]),
+        B: wildcardLabelWarning([ga4Config.cvrB.denominatorLabels, ga4Config.cvrB.numeratorLabels]),
+        C: wildcardLabelWarning([ga4Config.cvrC.denominatorLabels, ga4Config.cvrC.numeratorLabels]),
+        D: wildcardLabelWarning([ga4Config.cvrD.denominatorLabels, ga4Config.cvrD.numeratorLabels]),
+    }
+
     // 必要サンプルサイズ: 有意水準95%（z=1.96）・検出力80%（z=0.84）の両側Z検定
     const requiredSampleSize = (() => {
         const p1 = parseFloat(baselineCvr) / 100
@@ -837,6 +858,11 @@ export default function AbTestFormModal({
 
                         <div className={styles.formSection}>
                             <h4 className={styles.formSubSectionTitle}>CVR設定 A *</h4>
+                            <p className={styles.helpText}>
+                                ラベルには「*」（ワイルドカード・任意文字列）が使えます。例:
+                                「SU__*__Label__StepLast_求人を探しに行く」で全職種を横断集計できます。
+                                B側は末尾に __B-xxxx を付ければ、Aパターンにはサフィックス付きラベルは一致しません。
+                            </p>
                             <div className={styles.cvrGrid}>
                                 <div>
                                     <label className={styles.label}>分母ディメンション</label>
@@ -904,6 +930,7 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                             </div>
+                            {cvrWildcardWarnings.A && <p className={styles.testWarning}>{cvrWildcardWarnings.A}</p>}
                         </div>
 
                         <div className={styles.formSection}>
@@ -991,6 +1018,7 @@ export default function AbTestFormModal({
                                     />
                                 </div>
                             </div>
+                            {cvrWildcardWarnings.B && <p className={styles.testWarning}>{cvrWildcardWarnings.B}</p>}
                         </div>
 
                         <div className={styles.formSection}>
@@ -1087,6 +1115,7 @@ export default function AbTestFormModal({
                                     </div>
                                 </div>
                             )}
+                            {showCvrC && cvrWildcardWarnings.C && <p className={styles.testWarning}>{cvrWildcardWarnings.C}</p>}
                         </div>
 
                         <div className={styles.formSection}>
@@ -1183,6 +1212,7 @@ export default function AbTestFormModal({
                                     </div>
                                 </div>
                             )}
+                            {showCvrD && cvrWildcardWarnings.D && <p className={styles.testWarning}>{cvrWildcardWarnings.D}</p>}
                         </div>
 
                         <div className={styles.formSection}>

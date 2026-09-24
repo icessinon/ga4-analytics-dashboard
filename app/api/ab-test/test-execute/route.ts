@@ -53,7 +53,8 @@ export async function POST(request: Request) {
             dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
             dimensions: dimensions,
             metrics: metrics,
-            limit: ga4Config.limit || 10000,
+            // ワイルドカードラベルは職種横断で多数の行を拾うため底上げ（limit到達＝サイレント欠測）
+            limit: Math.max(ga4Config.limit || 0, 50000),
         }
         
         if (!ga4Request.propertyId) {
@@ -235,10 +236,14 @@ export async function POST(request: Request) {
             }
         }
 
+        const truncated = ga4Response.rows.length >= ga4Request.limit
         return NextResponse.json({
             success: true,
             cvrResults,
             rowCount: ga4Response.rows.length,
+            ...(truncated && {
+                warning: `GA4の取得行数が上限（${ga4Request.limit}行）に達しています。集計に欠測がある可能性があるため、期間を短くするかフィルタで絞り込んでください。`,
+            }),
         })
     } catch (error) {
         console.error('AB Test Test Execute API Error:', error)
