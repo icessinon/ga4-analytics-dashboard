@@ -31,7 +31,7 @@ x-work.jp（求人転職プラットフォーム。事業領域 driver/sekokan �
 ## 2. BigQuery（GA4生イベント：セッション単位・経路分析）
 
 - **分かること**: ページ遷移率・経路分類（検索経由/直接）・セッションファネル・次アクションなど、GA4 API で取れないセッション/イベント粒度の分析。
-- **データ**: `x-work-ga.analytics_534098180.events_*`。**エクスポート開始 2026-08-07 以降のみ**（それ以前の日付は無い）。
+- **データ**: `xmile-drm.analytics_534098180.events_*`。**エクスポート開始 2026-08-07 以降のみ**（それ以前の日付は無い）。
 - **アクセス**: `lib/bq/ga4EventsClient.ts` の `runGa4EventsQuery` を使う tmp スクリプト。既存例: `scripts/tmp-industry-top-transition.ts`（トップ→詳細遷移率）、`tmp-industry-top-direct-transition.ts`（次PV分類で検索経由/直接を分離）。
 - **注意点**:
   - dry run→コスト提示は必須（上記大原則）。

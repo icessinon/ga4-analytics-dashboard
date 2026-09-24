@@ -3,12 +3,16 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * GA4 BigQuery Export（x-work-ga.analytics_534098180.events_*）への読み取りクライアント。
- * GA4のSA（x-work-ga@x-work-ga.iam）を流用する。2026-08-14にBigQueryロールが
- * 付与され jobs.query が可能になった（それ以前はjobs.create権限なし）。
+ * GA4 BigQuery Export（xmile-drm.analytics_534098180.events_*）への読み取りクライアント。
+ * GA4のSA（x-work-ga@x-work-ga.iam）を流用する。SAの所属は x-work-ga のままで、
+ * xmile-drm 側に BigQuery ジョブユーザー＋データ閲覧者を付与して読んでいる。
+ *
+ * 2026-09-24にエクスポート先を x-work-ga から xmile-drm へ移行した（旧プロジェクトが
+ * 課金リンク未設定でテーブルが60日で自動削除されるため）。8/6〜9/23分は旧プロジェクトから
+ * コピー済みで、同一データセット内に連続して存在する。
  */
 
-export const GA4_EXPORT_PROJECT = 'x-work-ga'
+export const GA4_EXPORT_PROJECT = 'xmile-drm'
 export const GA4_EXPORT_DATASET = 'analytics_534098180'
 /** BQエクスポート開始日。これより前のイベントはBQに存在しない（GA4 APIのみ） */
 export const GA4_EXPORT_START = '20260807'
