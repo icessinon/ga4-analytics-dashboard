@@ -1,6 +1,12 @@
 import { google } from 'googleapis'
+import { getBQWriteCredentials } from './credentials'
 
-export const WRITE_PROJECT_ID = 'hrs-div'
+/**
+ * ダッシュボード自前テーブル（ABテスト履歴・各種実行ログ）の読み書き先。
+ * 2026-09-25に hrs-div から xmile-drm へ移設し、GA4エクスポートと同一プロジェクトに
+ * 集約した（分析ログとGA4生イベントをクロスプロジェクトなしでJOINできる）。
+ */
+export const WRITE_PROJECT_ID = 'xmile-drm'
 export const WRITE_DATASET    = 'ga4_analytics_dashboard'
 export const LOCATION         = 'asia-northeast1'
 
@@ -9,10 +15,8 @@ export type BQFieldMode = 'NULLABLE' | 'REQUIRED' | 'REPEATED'
 export interface BQField { name: string; type: BQFieldType; mode?: BQFieldMode }
 
 function getWriteAuth() {
-  const key = process.env.BQ_WRITE_SERVICE_ACCOUNT_KEY
-  if (!key) throw new Error('BQ_WRITE_SERVICE_ACCOUNT_KEY is not set')
   return new google.auth.GoogleAuth({
-    credentials: JSON.parse(key),
+    credentials: getBQWriteCredentials(),
     scopes: ['https://www.googleapis.com/auth/bigquery'],
   })
 }

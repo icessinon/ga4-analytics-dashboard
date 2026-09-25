@@ -1,11 +1,10 @@
 import { google } from 'googleapis'
-import fs from 'fs'
-import path from 'path'
+import { getBQReadCredentials } from './credentials'
 
 /**
  * GA4 BigQuery Export（xmile-drm.analytics_534098180.events_*）への読み取りクライアント。
- * GA4のSA（x-work-ga@x-work-ga.iam）を流用する。SAの所属は x-work-ga のままで、
- * xmile-drm 側に BigQuery ジョブユーザー＋データ閲覧者を付与して読んでいる。
+ * 認証は BQ専用SA（ga4-analytics-dashboard@xmile-drm.iam）。鍵が未配備の環境では
+ * 従来のGA4のSA（x-work-ga@x-work-ga.iam）にフォールバックする。
  *
  * 2026-09-24にエクスポート先を x-work-ga から xmile-drm へ移行した（旧プロジェクトが
  * 課金リンク未設定でテーブルが60日で自動削除されるため）。8/6〜9/23分は旧プロジェクトから
@@ -20,16 +19,6 @@ export const GA4_EXPORT_START = '20260807'
 // 事故ガード: 誤って全期間・全カラムをスキャンするクエリを弾く（現状1日≈50MB）
 const MAX_SCAN_BYTES = 5 * 1024 ** 3
 
-function getCredentials(): { client_email: string; private_key: string } {
-    const inline = process.env.GA4_SERVICE_ACCOUNT_KEY
-    if (inline && inline.trim() !== '') return JSON.parse(inline)
-    const keyPath = process.env.GA4_SERVICE_ACCOUNT_KEY_PATH
-    if (keyPath && keyPath.trim() !== '') {
-        const resolved = path.isAbsolute(keyPath) ? keyPath : path.resolve(process.cwd(), keyPath)
-        return JSON.parse(fs.readFileSync(resolved, 'utf8'))
-    }
-    throw new Error('GA4_SERVICE_ACCOUNT_KEY または GA4_SERVICE_ACCOUNT_KEY_PATH が未設定のため BigQuery に接続できません')
-}
 
 /**
  * dry runでスキャン量を確認してからクエリを実行し、行をオブジェクト配列で返す。
@@ -38,7 +27,7 @@ export async function runGa4EventsQuery(
     query: string,
 ): Promise<{ rows: Record<string, string | null>[]; scannedBytes: number }> {
     const auth = new google.auth.GoogleAuth({
-        credentials: getCredentials(),
+        credentials: getBQReadCredentials(),
         scopes: ['https://www.googleapis.com/auth/bigquery'],
     })
     const client = await auth.getClient()
