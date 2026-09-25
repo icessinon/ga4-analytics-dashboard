@@ -16,7 +16,7 @@ export interface BQField { name: string; type: BQFieldType; mode?: BQFieldMode }
 
 function getWriteAuth() {
   return new google.auth.GoogleAuth({
-    credentials: getServiceAccountCredentials(['BQ_WRITE_SERVICE_ACCOUNT_KEY']),
+    credentials: getServiceAccountCredentials(),
     scopes: ['https://www.googleapis.com/auth/bigquery'],
   })
 }

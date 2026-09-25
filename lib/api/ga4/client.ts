@@ -248,8 +248,8 @@ export async function getGA4AccessToken(customToken?: string): Promise<string> {
             '以下のいずれかで認証してください（設定は .env または .env.local に記載。Docker の場合は .env）：\n' +
             '1. 画面上のフォームからアクセストークンを直接入力\n' +
             '2. GA4_ACCESS_TOKEN を設定\n' +
-            '3. GA4_SERVICE_ACCOUNT_KEY（サービスアカウントのJSONを1行の文字列で）を設定\n' +
-            '4. GA4_SERVICE_ACCOUNT_KEY_PATH（キーファイルのパス。Docker の場合はファイルをマウントするか 3 を推奨）\n' +
+            '3. GCP_SERVICE_ACCOUNT_KEY（サービスアカウントのJSONを1行の文字列で）を設定\n' +
+            '4. GCP_SERVICE_ACCOUNT_KEY_PATH（キーファイルのパス。Docker の場合はファイルをマウントするか 3 を推奨）\n' +
             '5. GA4_CLIENT_ID / GA4_CLIENT_SECRET / GA4_REFRESH_TOKEN（OAuth2）を設定\n\n' +
             'Google Cloud で「Google Analytics Data API」を有効化し、上記のいずれかの認証情報を用意してください。'
         )

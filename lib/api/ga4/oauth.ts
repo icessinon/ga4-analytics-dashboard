@@ -70,59 +70,13 @@ export async function getAccessTokenWithOAuth2(
  * GASの自動認証と同等の機能を提供
  */
 export async function getGA4AccessTokenAuto(): Promise<string> {
-    // 方法0: 統合SA（GCP_SERVICE_ACCOUNT_KEY*）。2026-09-25以降はこれが本筋。
-    //        未設定の環境では従来の GA4_SERVICE_ACCOUNT_KEY* 等にフォールバックする。
+    // サービスアカウント（統合SA）。2026-09-25に用途別SAを1本へ統合し、
+    // 旧 GA4_SERVICE_ACCOUNT_KEY* 経路は撤去した。詳細は lib/serviceAccount.ts。
     try {
         return await getAccessTokenWithServiceAccount(getServiceAccountCredentials())
     } catch (error) {
-        console.error('[ga4/oauth] 統合SAでのトークン取得に失敗、従来の方法にフォールバックします:',
+        console.error('[ga4/oauth] サービスアカウントでのトークン取得に失敗:',
             error instanceof Error ? error.message : error)
-    }
-
-    // 方法1: サービスアカウントキー（JSON）が設定されている場合
-    const serviceAccountKeyJson = process.env.GA4_SERVICE_ACCOUNT_KEY
-    if (serviceAccountKeyJson) {
-        try {
-            // 改行文字を正しく処理
-            let jsonString = serviceAccountKeyJson
-            // シングルクォートで囲まれている場合は削除
-            if (jsonString.startsWith("'") && jsonString.endsWith("'")) {
-                jsonString = jsonString.slice(1, -1)
-            }
-            // \\nを\nに変換
-            jsonString = jsonString.replace(/\\n/g, '\n')
-            const serviceAccountKey = JSON.parse(jsonString)
-            return await getAccessTokenWithServiceAccount(serviceAccountKey)
-        } catch (error) {
-            console.error('Failed to parse service account key:', error)
-            // エラーを再スローして次の方法を試す
-        }
-    }
-
-    // 方法1-2: サービスアカウントキーファイルパスが設定されている場合
-    const serviceAccountKeyPath = process.env.GA4_SERVICE_ACCOUNT_KEY_PATH
-    if (serviceAccountKeyPath) {
-        try {
-            const fs = await import('fs/promises')
-            const path = await import('path')
-            // 相対パスは process.cwd() 基準で解決（ローカル=プロジェクトルート、Docker=/app）
-            const resolvedPath = path.isAbsolute(serviceAccountKeyPath)
-                ? serviceAccountKeyPath
-                : path.resolve(process.cwd(), serviceAccountKeyPath)
-            const keyFile = await fs.readFile(resolvedPath, 'utf-8')
-            if (!keyFile.trim()) {
-                console.error('GA4_SERVICE_ACCOUNT_KEY_PATH: ファイルが空です:', resolvedPath)
-            } else {
-                const serviceAccountKey = JSON.parse(keyFile)
-                return await getAccessTokenWithServiceAccount(serviceAccountKey)
-            }
-        } catch (error: any) {
-            if (error?.code === 'ENOENT') {
-                console.error('GA4_SERVICE_ACCOUNT_KEY_PATH: ファイルが見つかりません:', process.cwd(), serviceAccountKeyPath)
-            } else {
-                console.error('Failed to read service account key file:', error)
-            }
-        }
     }
 
     // 方法2: OAuth2認証情報が設定されている場合
@@ -142,9 +96,8 @@ export async function getGA4AccessTokenAuto(): Promise<string> {
 
     throw new Error(
         'GA4認証情報が設定されていません。.env または .env.local に以下のいずれかを設定してください：\n' +
-        '1. GA4_SERVICE_ACCOUNT_KEY（JSONを1行で）\n' +
-        '2. GA4_SERVICE_ACCOUNT_KEY_PATH（キーファイルのパス。Docker の場合はファイルをマウントするか 1 を利用）\n' +
-        '3. GA4_CLIENT_ID / GA4_CLIENT_SECRET / GA4_REFRESH_TOKEN（OAuth2）\n' +
-        '4. GA4_ACCESS_TOKEN（一時的なトークン）'
+        '1. GCP_SERVICE_ACCOUNT_KEY（JSONを1行で）または GCP_SERVICE_ACCOUNT_KEY_PATH（キーファイルのパス）\n' +
+        '2. GA4_CLIENT_ID / GA4_CLIENT_SECRET / GA4_REFRESH_TOKEN（OAuth2）\n' +
+        '3. GA4_ACCESS_TOKEN（一時的なトークン）'
     )
 }

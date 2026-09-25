@@ -26,7 +26,7 @@ export async function runGa4EventsQuery(
     query: string,
 ): Promise<{ rows: Record<string, string | null>[]; scannedBytes: number }> {
     const auth = new google.auth.GoogleAuth({
-        credentials: getServiceAccountCredentials(['GA4_SERVICE_ACCOUNT_KEY']),
+        credentials: getServiceAccountCredentials(),
         scopes: ['https://www.googleapis.com/auth/bigquery'],
     })
     const client = await auth.getClient()
