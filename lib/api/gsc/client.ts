@@ -5,14 +5,13 @@ import { getServiceAccountCredentials } from '@/lib/serviceAccount'
  * Search Console API クライアント。
  * 統合SA（ga4-analytics-dashboard@xmile-drm）を使う。sc-domain:x-work.jp に
  * 制限付き権限でユーザー追加済み（2026-09-25。searchanalytics.query は制限付きで通る）。
- * 旧SA（ai-product-dashboard@hrs-div、2026-08-12追加・フル権限）は移行期のフォールバック。
  */
 
 export const GSC_SITE = 'sc-domain:x-work.jp'
 
 function getAuth() {
     return new google.auth.GoogleAuth({
-        credentials: getServiceAccountCredentials(['BQ_WRITE_SERVICE_ACCOUNT_KEY']),
+        credentials: getServiceAccountCredentials(),
         scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
     })
 }
