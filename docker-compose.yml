@@ -70,7 +70,6 @@ services:
       INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     env_file:
       - .env
-    volumes:
     depends_on:
       postgres:
         condition: service_healthy
