@@ -52,3 +52,4 @@ scripts/data/persona/
 # scout attribute snapshot inputs (per-candidate, regenerated via MCP/DDB — do not commit)
 scripts/_scout_dump.json
 scripts/_scout_attrs.json
+xmile-drm-*.json
