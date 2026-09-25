@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { getBQWriteCredentials } from './credentials'
+import { getServiceAccountCredentials } from '@/lib/serviceAccount'
 
 /**
  * ダッシュボード自前テーブル（ABテスト履歴・各種実行ログ）の読み書き先。
@@ -16,7 +16,7 @@ export interface BQField { name: string; type: BQFieldType; mode?: BQFieldMode }
 
 function getWriteAuth() {
   return new google.auth.GoogleAuth({
-    credentials: getBQWriteCredentials(),
+    credentials: getServiceAccountCredentials(['BQ_WRITE_SERVICE_ACCOUNT_KEY']),
     scopes: ['https://www.googleapis.com/auth/bigquery'],
   })
 }

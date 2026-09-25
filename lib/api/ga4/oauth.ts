@@ -11,6 +11,7 @@
  */
 
 import { google } from 'googleapis'
+import { getServiceAccountCredentials } from '@/lib/serviceAccount'
 
 /**
  * サービスアカウントを使用してアクセストークンを取得
@@ -69,6 +70,15 @@ export async function getAccessTokenWithOAuth2(
  * GASの自動認証と同等の機能を提供
  */
 export async function getGA4AccessTokenAuto(): Promise<string> {
+    // 方法0: 統合SA（GCP_SERVICE_ACCOUNT_KEY*）。2026-09-25以降はこれが本筋。
+    //        未設定の環境では従来の GA4_SERVICE_ACCOUNT_KEY* 等にフォールバックする。
+    try {
+        return await getAccessTokenWithServiceAccount(getServiceAccountCredentials())
+    } catch (error) {
+        console.error('[ga4/oauth] 統合SAでのトークン取得に失敗、従来の方法にフォールバックします:',
+            error instanceof Error ? error.message : error)
+    }
+
     // 方法1: サービスアカウントキー（JSON）が設定されている場合
     const serviceAccountKeyJson = process.env.GA4_SERVICE_ACCOUNT_KEY
     if (serviceAccountKeyJson) {
