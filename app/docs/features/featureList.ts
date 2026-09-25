@@ -403,7 +403,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'SEOカテゴリ急落の常設アラート: 毎日10:00にカテゴリ別クリックの前週比を判定（-25%超かつ前週200クリック以上で🚨即時Slack通知）、毎週月曜は全カテゴリの週次サマリーを配信。ABテストSEO監視と同じジョブで実行',
             'ABテストSEO監視（自動）: ABテスト設定の「SEO監視対象パス」に正規表現を入れると、テスト期間中毎日10:00に対象ページのGSC実績をサイト全体と対照比較（DiD、テスト開始前7日vs直近7日）。対照比クリック-20pt超 or 順位+1.0超悪化でSlack即日通知＋Gemini見立てコメント、毎週月曜は異常なしでもサマリー配信（POST /api/alerts/seo-watch）',
             'GSCデータの2〜3日ラグを考慮した期間設計（終端は3日前）。SEO反映は2〜6週かかる旨の注意書きつき',
-            'SA（ai-product-dashboard@hrs-div）をSearch Consoleにユーザー追加して接続（2026-08-12設定）',
+            '統合SA（ga4-analytics-dashboard@xmile-drm）をSearch Consoleに制限付き権限でユーザー追加して接続（2026-09-25にSA統合）',
         ],
         metrics: ['clicks', 'impressions', 'ctr', 'position'],
         apiRoute: 'POST /api/seo-report',
