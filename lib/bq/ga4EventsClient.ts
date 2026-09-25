@@ -1,10 +1,9 @@
 import { google } from 'googleapis'
-import { getBQReadCredentials } from './credentials'
+import { getServiceAccountCredentials } from '@/lib/serviceAccount'
 
 /**
  * GA4 BigQuery Export（xmile-drm.analytics_534098180.events_*）への読み取りクライアント。
- * 認証は BQ専用SA（ga4-analytics-dashboard@xmile-drm.iam）。鍵が未配備の環境では
- * 従来のGA4のSA（x-work-ga@x-work-ga.iam）にフォールバックする。
+ * 認証は統合SA（ga4-analytics-dashboard@xmile-drm.iam）。[[lib/serviceAccount.ts]] 参照。
  *
  * 2026-09-24にエクスポート先を x-work-ga から xmile-drm へ移行した（旧プロジェクトが
  * 課金リンク未設定でテーブルが60日で自動削除されるため）。8/6〜9/23分は旧プロジェクトから
@@ -27,7 +26,7 @@ export async function runGa4EventsQuery(
     query: string,
 ): Promise<{ rows: Record<string, string | null>[]; scannedBytes: number }> {
     const auth = new google.auth.GoogleAuth({
-        credentials: getBQReadCredentials(),
+        credentials: getServiceAccountCredentials(['GA4_SERVICE_ACCOUNT_KEY']),
         scopes: ['https://www.googleapis.com/auth/bigquery'],
     })
     const client = await auth.getClient()
