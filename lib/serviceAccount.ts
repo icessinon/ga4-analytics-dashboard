@@ -20,12 +20,29 @@ export interface ServiceAccountCredentials {
     [key: string]: unknown
 }
 
-/** 1行JSONがシングルクォート囲みや \n エスケープで渡されるケースを吸収する */
+/**
+ * 1行JSONで渡された鍵をパースする。
+ *
+ * private_key 内の改行は JSON のエスケープ `\n` で表現されるのが正しい形なので、
+ * まずはそのままパースする。無条件に `\n` を実改行へ置換すると、正しい値まで
+ * 「Bad control character in string literal」で壊れる。
+ * 正規化は素直なパースが失敗したときの救済としてのみ行う。
+ */
 function parseKeyJson(raw: string): ServiceAccountCredentials {
     let s = raw.trim()
     if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1)
-    if (!s.includes('\n')) s = s.replace(/\\n/g, '\n')
-    return JSON.parse(s)
+
+    try {
+        return JSON.parse(s)
+    } catch {
+        // 救済1: private_key の改行が実改行のまま入っている（JSONとしては不正）
+        try {
+            return JSON.parse(s.replace(/\n/g, '\\n'))
+        } catch {
+            // 救済2: エスケープが二重になっている
+            return JSON.parse(s.replace(/\\n/g, '\n'))
+        }
+    }
 }
 
 function readKeyFile(keyPath: string): ServiceAccountCredentials {
