@@ -74,7 +74,7 @@ const DOMAIN_KNOWLEDGE = `
 ## データ基盤
 - DynamoDB: JobApplication-prd（会員応募）/ GuestJobApplication-prd（ゲスト応募）/ JobDescriptions-prd（求人、contractType保持）
 - Salesforce: Matching__c（紹介応募・成約）、Order__c（求人）。応募→SF連携はZapier（停止事故歴あり）
-- BigQuery: hrs-div.ga4_analytics_dashboard（実行履歴・AB結果・AI最終レポート蓄積）
+- BigQuery: xmile-drm に一元化（2026-09-25）。ga4_analytics_dashboard（実行履歴・AB結果・AI最終レポート蓄積）/ analytics_534098180（GA4生イベント、2026-08-06〜）/ xwork（プロダクトデータ）
 - x-work.jp本体はAmplify Hosting。ソースはdrm-frontリポジトリ
 
 ## 重要インシデント
@@ -94,8 +94,8 @@ function buildSchemaSection(): string {
 
     return `# データスキーマ
 
-## BigQuery（プロジェクト hrs-div / データセット ga4_analytics_dashboard）
-ダッシュボードが書き込むログ蓄積用。**GA4の生イベントデータは入っていない**（GA4のBigQuery Export未設定。GA4データはGA4 Data API経由で取得）。
+## BigQuery（プロジェクト xmile-drm / データセット ga4_analytics_dashboard）
+ダッシュボードが書き込むログ蓄積用。GA4の生イベントは別データセット xmile-drm.analytics_534098180（2026-08-06〜、GA4 BigQuery Export）にあり、セッション単位の経路分析はそちらを使う。集計値はGA4 Data API経由でも取得する。
 テーブルとカラム（コード上の定義 lib/bq/schemas.ts と同期）:
 ${bqTables}
 

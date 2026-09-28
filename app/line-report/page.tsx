@@ -174,7 +174,7 @@ export default function LineReportPage() {
                         {data.deliverySource === 'snapshot' && (
                             <div className={styles.notice}>
                                 {data.snapshotAsOf} 時点のスナップショット表示です（配信は毎週火曜のため次回配信まで最新）。
-                                SA（ai-product-dashboard@hrs-div.iam.gserviceaccount.com）に xmile-drm の xwork データセット閲覧権限が付与されると、自動でライブ表示に切り替わります。
+                                統合SA（ga4-analytics-dashboard@xmile-drm.iam.gserviceaccount.com）から xmile-drm の xwork データセットを読めていれば、自動でライブ表示に切り替わります。
                             </div>
                         )}
                         {data.deliveries && (
