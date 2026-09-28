@@ -272,7 +272,7 @@ export default function GlossaryPage() {
                     <tbody>
                         <tr><td>DynamoDB（本体AWS 662907192686）</td><td>JobApplication-prd（会員応募）/ GuestJobApplication-prd（ゲスト応募、articleIdのみ）/ JobDescriptions-prd（求人。pk=media_id, sk=&apos;info&apos;、contractType保持）</td></tr>
                         <tr><td>Salesforce</td><td>Matching__c（紹介の応募・成約管理。種別=Field65__c）/ Order__c（求人）/ CustomObject1__c（求職者。約130万件。属性: 年齢層Field90__c・性別Field13__c・<strong>登録サービス=事業領域Field5__c</strong>・希望職種DesiredOccupation__c・転職時期Field27__c・仕事の状況Field29__c）。応募→SF連携はZapier経由（停止事故歴あり・死活監視推奨）</td></tr>
-                        <tr><td>BigQuery</td><td>hrs-div.ga4_analytics_dashboard（このダッシュボードの実行履歴・AB結果・AI最終レポート蓄積）</td></tr>
+                        <tr><td>BigQuery</td><td>xmile-drm.ga4_analytics_dashboard（このダッシュボードの実行履歴・AB結果・AI最終レポート蓄積）／ xmile-drm.analytics_534098180（GA4生イベント、2026-08-06〜）</td></tr>
                         <tr><td>x-work.jp本体</td><td>Amplify Hosting（appId d3egkdlj4m310n）。アクセスログは generate-access-logs で取得可能。ソースは drm-front リポジトリ</td></tr>
                     </tbody>
                 </table>

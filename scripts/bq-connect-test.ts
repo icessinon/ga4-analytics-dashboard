@@ -36,7 +36,7 @@ async function main() {
     trigger:     'manual',
   })
   console.log(`  inserted: run_id=${runId}`)
-  console.log('== done — BQ 側で hrs-div.ga4_analytics_dashboard.sync_run_log を確認してください ==')
+  console.log('== done — BQ 側で xmile-drm.ga4_analytics_dashboard.sync_run_log を確認してください ==')
 }
 
 main().catch(err => {
