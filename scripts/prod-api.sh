@@ -44,8 +44,14 @@ if [ "$RELOGIN" = "1" ] || ! grep -q 'ga4_auth' "$COOKIE_JAR" 2>/dev/null; then
     login
 fi
 
+RESPONSE_BODY="$(mktemp "${TMPDIR:-/tmp}/ga4-prod-api-body.XXXXXX")"
+trap 'rm -f "$RESPONSE_BODY"' EXIT
+
+# 本文はファイルに落とし、戻り値として HTTP ステータスだけを返す。
+# Cookie 失効時の応答は本文が `/login?from=...` の一行だけだったり
+# ログイン画面の HTML だったりと一定しないので、本文ではなくステータスで判定する。
 request() {
-    local args=(-sS -X "$METHOD" "$PROD_DASHBOARD_URL$API_PATH" -b "$COOKIE_JAR" --max-time 180)
+    local args=(-sS -o "$RESPONSE_BODY" -w '%{http_code}' -X "$METHOD" "$PROD_DASHBOARD_URL$API_PATH" -b "$COOKIE_JAR" --max-time 180)
     if [ -n "$BODY" ]; then
         args+=(-H 'Content-Type: application/json')
         if [ -f "$BODY" ]; then args+=(--data-binary "@$BODY"); else args+=(--data-binary "$BODY"); fi
@@ -53,21 +59,37 @@ request() {
     curl "${args[@]}"
 }
 
-RESPONSE="$(request)"
+STATUS="$(request)"
 
-# Cookie 失効時はログイン画面の HTML が返る。一度だけ取り直して再試行。
-case "$RESPONSE" in
-    *'<!DOCTYPE html'*|*'<!doctype html'*)
+# 3xx（/login へのリダイレクト）・401・403 は Cookie 失効とみなし、一度だけ取り直して再試行
+case "$STATUS" in
+    30[0-9]|401|403)
         login
-        RESPONSE="$(request)"
+        STATUS="$(request)"
         ;;
 esac
 
-printf '%s' "$RESPONSE" | python3 -c '
+case "$STATUS" in
+    30[0-9]|401|403)
+        echo "ERROR: 認証に失敗しました (HTTP $STATUS)。.env の PROD_DASHBOARD_USER / PROD_DASHBOARD_PASSWORD を確認してください。" >&2
+        exit 1
+        ;;
+esac
+
+# JSON なら整形、そうでなければ素通し
+python3 -c '
 import json, sys
-raw = sys.stdin.read()
+raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
 try:
     print(json.dumps(json.loads(raw), ensure_ascii=False, indent=2))
 except Exception:
     print(raw)
-'
+' "$RESPONSE_BODY"
+
+# 4xx / 5xx は本文を出したうえで異常終了する（呼び出し側が失敗に気づけるように）
+case "$STATUS" in
+    [45][0-9][0-9])
+        echo "ERROR: HTTP $STATUS" >&2
+        exit 1
+        ;;
+esac
