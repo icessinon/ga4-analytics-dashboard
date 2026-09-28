@@ -6,6 +6,8 @@ export interface FeatureDoc {
     description: string
     capabilities: string[]
     metrics?: string[]
+    /** 数値を読むときの注意点（計測の限界・突合キーなど） */
+    notes?: string[]
     ai?: boolean
     apiRoute?: string
 }
@@ -23,6 +25,23 @@ export const FEATURE_CATEGORIES = [
 
 export const FEATURE_LIST: FeatureDoc[] = [
     // ── ユーザー分析 ──
+    {
+        name: '会員登録後ステップメール',
+        href: '/signup-step-mails',
+        category: 'チャネル・集客',
+        description: '会員登録から1/3/7/14/30日後に自動送信される5通のステップメール（drm-front PR#3659、2026-09-24稼働）の実績。送信数は通知基盤の送達記録 DeliveryRecords-prd（DynamoDB、topic=signup_step_mail）、開封・クリック・バウンスは SES イベントを BigQuery に落とした xmile-drm.xwork.ses_event_records が出典で、providerMessageId = message_id で突合します。',
+        capabilities: [
+            'ステップ別の送信数・配信成功・開封・クリック・バウンスと開封率／クリック率。未送信ステップは到達待ちの人数を表示',
+            '配信スケジュール（SignupStepMails-prd）の状態別会員数: 配信中 / 完了 / 退会打ち切り / 猶予超過打ち切り',
+            '日別の送信・開封推移',
+        ],
+        notes: [
+            'ステップの識別は件名ではなく sentIdempotencyKey（signup_step_mail:<userId>:<stepKey>）で行う。day7/day14 は氏名・エリアを差し込む可変件名のため件名マッチでは突合できない',
+            '開封率の分母は配信成功（Delivery）。同一メールで開封イベントが複数回立つため message_id で重複除去している',
+            'SESの開封計測は画像読み込み依存で、ブロック環境では低く、Appleのメールプライバシー保護では高く出る。絶対水準ではなくステップ間の差と時系列で見る',
+            'SESイベントのBigQuery連携に遅延があるため、直近の送信は開封が未反映になることがある（突合できなかった通数を画面に表示）',
+        ],
+    },
     {
         name: 'CVセッション解剖（BQ）',
         href: '/user/flow',
