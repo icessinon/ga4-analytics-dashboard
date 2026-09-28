@@ -148,10 +148,31 @@ export async function POST(request: Request) {
             }
         })
 
-        const daily = [...byDay.entries()]
-            .filter(([d]) => d)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([date, b]) => ({ date, ...b, openRate: b.delivered > 0 ? b.opened / b.delivered : null }))
+        // 送信ゼロの日も行として残す。抜けていると「データが取れていない」ように見えるが、
+        // 実際には cron が回って対象者がいなかっただけ、という日が普通に挟まる。
+        // 起点は最初の送信日ではなく「最初の対象者の登録日」。稼働直後は経過日数が足りず
+        // 送信ゼロの日が先頭に並ぶので、そこを省くと立ち上がりの経緯が読めなくなる
+        const todayJst = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10)
+        const firstRegisteredDay = schedules
+            .map((x) => jstDay(x.registeredAt))
+            .filter(Boolean)
+            .sort()[0]
+        const firstDay = [firstRegisteredDay, since.slice(0, 10)]
+            .filter(Boolean)
+            .sort()
+            .reverse()[0]
+        const daily: Array<{ date: string } & ReturnType<typeof blank> & { openRate: number | null }> = []
+        if (firstDay) {
+            for (
+                let d = new Date(`${firstDay}T00:00:00Z`);
+                d.toISOString().slice(0, 10) <= todayJst;
+                d.setUTCDate(d.getUTCDate() + 1)
+            ) {
+                const date = d.toISOString().slice(0, 10)
+                const b = byDay.get(date) ?? blank()
+                daily.push({ date, ...b, openRate: b.delivered > 0 ? b.opened / b.delivered : null })
+            }
+        }
 
         const totals = steps.reduce(
             (a, s) => ({
@@ -176,9 +197,12 @@ export async function POST(request: Request) {
             schedules: {
                 total: schedules.length,
                 byStatus: scheduleStatus,
-                firstRegisteredAt: schedules.map((s) => s.registeredAt ?? '').filter(Boolean).sort()[0] ?? null,
+                firstRegisteredAt: schedules.map((x) => x.registeredAt ?? '').filter(Boolean).sort()[0] ?? null,
             },
             unmatchedMessages: messageIds.length - events.size,
+            /** 日次Lambdaの発火時刻（JST）。当日分がこの時刻まで0なのは正常 */
+            cronHourJst: 12,
+            todayJst,
             fetchedAt: new Date().toISOString(),
         })
     } catch (error) {
