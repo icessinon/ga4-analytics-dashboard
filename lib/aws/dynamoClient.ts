@@ -13,6 +13,10 @@ export const DDB_TABLES = {
     guestJobApplications: 'GuestJobApplication-prd',
     jobDescriptions: 'JobDescriptions-prd',
     memberUsers: 'MemberUsers-prd',
+    /** 通知基盤の送達記録（drm-front PR#3659 で新設。topic横断の共用テーブル） */
+    deliveryRecords: 'DeliveryRecords-prd',
+    /** 会員登録後ステップメールの配信スケジュール（会員1人につき1レコード） */
+    signupStepMails: 'SignupStepMails-prd',
 } as const
 
 let docClient: DynamoDBDocumentClient | null = null

@@ -65,6 +65,14 @@ function FeatureCard({ feature }: { feature: FeatureDoc }) {
                 </div>
             )}
 
+            {feature.notes && feature.notes.length > 0 && (
+                <ul className={styles.noteList}>
+                    {feature.notes.map((n, i) => (
+                        <li key={i} className={styles.noteItem}>{n}</li>
+                    ))}
+                </ul>
+            )}
+
             {feature.href && (
                 <div className={styles.cardFooter}>
                     <Link href={feature.href} className={styles.openLink}>

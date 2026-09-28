@@ -132,6 +132,7 @@ export const QUICK_ACCESS_GROUPS: QuickAccessGroup[] = [
             { title: 'SEOモニタ', subtitle: 'Search Consoleの順位・表示回数・CTRをページカテゴリ別・URL別に監視（施策のSEO影響判定）', getHref: () => '/seo-report' },
             { title: 'LINE配信レポート', subtitle: 'LINE経由の再訪・CV・円換算と週次おすすめ配信の実績', getHref: () => '/line-report', productPrefix: true },
             { title: 'UTM別レポート', subtitle: 'utm_source×medium×campaign別のセッション・CV・円換算。各UTMの意味と発行タイミング注記つき', getHref: () => '/utm-report', productPrefix: true },
+            { title: '会員登録後ステップメール', subtitle: '登録から1/3/7/14/30日後に送る5通の送信数・開封率・クリック率。送達記録＋SESイベントが出典', getHref: () => '/signup-step-mails' },
         ],
     },
     {

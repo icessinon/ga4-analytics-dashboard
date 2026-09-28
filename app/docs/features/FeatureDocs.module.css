@@ -249,3 +249,9 @@
     padding-top: 1.5rem;
     border-top: 1px solid #1f2937;
 }
+
+/* 数値を読むときの注意点 */
+.noteList { margin: 10px 0 0; padding: 10px 12px; list-style: none; background-color: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 0.5rem; }
+.noteItem { font-size: 11px; color: #fbbf24; line-height: 1.6; padding-left: 14px; position: relative; }
+.noteItem + .noteItem { margin-top: 5px; }
+.noteItem::before { content: '注'; position: absolute; left: 0; top: 0; font-size: 10px; font-weight: 700; }
