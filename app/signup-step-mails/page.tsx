@@ -43,6 +43,8 @@ interface Response {
     totals: { sent: number; delivered: number; opened: number; clicked: number; bounced: number; failed: number; openRate: number | null; clickRate: number | null }
     schedules: { total: number; byStatus: Record<string, number>; firstRegisteredAt: string | null }
     unmatchedMessages: number
+    cronHourJst: number
+    todayJst: string
     fetchedAt: string
 }
 
@@ -228,22 +230,36 @@ export default function SignupStepMailsPage() {
                                             <th className={styles.num}>開封率</th>
                                             <th className={styles.num}>クリック</th>
                                             <th className={styles.num}>バウンス</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {dailyDesc.map((d) => (
-                                            <tr key={d.date}>
-                                                <td>{d.date}</td>
-                                                <td className={`${styles.num} ${styles.strong}`}>{d.sent.toLocaleString()}</td>
-                                                <td className={styles.num}>{d.delivered.toLocaleString()}</td>
-                                                <td className={styles.num}>{d.opened.toLocaleString()}</td>
-                                                <td className={styles.num}>{pct(d.openRate)}</td>
-                                                <td className={styles.num}>{d.clicked.toLocaleString()}</td>
-                                                <td className={styles.num}>{d.bounced.toLocaleString()}</td>
-                                            </tr>
-                                        ))}
+                                        {dailyDesc.map((d) => {
+                                            const isToday = d.date === data.todayJst
+                                            const beforeCron = isToday && new Date().getHours() < data.cronHourJst
+                                            return (
+                                                <tr key={d.date} className={d.sent === 0 ? styles.zeroRow : undefined}>
+                                                    <td>{d.date}{isToday && <span className={styles.todayTag}>今日</span>}</td>
+                                                    <td className={`${styles.num} ${styles.strong}`}>{d.sent.toLocaleString()}</td>
+                                                    <td className={styles.num}>{d.delivered.toLocaleString()}</td>
+                                                    <td className={styles.num}>{d.opened.toLocaleString()}</td>
+                                                    <td className={styles.num}>{pct(d.openRate)}</td>
+                                                    <td className={styles.num}>{d.clicked.toLocaleString()}</td>
+                                                    <td className={styles.num}>{d.bounced.toLocaleString()}</td>
+                                                    <td className={styles.zeroNote}>
+                                                        {d.sent > 0 ? '' : beforeCron ? `本日${data.cronHourJst}時の配信前` : '対象者なし'}
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
                                     </tbody>
                                 </table>
+                            </div>
+                            <div className={styles.tableNote}>
+                                日次の配信は<strong>12:00 JSTに1回だけ</strong>動きます。送信0の日は障害ではなく、
+                                その時点で送信条件（登録からの経過日数）を満たす会員がいなかった日です。
+                                送信日は登録日の翌日以降にずれるため、<strong>日別の登録数とは直接対応しません</strong>
+                                （例: 9/27の送信分は9/25昼〜9/26昼の登録者）。
                             </div>
                         </div>
                     )}
