@@ -38,11 +38,15 @@ report = ab.get('finalAiReport') or ''
 victory= ab.get('victoryFactors') or ''
 
 def md_to_slack(t):
-    # Markdown → Slack mrkdwn の最低限変換
-    t = re.sub(r'^#{1,6}\s*', '', t, flags=re.M)   # 見出し記号を除去
-    t = t.replace('**', '*')                        # 太字 ** → *
-    t = re.sub(r'^\s*[\*\-]\s+', '• ', t, flags=re.M)  # 箇条書き
-    return t.strip()
+    # Markdown → Slack mrkdwn。番号付き見出し(### 1. 結果サマリー 等)は ◽️＋太字で段落を見やすく
+    out = []
+    for line in t.split('\n'):
+        h = re.match(r'^#{1,6}\s*(?:\d+[.．、]\s*)?(.+?)\s*$', line)
+        if h:
+            out.append('◽️ *' + re.sub(r'\*\*', '', h.group(1)).strip() + '*')
+        else:
+            out.append(re.sub(r'^\s*[\*\-]\s+', '• ', line.replace('**', '*')))
+    return '\n'.join(out).strip()
 
 def pick_sections(md, keywords):
     # "### 見出し" 区切りで、keywords を含む見出しのセクション本文を集める

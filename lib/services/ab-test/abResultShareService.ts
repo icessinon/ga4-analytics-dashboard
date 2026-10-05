@@ -56,8 +56,17 @@ export async function shareAbResult(abTestId: number, variants?: ShareVariant[])
     // 最終AIレポート(Markdown)から「サマリー/勝因/要因」セクションを抜き出し Slack mrkdwn へ
     const report = ab.finalAiReport || ''
     const victory = ab.victoryFactors || ''
+    // Markdown → Slack mrkdwn。番号付き見出し（### 1. 結果サマリー 等）は ◽️＋太字にして段落を見やすく
     const mdToSlack = (t: string) =>
-        t.replace(/^#{1,6}\s*/gm, '').replace(/\*\*/g, '*').replace(/^\s*[*-]\s+/gm, '• ').trim()
+        t
+            .split('\n')
+            .map((line) => {
+                const h = line.match(/^#{1,6}\s*(?:\d+[.．、]\s*)?(.+?)\s*$/)
+                if (h) return `◽️ *${h[1].replace(/\*\*/g, '').trim()}*`
+                return line.replace(/\*\*/g, '*').replace(/^\s*[*-]\s+/, '• ')
+            })
+            .join('\n')
+            .trim()
     const pickSections = (md: string, kw: string[]) =>
         md
             .split(/\n(?=#{2,6}\s)/)
