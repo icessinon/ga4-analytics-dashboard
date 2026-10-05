@@ -12,6 +12,7 @@ import { sendSlackNotification, type SlackBlock } from '@/lib/services/notificat
 import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
 import { insertAbTestResultLog, insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
+import { shareAbResult } from '@/lib/services/ab-test/abResultShareService'
 
 interface GA4CvrConfig {
     denominatorLabels?: string[] | string
@@ -387,6 +388,13 @@ export async function POST(request: Request) {
                 // テスト期間終了後の実行では AI 最終レポートを生成（未生成の場合のみ）
                 if (abTest.endDate && abTest.endDate.getTime() <= Date.now() && !abTest.finalAiReport) {
                     await generateAndStoreFinalReport(abTest.id)
+                    // 【仕様】テスト完了時はAB結果共有チャンネル（SLACK_WEBHOOK_URL_ABREPORT）へ
+                    // 勝者・改善率・期間・サマリー/勝因・ダッシュボードURL入りの結果を自動共有する
+                    try {
+                        await shareAbResult(abTest.id, variants)
+                    } catch (error) {
+                        console.error('AB結果共有Slack通知エラー:', error)
+                    }
                 }
 
                 results.push({

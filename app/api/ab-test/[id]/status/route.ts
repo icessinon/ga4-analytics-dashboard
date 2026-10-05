@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
+import { shareAbResult } from '@/lib/services/ab-test/abResultShareService'
 
 /**
  * 直近の実行結果から勝利バリアントとA比改善率を算出
@@ -128,6 +129,12 @@ export async function PUT(
             if (report) {
                 abTest.finalAiReport = report
                 abTest.finalAiReportAt = new Date()
+            }
+            // 【仕様】完了時はAB結果共有チャンネルへ結果を自動共有（variants未指定→DBの最新結果から復元）
+            try {
+                await shareAbResult(id)
+            } catch (error) {
+                console.error('AB結果共有Slack通知エラー:', error)
             }
         }
 
