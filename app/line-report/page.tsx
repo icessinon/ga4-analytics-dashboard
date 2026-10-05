@@ -14,6 +14,28 @@ interface SourceRow { source: string; sessions: number; users: number }
 interface DailyRow { date: string; users: number; sessions: number }
 interface DeliveryRow { unit: string; date: string; linked: number; success: number; optOut: number; noJobs: number; error: number }
 
+type LineChannelKey = 'signup' | 'signin' | 'thanksModal' | 'thanksBanner' | 'thanksLegacy' | 'sidebar' | 'other'
+interface ChannelRow {
+    key: LineChannelKey
+    label: string
+    hint: string
+    users: number
+    viewUsers: number | null
+    declineUsers: number | null
+    pages: { path: string; users: number }[]
+}
+interface UntrackedRow { place: string; source: string; destination: string }
+interface AssociationResponse {
+    startDate: string
+    endDate: string
+    clamped: boolean
+    channels: ChannelRow[]
+    totalUsers: number
+    daily: { date: string; users: Partial<Record<LineChannelKey, number>>; total: number }[]
+    untracked: UntrackedRow[]
+    scannedMb: number
+}
+
 interface LineReportResponse {
     startDate: string
     endDate: string
@@ -51,6 +73,9 @@ export default function LineReportPage() {
     const [data, setData] = useState<LineReportResponse | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [assoc, setAssoc] = useState<AssociationResponse | null>(null)
+    const [assocLoading, setAssocLoading] = useState(false)
+    const [assocError, setAssocError] = useState<string | null>(null)
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId || !range) return
@@ -75,6 +100,30 @@ export default function LineReportPage() {
 
     useEffect(() => { load() }, [load])
 
+    // 連携導線はBQ直読みで重いため、GA4 Data API側とは別に叩く（片方が落ちてももう片方は出す）
+    const loadAssoc = useCallback(async () => {
+        if (!range) return
+        setAssocLoading(true)
+        setAssocError(null)
+        try {
+            const res = await fetch('/api/line-report/associations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ startDate: range.startDate, endDate: range.endDate }),
+            })
+            const json = await parseJsonResponse<AssociationResponse & { error?: string }>(res)
+            if (!res.ok) throw new Error(json.error || '取得に失敗しました')
+            setAssoc(json)
+        } catch (e) {
+            setAssocError(e instanceof Error ? e.message : '取得に失敗しました')
+            setAssoc(null)
+        } finally {
+            setAssocLoading(false)
+        }
+    }, [range])
+
+    useEffect(() => { loadAssoc() }, [loadAssoc])
+
     const sumUsers = data ? data.sources.reduce((s, r) => s + r.users, 0) : 0
     const sumSessions = data ? data.sources.reduce((s, r) => s + r.sessions, 0) : 0
     // 円換算: 応募・LP応募は人材紹介単価で近似、登録は単独登録単価
@@ -83,6 +132,9 @@ export default function LineReportPage() {
         : 0
     const totalCv = data ? data.cv.applyCv + data.cv.lpApplyCv + data.cv.signupCv : 0
     const latestDelivery = data?.deliveries?.[0] ?? null
+    // 連携導線は実績のあるものだけ出す（未分類 other は0件でも出すと紛らわしいので同じ扱い）
+    const activeChannels = assoc ? assoc.channels.filter((c) => c.users > 0 || (c.viewUsers ?? 0) > 0) : []
+    const assocDailyMax = assoc ? Math.max(1, ...assoc.daily.map((d) => d.total)) : 1
     const maxDaily = data ? Math.max(1, ...data.daily.map((d) => d.users)) : 1
     // 日別テーブルは新しい日付が上（降順）
     const dailyDesc = data ? [...data.daily].sort((a, b) => b.date.localeCompare(a.date)) : []
@@ -93,7 +145,7 @@ export default function LineReportPage() {
                 <div>
                     <h1 className={styles.title}>LINE配信レポート</h1>
                     <p className={styles.subtitle}>
-                        LINE経由（utm_medium=line）の再訪・CVと、おすすめ求人LINE配信（毎週火曜・連携者向け）の実績。LINE施策の判定基盤です。
+                        サイト内のLINE連携導線（どこから何人が連携に進んだか）と、LINE経由（utm_medium=line）の再訪・CV、おすすめ求人LINE配信（毎週火曜・連携者向け）の実績。LINE施策の判定基盤です。
                     </p>
                 </div>
                 <BackLink href="/">ダッシュボード</BackLink>
@@ -112,6 +164,126 @@ export default function LineReportPage() {
                     resolved={data}
                 />
             </div>
+
+            <div className={styles.card}>
+                <h2 className={styles.sectionTitle}>サイト → LINE連携の導線</h2>
+                {assocLoading && <p className={styles.loading}>読み込み中...</p>}
+                {assocError && <div className={styles.error}>{assocError}</div>}
+                {assoc && !assocLoading && (
+                    <>
+                        {assoc.clamped && (
+                            <div className={styles.notice}>
+                                BQエクスポートの開始日と上限30日に合わせて {assoc.startDate}〜{assoc.endDate} で集計しました。
+                            </div>
+                        )}
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>導線</th>
+                                        <th className={styles.num}>表示した人</th>
+                                        <th className={styles.num}>連携に進んだ人</th>
+                                        <th className={styles.num}>見送った人</th>
+                                        <th className={styles.num}>CTR</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activeChannels.map((c) => (
+                                        <tr key={c.key}>
+                                            <td>
+                                                {c.label}
+                                                <span style={{ display: 'block', color: '#6b7280', fontSize: '0.8em' }}>{c.hint}</span>
+                                            </td>
+                                            <td className={styles.num}>{c.viewUsers != null ? c.viewUsers.toLocaleString() : '－'}</td>
+                                            <td className={`${styles.num} ${styles.strong}`}>{c.users.toLocaleString()}</td>
+                                            <td className={styles.num}>{c.declineUsers != null ? c.declineUsers.toLocaleString() : '－'}</td>
+                                            <td className={styles.num}>{c.viewUsers ? `${((c.users / c.viewUsers) * 100).toFixed(1)}%` : '－'}</td>
+                                        </tr>
+                                    ))}
+                                    <tr>
+                                        <td className={styles.strong}>合計（重複を除いた実人数）</td>
+                                        <td></td>
+                                        <td className={`${styles.num} ${styles.strong}`}>{(assoc.totalUsers ?? 0).toLocaleString()}</td>
+                                        <td colSpan={2}></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className={styles.tableNote}>
+                            ※ 全列ユニーク人数（Cookie単位）です。クリック件数で数えると認証画面から戻って押し直した分が乗るため（会員登録系は実測1.25回/人）、導線間を比べられるよう人数に揃えています。合計は導線を横断した実人数で、各行の和とは一致しません（複数の導線を押した人は1人）。<br />
+                            ※「見送った人」＝モーダルの「あとで」・バナーの「閉じる」を押した人。この2つ以外の導線には閉じるボタンが無いため「－」になります。<br />
+                            ※ 数えているのは「LINE連携リンクを押した」ところまでで、連携の完了ではありません（遷移先がLIFF・ソーシャルプラスでGA4の外に出るため）。<br />
+                            ※ モーダルの「表示した人」は実態より少なく出ます（Portal配下のview labelを拾い切れない）。モーダルのCTRは目安として見てください。<br />
+                            ※「LINEでログイン」は「LINEで会員登録」と同じブロックにあるため表示を分けられず、CTRは会員登録側にのみ出します。<br />
+                            ※ Cookie単位のため、デバイス跨ぎやITPによるCookie失効の分は実人数より多めに出ます。<br />
+                            ※ BigQueryスキャン {assoc.scannedMb.toLocaleString()}MB。
+                        </p>
+                    </>
+                )}
+            </div>
+
+            {assoc && !assocLoading && assoc.daily.length > 0 && (
+                <div className={styles.card}>
+                    <h2 className={styles.sectionTitle}>連携に進んだ人の日別推移</h2>
+                    <div className={styles.tableWrapper}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    {activeChannels.map((c) => <th key={c.key} className={styles.num}>{c.label}</th>)}
+                                    <th className={styles.num}>合計</th>
+                                    <th style={{ width: '30%' }}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assoc.daily.map((d) => (
+                                    <tr key={d.date}>
+                                        <td>{d.date}</td>
+                                        {activeChannels.map((c) => (
+                                            <td key={c.key} className={styles.num}>{(d.users[c.key] ?? 0).toLocaleString()}</td>
+                                        ))}
+                                        <td className={`${styles.num} ${styles.strong}`}>{d.total.toLocaleString()}</td>
+                                        <td><span className={styles.bar} style={{ width: `${(d.total / assocDailyMax) * 100}%` }} /></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className={styles.tableNote}>
+                        ※ 各セルはその日のユニーク人数です。日をまたいで同じ人が押した分は日別には別々に出るため、縦に足しても上の合計とは一致しません。
+                    </p>
+                </div>
+            )}
+
+            {assoc && !assocLoading && assoc.untracked.length > 0 && (
+                <div className={styles.card}>
+                    <h2 className={styles.sectionTitle}>まだ数えられていない導線（{assoc.untracked.length}件）</h2>
+                    <div className={styles.tableWrapper}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>場所</th>
+                                    <th>実装箇所（drm-front）</th>
+                                    <th>遷移先</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assoc.untracked.map((u) => (
+                                    <tr key={u.source}>
+                                        <td>{u.place}</td>
+                                        <td style={{ color: '#6b7280', fontSize: '0.85em' }}>{u.source}</td>
+                                        <td style={{ color: '#6b7280' }}>{u.destination}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className={styles.tableNote}>
+                        ※ data-click-label が無いためクリックを数えられません。上の表の数字は「計測できている導線だけの合計」です。<br />
+                        ※ 遷移先の inflow-routes が同じ導線同士は、LINE側の友だち追加数でも区別できません。面別に分けるにはLINE側で流入経路を発行し直す必要があります。
+                    </p>
+                </div>
+            )}
 
             {loading && <p className={styles.loading}>読み込み中...</p>}
             {error && <div className={styles.error}>{error}</div>}

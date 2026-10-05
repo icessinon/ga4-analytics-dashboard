@@ -382,8 +382,10 @@ export const FEATURE_LIST: FeatureDoc[] = [
         name: 'LINE配信レポート',
         href: '/line-report',
         category: 'チャネル・集客',
-        description: 'LINE経由（utm_medium=line）の再訪・CV・期待売上換算と、おすすめ求人LINE配信（毎週火曜・連携者向けFlexカルーセル）の週次実績を常設表示。LINE施策（配信頻度AB・連携率改善等）の判定基盤。',
+        description: 'サイト内のLINE連携導線（サイト→LINE）と、LINE経由（utm_medium=line）の再訪・CV・期待売上換算、おすすめ求人LINE配信（毎週火曜・連携者向けFlexカルーセル）の週次実績を常設表示。LINE施策（配信頻度AB・連携率改善等）の判定基盤。',
         capabilities: [
+            'サイト→LINE連携の導線別ユニーク人数（会員登録/ログイン・サンクス離脱モーダル・サンクス滞在バナー（XWORK_PRODUCT-1862）・サンクス既存バナー・サイドバー）と表示人数・見送り人数・CTR・日別推移（BQ events_* 直読み・最大30日）',
+            'ラベル未配線でクリックを数えられない導線（フッター・SNSカード・lp-thanks 6種・会員登録完了メール）を一覧で明示。遷移先のinflow-routes共有も併記',
             'LINE経由の再訪ユーザー・セッション・CV（応募/LP応募/会員登録）と円換算（CV単価係数）',
             'utm_source別内訳（product=週次おすすめ配信 / ca / scout 等）',
             '週次配信実績（BQ xmile-drm.xwork.line_job_recommendation_unit_stats）: 連携者数の推移・配信成功・受取拒否率・求人マッチなし。※write SAにxmile-drmの閲覧権限が必要（未付与時は付与手順を画面に表示）',
@@ -391,7 +393,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
             'クリック統計（LINE Insight）はdrm-front側でBQ未連携のため未対応（連携後に追加予定）',
         ],
         metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium'],
-        apiRoute: 'POST /api/line-report',
+        apiRoute: 'POST /api/line-report, POST /api/line-report/associations',
     },
     {
         name: 'UTM別レポート',
