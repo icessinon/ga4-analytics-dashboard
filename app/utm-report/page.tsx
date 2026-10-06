@@ -156,7 +156,7 @@ export default function UtmReportPage() {
                 完全な一覧・命名規則は<a href="/docs/glossary" className={styles.strong}> 用語集のUTM節</a>／docs/utm-naming-convention.md。
             </div>
 
-            <RelatedPages pages={[{ href: '/line-report', label: 'LINE配信レポート' }, { href: '/cv-types', label: '求人種別CV分析' }, { href: '/cv-value', label: 'CV単価・お金まわり' }]} />
+            <RelatedPages pages={[{ href: '/line-report', label: 'LINEレポート' }, { href: '/cv-types', label: '求人種別CV分析' }, { href: '/cv-value', label: 'CV単価・お金まわり' }]} />
 
             <div className={styles.controls}>
                 <PeriodSelect

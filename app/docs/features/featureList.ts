@@ -379,12 +379,14 @@ export const FEATURE_LIST: FeatureDoc[] = [
         apiRoute: 'POST /api/cv-types, POST /api/applications/actual（既存APIを再利用）',
     },
     {
-        name: 'LINE配信レポート',
+        name: 'LINEレポート',
         href: '/line-report',
         category: 'チャネル・集客',
         description: 'サイト内のLINE連携導線（サイト→LINE）と、LINE経由（utm_medium=line）の再訪・CV・期待売上換算、おすすめ求人LINE配信（毎週火曜・連携者向けFlexカルーセル）の週次実績を常設表示。LINE施策（配信頻度AB・連携率改善等）の判定基盤。',
         capabilities: [
-            'サイト→LINE連携の導線別ユニーク人数（会員登録/ログイン・サンクス離脱モーダル・サンクス滞在バナー（XWORK_PRODUCT-1862）・サンクス既存バナー・サイドバー）と表示人数・見送り人数・CTR・日別推移（BQ events_* 直読み・最大30日）',
+            'LINE連携者の増え方グラフ（累計 / 配信ごとの1日あたり / 月次純増 の3タブ。配信間隔が週1→週2と変わるため日割りで比較する。期間選択とは独立した長期推移）',
+            'サイト→LINE連携の導線別ファネル（表示→連携→見送り）。会員登録/ログイン・サンクス離脱モーダル・サンクス滞在バナー（XWORK_PRODUCT-1862）・サンクス既存バナー・サイドバー。全指標ユニーク人数（BQ events_* 直読み・最大30日）',
+            '詳細テーブル（導線別数値・日別内訳・未計測導線・週次配信・流入元・再訪日別）は既定で折りたたみ',
             'ラベル未配線でクリックを数えられない導線（フッター・SNSカード・lp-thanks 6種・会員登録完了メール）を一覧で明示。遷移先のinflow-routes共有も併記',
             'LINE経由の再訪ユーザー・セッション・CV（応募/LP応募/会員登録）と円換算（CV単価係数）',
             'utm_source別内訳（product=週次おすすめ配信 / ca / scout 等）',

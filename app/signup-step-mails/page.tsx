@@ -102,7 +102,7 @@ export default function SignupStepMailsPage() {
             </div>
 
             <RelatedPages pages={[
-                { href: '/line-report', label: 'LINE配信レポート' },
+                { href: '/line-report', label: 'LINEレポート' },
                 { href: '/signup-funnel', label: '会員登録ファネル' },
                 { href: '/utm-report', label: 'UTM別レポート' },
             ]} />
