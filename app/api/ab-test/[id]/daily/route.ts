@@ -1,34 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
-import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
-import { calculateCVR, type CvrConfig } from '@/lib/services/analytics/cvrService'
-import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
+import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
+import { activeVariantKeys, type GA4Config, type VariantKey } from '@/lib/services/ab-test/ga4ConfigTypes'
+import { buildAbTestGa4Request, cvrForVariant } from '@/lib/services/ab-test/execution/ga4Report'
 import { parseDateString } from '@/lib/utils/date'
-
-interface GA4CvrConfig {
-    denominatorDimension?: string
-    denominatorLabels?: string[] | string
-    numeratorDimension?: string
-    numeratorLabels?: string[] | string
-    metric?: string
-    [key: string]: unknown
-}
-
-interface GA4Config {
-    propertyId: string
-    dimensions?: Array<{ name: string }> | string
-    metrics?: Array<{ name: string }> | string
-    limit?: number
-    filter?: { dimension?: string; operator?: string; expression?: string }
-    excludeFilter?: { dimension?: string; operator?: string; expression?: string }
-    cvrA?: GA4CvrConfig
-    cvrB?: GA4CvrConfig
-    cvrC?: GA4CvrConfig
-    cvrD?: GA4CvrConfig
-}
-
-const VARIANT_KEYS = ['A', 'B', 'C', 'D'] as const
-type VariantKey = (typeof VARIANT_KEYS)[number]
 
 interface VariantDaily {
     pv: number
@@ -37,22 +12,6 @@ interface VariantDaily {
     cumPv: number
     cumCv: number
     cumCvr: number
-}
-
-function normalizeCvrConfig(cvrConfig: GA4CvrConfig): CvrConfig {
-    return {
-        ...cvrConfig,
-        denominatorLabels: Array.isArray(cvrConfig.denominatorLabels)
-            ? cvrConfig.denominatorLabels
-            : typeof cvrConfig.denominatorLabels === 'string'
-            ? cvrConfig.denominatorLabels.split(',').map((l) => l.trim())
-            : [],
-        numeratorLabels: Array.isArray(cvrConfig.numeratorLabels)
-            ? cvrConfig.numeratorLabels
-            : typeof cvrConfig.numeratorLabels === 'string'
-            ? cvrConfig.numeratorLabels.split(',').map((l) => l.trim())
-            : [],
-    } as CvrConfig
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -85,44 +44,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const startDate = parseDateString(reqStart ?? abTest.startDate.toISOString().split('T')[0])
         const endDate = parseDateString(reqEnd ?? (abTest.endDate?.toISOString().split('T')[0] ?? 'yesterday'))
 
-        const baseDimensions: Array<{ name: string }> = Array.isArray(ga4Config.dimensions)
-            ? ga4Config.dimensions
-            : typeof ga4Config.dimensions === 'string'
-            ? ga4Config.dimensions.split(',').map((d) => ({ name: d.trim() }))
-            : []
-
-        const allDimensions = baseDimensions.some((d) => d.name === 'date')
-            ? baseDimensions
-            : [...baseDimensions, { name: 'date' }]
-
-        const metrics: Array<{ name: string }> = Array.isArray(ga4Config.metrics)
-            ? ga4Config.metrics
-            : typeof ga4Config.metrics === 'string'
-            ? ga4Config.metrics.split(',').map((m) => ({ name: m.trim() }))
-            : []
-
-        const ga4Request: GA4ReportRequest = {
-            propertyId: ga4Config.propertyId,
-            dateRanges: [{ startDate, endDate }],
-            dimensions: allDimensions,
-            metrics,
-            // dateディメンション追加で行数が日数倍に膨らむため、設定値より大きめに取る（GA4上限は250,000）
+        // dateディメンション追加で行数が日数倍に膨らむため、設定値より大きめに取る（GA4上限は250,000）
+        const ga4Request = buildAbTestGa4Request(ga4Config, { startDate, endDate }, {
+            extraDimension: 'date',
             limit: Math.min(250000, Math.max(ga4Config.limit || 0, 100000)),
-        }
-
-        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
+        })
 
         const report = await fetchGA4Data(ga4Request, accessToken)
 
         const dimensionHeaders = report.dimensionHeaders || []
-        const metricHeaders = report.metricHeaders || []
 
         const dateDimIdx = dimensionHeaders.findIndex((h) => h.name === 'date')
         if (dateDimIdx === -1) {
             return NextResponse.json({ error: 'dateディメンションが見つかりません' }, { status: 500 })
         }
 
-        const activeVariants = VARIANT_KEYS.filter((v) => ga4Config[`cvr${v}`])
+        const activeVariants = activeVariantKeys(ga4Config)
 
         // GA4のdateはYYYYMMDD — 日付ごとに行をグループ化
         const rowsByDate = new Map<string, typeof report.rows>()
@@ -144,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             const sub = { ...report, rows: rowsByDate.get(date) ?? [] }
             const day: { date: string } & Partial<Record<VariantKey, VariantDaily>> = { date }
             for (const v of activeVariants) {
-                const result = calculateCVR(sub, normalizeCvrConfig(ga4Config[`cvr${v}`]!), dimensionHeaders, metricHeaders)
+                const result = cvrForVariant(sub, ga4Config, v)
                 cumulative[v].pv += result.pv
                 cumulative[v].cv += result.cv
                 day[v] = {

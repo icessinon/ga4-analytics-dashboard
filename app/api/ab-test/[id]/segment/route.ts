@@ -1,33 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
-import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
-import { calculateCVR, type CvrConfig, type CvrResult } from '@/lib/services/analytics/cvrService'
-import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
+import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
+import type { CvrResult } from '@/lib/services/analytics/cvrService'
+import type { GA4Config } from '@/lib/services/ab-test/ga4ConfigTypes'
+import { buildAbTestGa4Request, computeVariantCvrs } from '@/lib/services/ab-test/execution/ga4Report'
 import { parseDateString } from '@/lib/utils/date'
-
-interface GA4CvrConfig {
-    denominatorDimension?: string
-    denominatorLabels?: string[] | string
-    denominatorFilters?: Array<{ dimension: string; operator: string; expression: string }>
-    numeratorDimension?: string
-    numeratorLabels?: string[] | string
-    numeratorFilters?: Array<{ dimension: string; operator: string; expression: string }>
-    metric?: string
-    [key: string]: unknown
-}
-
-interface GA4Config {
-    propertyId: string
-    dimensions?: Array<{ name: string }> | string
-    metrics?: Array<{ name: string }> | string
-    limit?: number
-    filter?: { dimension?: string; operator?: string; expression?: string }
-    excludeFilter?: { dimension?: string; operator?: string; expression?: string }
-    cvrA?: GA4CvrConfig
-    cvrB?: GA4CvrConfig
-    cvrC?: GA4CvrConfig
-    cvrD?: GA4CvrConfig
-}
 
 const ALLOWED_SEGMENT_DIMENSIONS = [
     'deviceCategory',
@@ -37,22 +14,6 @@ const ALLOWED_SEGMENT_DIMENSIONS = [
     'sessionSource',
     'sessionMedium',
 ]
-
-function normalizeCvrConfig(cvrConfig: GA4CvrConfig): CvrConfig {
-    return {
-        ...cvrConfig,
-        denominatorLabels: Array.isArray(cvrConfig.denominatorLabels)
-            ? cvrConfig.denominatorLabels
-            : typeof cvrConfig.denominatorLabels === 'string'
-            ? cvrConfig.denominatorLabels.split(',').map((l) => l.trim())
-            : [],
-        numeratorLabels: Array.isArray(cvrConfig.numeratorLabels)
-            ? cvrConfig.numeratorLabels
-            : typeof cvrConfig.numeratorLabels === 'string'
-            ? cvrConfig.numeratorLabels.split(',').map((l) => l.trim())
-            : [],
-    } as CvrConfig
-}
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -88,38 +49,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const startDate = parseDateString(reqStart ?? abTest.startDate.toISOString().split('T')[0])
         const endDate = parseDateString(reqEnd ?? (abTest.endDate?.toISOString().split('T')[0] ?? 'yesterday'))
 
-        const baseDimensions: Array<{ name: string }> = Array.isArray(ga4Config.dimensions)
-            ? ga4Config.dimensions
-            : typeof ga4Config.dimensions === 'string'
-            ? ga4Config.dimensions.split(',').map((d) => ({ name: d.trim() }))
-            : []
-
-        const allDimensions = baseDimensions.some((d) => d.name === segmentDimension)
-            ? baseDimensions
-            : [...baseDimensions, { name: segmentDimension }]
-
-        const metrics: Array<{ name: string }> = Array.isArray(ga4Config.metrics)
-            ? ga4Config.metrics
-            : typeof ga4Config.metrics === 'string'
-            ? ga4Config.metrics.split(',').map((m) => ({ name: m.trim() }))
-            : []
-
-        const ga4Request: GA4ReportRequest = {
-            propertyId: ga4Config.propertyId,
-            dateRanges: [{ startDate, endDate }],
-            dimensions: allDimensions,
-            metrics,
+        const ga4Request = buildAbTestGa4Request(ga4Config, { startDate, endDate }, {
+            extraDimension: segmentDimension,
             limit: ga4Config.limit || 50000,
             // 国別セグメントの内訳ではデフォルトの country=Japan フィルタを外す（1行になってしまうため）
             includeAllCountries: segmentDimension === 'country',
-        }
-
-        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
+        })
 
         const report = await fetchGA4Data(ga4Request, accessToken)
 
         const dimensionHeaders = report.dimensionHeaders || []
-        const metricHeaders = report.metricHeaders || []
 
         const segDimIdx = dimensionHeaders.findIndex((h) => h.name === segmentDimension)
         if (segDimIdx === -1) {
@@ -140,15 +79,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             dataD?: CvrResult
         }
 
-        const calcForReport = (rows: typeof report.rows): SegmentResult => {
-            const sub = { ...report, rows: rows ?? [] }
-            const result: SegmentResult = { name: '' }
-            if (ga4Config.cvrA) result.dataA = calculateCVR(sub, normalizeCvrConfig(ga4Config.cvrA!), dimensionHeaders, metricHeaders)
-            if (ga4Config.cvrB) result.dataB = calculateCVR(sub, normalizeCvrConfig(ga4Config.cvrB!), dimensionHeaders, metricHeaders)
-            if (ga4Config.cvrC) result.dataC = calculateCVR(sub, normalizeCvrConfig(ga4Config.cvrC!), dimensionHeaders, metricHeaders)
-            if (ga4Config.cvrD) result.dataD = calculateCVR(sub, normalizeCvrConfig(ga4Config.cvrD!), dimensionHeaders, metricHeaders)
-            return result
-        }
+        const calcForReport = (rows: typeof report.rows): SegmentResult => ({
+            name: '',
+            ...computeVariantCvrs({ ...report, rows: rows ?? [] }, ga4Config),
+        })
 
         // Total (all segments combined)
         const totalResult = calcForReport(report.rows)

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/client'
-import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
-import { calculateCVR, type CvrResult, type CvrConfig } from '@/lib/services/analytics/cvrService'
-import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
+import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
+import type { GA4Config } from '@/lib/services/ab-test/ga4ConfigTypes'
+import { buildAbTestGa4Request, computeVariantCvrs } from '@/lib/services/ab-test/execution/ga4Report'
 import { evaluateAbTestResult, type AbTestEvaluation, type AbTestVariant, type AbTestEvaluationConfig } from '@/lib/services/ab-test/abTestService'
 import { evaluateWithGemini } from '@/lib/api/gemini/client'
 import { parseDateString } from '@/lib/utils/date'
@@ -13,38 +13,6 @@ import { createErrorResponse, getErrorMessage } from '@/lib/utils/error'
 import { insertAbTestResultLog, insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 import { generateAndStoreFinalReport } from '@/lib/services/ab-test/finalReportService'
 import { shareAbResult } from '@/lib/services/ab-test/abResultShareService'
-
-interface GA4CvrConfig {
-    denominatorLabels?: string[] | string
-    numeratorLabels?: string[] | string
-    [key: string]: unknown
-}
-
-interface GA4Config {
-    propertyId: string
-    dimensions?: Array<{ name: string }> | string
-    metrics?: Array<{ name: string }> | string
-    limit?: number
-    filter?: {
-        dimension?: string
-        operator?: string
-        expression?: string
-    }
-    excludeFilter?: {
-        dimension?: string
-        operator?: string
-        expression?: string
-    }
-    cvrA?: GA4CvrConfig
-    cvrB?: GA4CvrConfig
-    cvrC?: GA4CvrConfig
-    cvrD?: GA4CvrConfig
-    geminiConfig?: {
-        enabled?: boolean
-        apiKey?: string
-    }
-    abTestEvaluationConfig?: Record<string, unknown>
-}
 
 /**
  * ABテスト自動実行API
@@ -127,67 +95,11 @@ export async function POST(request: Request) {
                     ? parseDateString(abTest.endDate.toISOString().split('T')[0])
                     : parseDateString('yesterday')
 
-                const dimensions = Array.isArray(ga4Config.dimensions)
-                    ? ga4Config.dimensions
-                    : typeof ga4Config.dimensions === 'string'
-                    ? ga4Config.dimensions.split(',').map((d: string) => ({ name: d.trim() }))
-                    : []
-
-                const metrics = Array.isArray(ga4Config.metrics)
-                    ? ga4Config.metrics
-                    : typeof ga4Config.metrics === 'string'
-                    ? ga4Config.metrics.split(',').map((m: string) => ({ name: m.trim() }))
-                    : []
-
-                const ga4Request: GA4ReportRequest = {
-                    propertyId: ga4Config.propertyId,
-                    dateRanges: [{ startDate, endDate }],
-                    dimensions: dimensions,
-                    metrics: metrics,
-                    // ワイルドカードラベルは職種横断で多数の行を拾うため底上げ（limit到達＝サイレント欠測）
-                    limit: Math.max(ga4Config.limit || 0, 50000),
-                }
-
-                ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
+                const ga4Request = buildAbTestGa4Request(ga4Config, { startDate, endDate })
 
                 const report = await fetchGA4Data(ga4Request, accessToken)
 
-                const cvrResults: { dataA?: CvrResult; dataB?: CvrResult; dataC?: CvrResult; dataD?: CvrResult } = {}
-                const dimensionHeaders = report.dimensionHeaders || []
-                const metricHeaders = report.metricHeaders || []
-
-                const normalizeCvrConfig = (cvrConfig: GA4CvrConfig): CvrConfig => {
-                    return {
-                        ...cvrConfig,
-                        denominatorLabels: Array.isArray(cvrConfig.denominatorLabels)
-                            ? cvrConfig.denominatorLabels
-                            : typeof cvrConfig.denominatorLabels === 'string'
-                            ? cvrConfig.denominatorLabels.split(',').map((l: string) => l.trim())
-                            : [],
-                        numeratorLabels: Array.isArray(cvrConfig.numeratorLabels)
-                            ? cvrConfig.numeratorLabels
-                            : typeof cvrConfig.numeratorLabels === 'string'
-                            ? cvrConfig.numeratorLabels.split(',').map((l: string) => l.trim())
-                            : [],
-                    } as CvrConfig
-                }
-
-                if (ga4Config.cvrA) {
-                    const normalizedCvrA = normalizeCvrConfig(ga4Config.cvrA)
-                    cvrResults.dataA = calculateCVR(report, normalizedCvrA, dimensionHeaders, metricHeaders)
-                }
-                if (ga4Config.cvrB) {
-                    const normalizedCvrB = normalizeCvrConfig(ga4Config.cvrB)
-                    cvrResults.dataB = calculateCVR(report, normalizedCvrB, dimensionHeaders, metricHeaders)
-                }
-                if (ga4Config.cvrC) {
-                    const normalizedCvrC = normalizeCvrConfig(ga4Config.cvrC)
-                    cvrResults.dataC = calculateCVR(report, normalizedCvrC, dimensionHeaders, metricHeaders)
-                }
-                if (ga4Config.cvrD) {
-                    const normalizedCvrD = normalizeCvrConfig(ga4Config.cvrD)
-                    cvrResults.dataD = calculateCVR(report, normalizedCvrD, dimensionHeaders, metricHeaders)
-                }
+                const cvrResults = computeVariantCvrs(report, ga4Config)
 
                 let abTestEvaluation: AbTestEvaluation | null = null
                 const cvrResultKeys = Object.keys(cvrResults)

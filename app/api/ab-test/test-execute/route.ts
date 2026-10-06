@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
-import { calculateCVR } from '@/lib/services/analytics/cvrService'
-import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
+import { calculateCVR, type CvrConfig } from '@/lib/services/analytics/cvrService'
+import { splitLabels, VARIANT_KEYS, type GA4Config, type GA4CvrConfig } from '@/lib/services/ab-test/ga4ConfigTypes'
+import { buildAbTestGa4Request } from '@/lib/services/ab-test/execution/ga4Report'
 import { parseDateString } from '@/lib/utils/date'
 
 /**
@@ -35,37 +36,8 @@ export async function POST(request: Request) {
         const parsedStartDate = parseDateString(startDate)
         const parsedEndDate = parseDateString(endDate)
 
-        const dimensions = Array.isArray(ga4Config.dimensions)
-            ? ga4Config.dimensions
-            : typeof ga4Config.dimensions === 'string'
-            ? ga4Config.dimensions.split(',').map((d: string) => ({ name: d.trim() }))
-            : []
-
-        const metrics = Array.isArray(ga4Config.metrics)
-            ? ga4Config.metrics
-            : typeof ga4Config.metrics === 'string'
-            ? ga4Config.metrics.split(',').map((m: string) => ({ name: m.trim() }))
-            : []
-
-        // GA4データを取得
-        const ga4Request: any = {
-            propertyId: ga4Config.propertyId,
-            dateRanges: [{ startDate: parsedStartDate, endDate: parsedEndDate }],
-            dimensions: dimensions,
-            metrics: metrics,
-            // ワイルドカードラベルは職種横断で多数の行を拾うため底上げ（limit到達＝サイレント欠測）
-            limit: Math.max(ga4Config.limit || 0, 50000),
-        }
-        
-        if (!ga4Request.propertyId) {
-            return NextResponse.json(
-                { error: 'プロパティIDが設定されていません' },
-                { status: 400 }
-            )
-        }
-
-        // フィルタを適用（空の場合は適用しない）
-        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
+        const config = ga4Config as GA4Config
+        const ga4Request = buildAbTestGa4Request(config, { startDate: parsedStartDate, endDate: parsedEndDate })
 
         const ga4Response = await fetchGA4Data(ga4Request, accessToken)
 
@@ -77,166 +49,27 @@ export async function POST(request: Request) {
             })
         }
 
-        // CVRを計算
-        const cvrResults: any = {}
-
-        // CVR A
-        if (ga4Config.cvrA) {
-            const cvrConfigA = {
-                metric: ga4Config.cvrA.metric || 'totalUsers',
-                numeratorDimension: ga4Config.cvrA.numeratorDimension,
-                denominatorDimension: ga4Config.cvrA.denominatorDimension,
-                numeratorLabels: Array.isArray(ga4Config.cvrA.numeratorLabels)
-                    ? ga4Config.cvrA.numeratorLabels
-                    : typeof ga4Config.cvrA.numeratorLabels === 'string'
-                    ? ga4Config.cvrA.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-                denominatorLabels: Array.isArray(ga4Config.cvrA.denominatorLabels)
-                    ? ga4Config.cvrA.denominatorLabels
-                    : typeof ga4Config.cvrA.denominatorLabels === 'string'
-                    ? ga4Config.cvrA.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-            }
-
+        // CVRを計算。フォーム入力なので空ラベルを落とし、metric 未指定は totalUsers にする
+        const toStrictCvrConfig = (c: GA4CvrConfig): CvrConfig => ({
+            metric: c.metric || 'totalUsers',
+            numeratorDimension: c.numeratorDimension ?? '',
+            denominatorDimension: c.denominatorDimension ?? '',
+            numeratorLabels: splitLabels(c.numeratorLabels, { dropEmpty: true }),
+            denominatorLabels: splitLabels(c.denominatorLabels, { dropEmpty: true }),
+        })
+        const cvrResults: Record<string, unknown> = {}
+        for (const key of VARIANT_KEYS) {
+            const cvrConfig = config[`cvr${key}`]
+            if (!cvrConfig) continue
             try {
-                const cvrA = calculateCVR(
-                    ga4Response,
-                    cvrConfigA,
-                    ga4Response.dimensionHeaders || [],
-                    ga4Response.metricHeaders || []
-                )
-                cvrResults.cvrA = {
-                    cv: cvrA.cv,
-                    pv: cvrA.pv,
-                    cvr: cvrA.cvr,
-                    pvByLabel: cvrA.pvByLabel,
-                    cvByLabel: cvrA.cvByLabel,
-                }
+                const r = calculateCVR(ga4Response, toStrictCvrConfig(cvrConfig), ga4Response.dimensionHeaders || [], ga4Response.metricHeaders || [])
+                cvrResults[`cvr${key}`] = { cv: r.cv, pv: r.pv, cvr: r.cvr, pvByLabel: r.pvByLabel, cvByLabel: r.cvByLabel }
             } catch (error) {
-                cvrResults.cvrA = {
-                    error: error instanceof Error ? error.message : 'CVR計算エラー',
-                }
+                cvrResults[`cvr${key}`] = { error: error instanceof Error ? error.message : 'CVR計算エラー' }
             }
         }
 
-        // CVR B
-        if (ga4Config.cvrB) {
-            const cvrConfigB = {
-                metric: ga4Config.cvrB.metric || 'totalUsers',
-                numeratorDimension: ga4Config.cvrB.numeratorDimension,
-                denominatorDimension: ga4Config.cvrB.denominatorDimension,
-                numeratorLabels: Array.isArray(ga4Config.cvrB.numeratorLabels)
-                    ? ga4Config.cvrB.numeratorLabels
-                    : typeof ga4Config.cvrB.numeratorLabels === 'string'
-                    ? ga4Config.cvrB.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-                denominatorLabels: Array.isArray(ga4Config.cvrB.denominatorLabels)
-                    ? ga4Config.cvrB.denominatorLabels
-                    : typeof ga4Config.cvrB.denominatorLabels === 'string'
-                    ? ga4Config.cvrB.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-            }
-
-            try {
-                const cvrB = calculateCVR(
-                    ga4Response,
-                    cvrConfigB,
-                    ga4Response.dimensionHeaders || [],
-                    ga4Response.metricHeaders || []
-                )
-                cvrResults.cvrB = {
-                    cv: cvrB.cv,
-                    pv: cvrB.pv,
-                    cvr: cvrB.cvr,
-                    pvByLabel: cvrB.pvByLabel,
-                    cvByLabel: cvrB.cvByLabel,
-                }
-            } catch (error) {
-                cvrResults.cvrB = {
-                    error: error instanceof Error ? error.message : 'CVR計算エラー',
-                }
-            }
-        }
-
-        // CVR C
-        if (ga4Config.cvrC) {
-            const cvrConfigC = {
-                metric: ga4Config.cvrC.metric || 'totalUsers',
-                numeratorDimension: ga4Config.cvrC.numeratorDimension,
-                denominatorDimension: ga4Config.cvrC.denominatorDimension,
-                numeratorLabels: Array.isArray(ga4Config.cvrC.numeratorLabels)
-                    ? ga4Config.cvrC.numeratorLabels
-                    : typeof ga4Config.cvrC.numeratorLabels === 'string'
-                    ? ga4Config.cvrC.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-                denominatorLabels: Array.isArray(ga4Config.cvrC.denominatorLabels)
-                    ? ga4Config.cvrC.denominatorLabels
-                    : typeof ga4Config.cvrC.denominatorLabels === 'string'
-                    ? ga4Config.cvrC.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-            }
-
-            try {
-                const cvrC = calculateCVR(
-                    ga4Response,
-                    cvrConfigC,
-                    ga4Response.dimensionHeaders || [],
-                    ga4Response.metricHeaders || []
-                )
-                cvrResults.cvrC = {
-                    cv: cvrC.cv,
-                    pv: cvrC.pv,
-                    cvr: cvrC.cvr,
-                    pvByLabel: cvrC.pvByLabel,
-                    cvByLabel: cvrC.cvByLabel,
-                }
-            } catch (error) {
-                cvrResults.cvrC = {
-                    error: error instanceof Error ? error.message : 'CVR計算エラー',
-                }
-            }
-        }
-
-        // CVR D
-        if (ga4Config.cvrD) {
-            const cvrConfigD = {
-                metric: ga4Config.cvrD.metric || 'totalUsers',
-                numeratorDimension: ga4Config.cvrD.numeratorDimension,
-                denominatorDimension: ga4Config.cvrD.denominatorDimension,
-                numeratorLabels: Array.isArray(ga4Config.cvrD.numeratorLabels)
-                    ? ga4Config.cvrD.numeratorLabels
-                    : typeof ga4Config.cvrD.numeratorLabels === 'string'
-                    ? ga4Config.cvrD.numeratorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-                denominatorLabels: Array.isArray(ga4Config.cvrD.denominatorLabels)
-                    ? ga4Config.cvrD.denominatorLabels
-                    : typeof ga4Config.cvrD.denominatorLabels === 'string'
-                    ? ga4Config.cvrD.denominatorLabels.split(',').map((l: string) => l.trim()).filter((l: string) => l.length > 0)
-                    : [],
-            }
-
-            try {
-                const cvrD = calculateCVR(
-                    ga4Response,
-                    cvrConfigD,
-                    ga4Response.dimensionHeaders || [],
-                    ga4Response.metricHeaders || []
-                )
-                cvrResults.cvrD = {
-                    cv: cvrD.cv,
-                    pv: cvrD.pv,
-                    cvr: cvrD.cvr,
-                    pvByLabel: cvrD.pvByLabel,
-                    cvByLabel: cvrD.cvByLabel,
-                }
-            } catch (error) {
-                cvrResults.cvrD = {
-                    error: error instanceof Error ? error.message : 'CVR計算エラー',
-                }
-            }
-        }
-
-        const truncated = ga4Response.rows.length >= ga4Request.limit
+        const truncated = ga4Response.rows.length >= (ga4Request.limit ?? 0)
         return NextResponse.json({
             success: true,
             cvrResults,

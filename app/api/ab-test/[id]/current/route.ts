@@ -1,55 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { fetchGA4Data, getGA4AccessToken, type GA4ReportRequest } from '@/lib/api/ga4/client'
-import { calculateCVR, type CvrConfig } from '@/lib/services/analytics/cvrService'
-import { buildGa4ConfigDimensionFilter } from '@/lib/services/ab-test/ga4ConfigFilter'
+import { activeVariantKeys, type GA4Config } from '@/lib/services/ab-test/ga4ConfigTypes'
+import { buildAbTestGa4Request, cvrForVariant } from '@/lib/services/ab-test/execution/ga4Report'
 import {
     calculateStatisticalSignificance,
     getRequiredSignificanceByHybrid,
     getPeriodReliabilityLevel,
 } from '@/lib/services/ab-test/statisticalService'
 import { parseDateString } from '@/lib/utils/date'
-
-interface GA4CvrConfig {
-    denominatorDimension?: string
-    denominatorLabels?: string[] | string
-    numeratorDimension?: string
-    numeratorLabels?: string[] | string
-    metric?: string
-    [key: string]: unknown
-}
-
-interface GA4Config {
-    propertyId: string
-    dimensions?: Array<{ name: string }> | string
-    metrics?: Array<{ name: string }> | string
-    limit?: number
-    filter?: { dimension?: string; operator?: string; expression?: string }
-    excludeFilter?: { dimension?: string; operator?: string; expression?: string }
-    cvrA?: GA4CvrConfig
-    cvrB?: GA4CvrConfig
-    cvrC?: GA4CvrConfig
-    cvrD?: GA4CvrConfig
-}
-
-const VARIANT_KEYS = ['A', 'B', 'C', 'D'] as const
-type VariantKey = (typeof VARIANT_KEYS)[number]
-
-function normalizeCvrConfig(cvrConfig: GA4CvrConfig): CvrConfig {
-    return {
-        ...cvrConfig,
-        denominatorLabels: Array.isArray(cvrConfig.denominatorLabels)
-            ? cvrConfig.denominatorLabels
-            : typeof cvrConfig.denominatorLabels === 'string'
-            ? cvrConfig.denominatorLabels.split(',').map((l) => l.trim())
-            : [],
-        numeratorLabels: Array.isArray(cvrConfig.numeratorLabels)
-            ? cvrConfig.numeratorLabels
-            : typeof cvrConfig.numeratorLabels === 'string'
-            ? cvrConfig.numeratorLabels.split(',').map((l) => l.trim())
-            : [],
-    } as CvrConfig
-}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -87,30 +46,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ notStarted: true, startDate })
         }
 
-        const dimensions: Array<{ name: string }> = Array.isArray(ga4Config.dimensions)
-            ? ga4Config.dimensions
-            : typeof ga4Config.dimensions === 'string'
-            ? ga4Config.dimensions.split(',').map((d) => ({ name: d.trim() }))
-            : []
+        const ga4Request = buildAbTestGa4Request(ga4Config, { startDate, endDate })
+        const dimensions = ga4Request.dimensions as Array<{ name: string }>
 
-        const metrics: Array<{ name: string }> = Array.isArray(ga4Config.metrics)
-            ? ga4Config.metrics
-            : typeof ga4Config.metrics === 'string'
-            ? ga4Config.metrics.split(',').map((m) => ({ name: m.trim() }))
-            : []
-
-        const ga4Request: GA4ReportRequest = {
-            propertyId: ga4Config.propertyId,
-            dateRanges: [{ startDate, endDate }],
-            dimensions,
-            metrics,
-            // ワイルドカードラベルは職種横断で多数の行を拾うため底上げ（limit到達＝サイレント欠測）
-            limit: Math.max(ga4Config.limit || 0, 50000),
-        }
-
-        ga4Request.dimensionFilter = buildGa4ConfigDimensionFilter(ga4Config)
-
-        const activeVariants = VARIANT_KEYS.filter((v) => ga4Config[`cvr${v}`])
+        const activeVariants = activeVariantKeys(ga4Config)
 
         const elapsedDays = Math.max(
             1,
@@ -118,12 +57,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         )
 
         // レポート（行集合）からバリアント別CVR・有意差・リードをまとめて計算する
-        type GA4Report = Parameters<typeof calculateCVR>[0]
+        type GA4Report = Awaited<ReturnType<typeof fetchGA4Data>>
         const computeResults = (report: GA4Report) => {
-            const dimensionHeaders = report.dimensionHeaders || []
-            const metricHeaders = report.metricHeaders || []
             const variants = activeVariants.map((key) => {
-                const result = calculateCVR(report, normalizeCvrConfig(ga4Config[`cvr${key}`]!), dimensionHeaders, metricHeaders)
+                const result = cvrForVariant(report, ga4Config, key)
                 return {
                     key,
                     pv: result.pv,
