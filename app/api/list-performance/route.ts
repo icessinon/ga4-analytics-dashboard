@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { runGa4EventsQuery, GA4_EXPORT_START, GA4_EXPORT_PROJECT, GA4_EXPORT_DATASET } from '@/lib/bq/ga4EventsClient'
+import { runGa4EventsQuery, GA4_EXPORT_START, GA4_EXPORT_PROJECT, GA4_EXPORT_DATASET, GA4_EXPORT_DEFAULT_FILTER } from '@/lib/bq/ga4EventsClient'
 
 /**
  * 求人一覧パフォーマンス: 職種一覧（/{industry}系）と検索結果（/search）の
@@ -35,7 +35,7 @@ WITH pv AS (
     REGEXP_EXTRACT((SELECT value.string_value FROM UNNEST(event_params) WHERE key='page_location'), r'^https?://[^/]+(/[^?#]*)') AS path
   FROM \`${GA4_EXPORT_PROJECT}.${GA4_EXPORT_DATASET}.events_*\`
   WHERE _TABLE_SUFFIX BETWEEN '${startSuffix}' AND '${endSuffix}'
-    AND event_name = 'page_view'
+    AND event_name = 'page_view'${GA4_EXPORT_DEFAULT_FILTER}
 ),
 flagged AS (
   SELECT *,

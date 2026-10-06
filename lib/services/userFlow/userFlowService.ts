@@ -1,4 +1,4 @@
-import { GA4_EXPORT_DATASET, GA4_EXPORT_PROJECT, GA4_EXPORT_START, runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
+import { GA4_EXPORT_DATASET, GA4_EXPORT_DEFAULT_FILTER, GA4_EXPORT_PROJECT, GA4_EXPORT_START, runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
 
 /**
  * CVセッション解剖レポート（BigQuery events_* ベース）。
@@ -68,7 +68,7 @@ WITH ev AS (
     REGEXP_EXTRACT((SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location'), r'^https?://[^/]+([^?#]*)') AS path,
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'click_label') AS click_label
   FROM \`${GA4_EXPORT_PROJECT}.${GA4_EXPORT_DATASET}.events_*\`
-  WHERE _TABLE_SUFFIX BETWEEN '${start}' AND '${end}'
+  WHERE _TABLE_SUFFIX BETWEEN '${start}' AND '${end}'${GA4_EXPORT_DEFAULT_FILTER}
 )`
 }
 
