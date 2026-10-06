@@ -1,4 +1,5 @@
-import { GA4_EXPORT_DATASET, GA4_EXPORT_DEFAULT_FILTER, GA4_EXPORT_PROJECT, GA4_EXPORT_START, runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
+import { runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
+import { clampToExportWindow, eventsFromWhere, toDisplay } from '@/lib/bq/ga4EventsSql'
 
 /**
  * サイト内の「LINE連携へ進む導線」の実績（BigQuery events_* ベース）。
@@ -118,8 +119,7 @@ WITH ev AS (
       (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'view_label')
     ) AS lbl,
     IFNULL((SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_path'), '(not set)') AS page_path
-  FROM \`${GA4_EXPORT_PROJECT}.${GA4_EXPORT_DATASET}.events_*\`
-  WHERE _TABLE_SUFFIX BETWEEN '${start}' AND '${end}'${GA4_EXPORT_DEFAULT_FILTER}
+  ${eventsFromWhere({ start, end })}
     AND event_name IN ('data_click_label', 'data_view_label')
 ),
 classified AS (
@@ -164,39 +164,8 @@ WHERE channel IS NOT NULL
 GROUP BY GROUPING SETS ((channel), (channel, event_date), (channel, page_path), (event_date), ())`
 }
 
-function toSuffix(d: Date): string {
-    return d.toISOString().slice(0, 10).replace(/-/g, '')
-}
-
-function toDisplay(suffix: string): string {
-    return `${suffix.slice(0, 4)}-${suffix.slice(4, 6)}-${suffix.slice(6, 8)}`
-}
-
 export async function runLineAssociationReport(startDate: string, endDate: string): Promise<LineAssociationReport> {
-    // BQの日次エクスポートは前日分まで。JST基準で昨日を超える終端は昨日に丸める
-    const nowJst = new Date(Date.now() + 9 * 3600 * 1000)
-    const yesterday = new Date(nowJst)
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-    const yesterdaySuffix = toSuffix(yesterday)
-
-    let start = startDate.replace(/-/g, '')
-    let endSuffix = endDate.replace(/-/g, '')
-    if (endSuffix > yesterdaySuffix) endSuffix = yesterdaySuffix
-    let clamped = false
-    if (start < GA4_EXPORT_START) {
-        start = GA4_EXPORT_START
-        clamped = true
-    }
-    // 上限日数を超える指定は新しい側を残して切る
-    const endDateObj = new Date(`${toDisplay(endSuffix)}T00:00:00Z`)
-    const minStart = new Date(endDateObj)
-    minStart.setUTCDate(minStart.getUTCDate() - (MAX_DAYS - 1))
-    const minStartSuffix = toSuffix(minStart)
-    if (start < minStartSuffix) {
-        start = minStartSuffix
-        clamped = true
-    }
-    if (start > endSuffix) start = endSuffix
+    const { start, end: endSuffix, clamped } = clampToExportWindow(startDate, endDate, { maxDays: MAX_DAYS })
 
     const { rows, scannedBytes } = await runGa4EventsQuery(buildQuery(start, endSuffix))
 

@@ -1,4 +1,5 @@
-import { GA4_EXPORT_DATASET, GA4_EXPORT_DEFAULT_FILTER, GA4_EXPORT_PROJECT, GA4_EXPORT_START, runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
+import { runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
+import { clampToExportWindow, eventsFromWhere, toDisplay } from '@/lib/bq/ga4EventsSql'
 
 /**
  * CVセッション解剖レポート（BigQuery events_* ベース）。
@@ -67,8 +68,7 @@ WITH ev AS (
     device.category AS device,
     REGEXP_EXTRACT((SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location'), r'^https?://[^/]+([^?#]*)') AS path,
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'click_label') AS click_label
-  FROM \`${GA4_EXPORT_PROJECT}.${GA4_EXPORT_DATASET}.events_*\`
-  WHERE _TABLE_SUFFIX BETWEEN '${start}' AND '${end}'${GA4_EXPORT_DEFAULT_FILTER}
+  ${eventsFromWhere({ start, end })}
 )`
 }
 
@@ -149,30 +149,8 @@ WHERE cat = 'detail'
 GROUP BY 1, 2 ORDER BY 1, 3 DESC`
 }
 
-function toSuffix(d: Date): string {
-    return d.toISOString().slice(0, 10).replace(/-/g, '')
-}
-
-function toDisplay(suffix: string): string {
-    return `${suffix.slice(0, 4)}-${suffix.slice(4, 6)}-${suffix.slice(6, 8)}`
-}
-
 export async function runUserFlowReport(startDate: string, endDate: string): Promise<UserFlowReport> {
-    // BQの日次エクスポートは前日分まで。JST基準で昨日を超える終端は昨日に丸める
-    const nowJst = new Date(Date.now() + 9 * 3600 * 1000)
-    const yesterday = new Date(nowJst)
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-    const yesterdaySuffix = toSuffix(yesterday)
-
-    let start = startDate.replace(/-/g, '')
-    let endSuffix = endDate.replace(/-/g, '')
-    if (endSuffix > yesterdaySuffix) endSuffix = yesterdaySuffix
-    let clamped = false
-    if (start < GA4_EXPORT_START) {
-        start = GA4_EXPORT_START
-        clamped = true
-    }
-    if (start > endSuffix) start = endSuffix
+    const { start, end: endSuffix, clamped } = clampToExportWindow(startDate, endDate)
 
     const [sessRes, nextRes] = await Promise.all([
         runGa4EventsQuery(buildSessionQuery(start, endSuffix)),
