@@ -405,5 +405,128 @@
     "volatile": [
       "fetchedAt"
     ]
+  },
+  {
+    "name": "heatmap-page-paths",
+    "path": "/api/heatmap/page-paths",
+    "body": {
+      "productId": 1,
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "heatmap-view-labels",
+    "path": "/api/heatmap/view-labels",
+    "body": {
+      "productId": 1,
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14",
+      "pagePath": "/"
+    }
+  },
+  {
+    "name": "heatmap-view-labels-all",
+    "path": "/api/heatmap/view-labels",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    }
+  },
+  {
+    "name": "ga4-labels",
+    "path": "/api/ga4/labels?propertyId=534098180",
+    "method": "GET"
+  },
+  {
+    "name": "page-metrics",
+    "path": "/api/dashboard/page-metrics",
+    "body": {
+      "propertyId": "534098180",
+      "productId": 1,
+      "pagePath": "/",
+      "month": "2026-09"
+    }
+  },
+  {
+    "name": "page-metrics-entry",
+    "path": "/api/dashboard/page-metrics",
+    "body": {
+      "propertyId": "534098180",
+      "productId": 1,
+      "pagePath": "/members/signup",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "page-metrics-series-daily",
+    "path": "/api/dashboard/page-metrics/series",
+    "body": {
+      "propertyId": "534098180",
+      "productId": 1,
+      "pagePath": "/",
+      "month": "2026-09",
+      "granularity": "daily"
+    }
+  },
+  {
+    "name": "page-metrics-series-weekly",
+    "path": "/api/dashboard/page-metrics/series",
+    "body": {
+      "propertyId": "534098180",
+      "productId": 1,
+      "pagePath": "/",
+      "month": "2026-09",
+      "granularity": "weekly"
+    }
+  },
+  {
+    "name": "page-metrics-series-monthly",
+    "path": "/api/dashboard/page-metrics/series",
+    "body": {
+      "propertyId": "534098180",
+      "productId": 1,
+      "pagePath": "/",
+      "month": "2026-09",
+      "granularity": "monthly"
+    }
+  },
+  {
+    "name": "heatmap-page-paths-noproduct",
+    "path": "/api/heatmap/page-paths",
+    "body": {
+      "productId": 999,
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "heatmap-view-labels-missing",
+    "path": "/api/heatmap/view-labels",
+    "body": {
+      "startDate": "2026-09-01"
+    }
+  },
+  {
+    "name": "page-metrics-missing",
+    "path": "/api/dashboard/page-metrics",
+    "body": {
+      "propertyId": "534098180"
+    }
+  },
+  {
+    "name": "page-metrics-series-missing-range",
+    "path": "/api/dashboard/page-metrics/series",
+    "body": {
+      "propertyId": "534098180",
+      "pagePath": "/"
+    }
+  },
+  {
+    "name": "ga4-labels-missing",
+    "path": "/api/ga4/labels",
+    "method": "GET"
   }
 ]

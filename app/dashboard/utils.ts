@@ -3,6 +3,7 @@
  */
 
 import type { MonthOption } from './types'
+import { rangeForGranularity } from '@/lib/services/dashboard/pageMetricsPeriod'
 
 /**
  * 月選択用のオプション一覧を生成する（直近24ヶ月）
@@ -19,30 +20,8 @@ export function getMonthOptions(): MonthOption[] {
     return options
 }
 
-/**
- * 集計単位に応じた日付範囲を返す
- */
-export function getRangeForGranularity(
-    month: string,
-    granularity: 'daily' | 'weekly' | 'monthly'
-): { startDate: string; endDate: string } {
-    const [y, m] = month.split('-').map(Number)
-    const format = (d: Date) => d.toISOString().slice(0, 10)
-    if (granularity === 'monthly') {
-        const start = new Date(y - 1, m - 1, 1)
-        const end = new Date(y, m, 0)
-        return { startDate: format(start), endDate: format(end) }
-    }
-    if (granularity === 'weekly') {
-        const end = new Date(y, m, 0)
-        const start = new Date(end)
-        start.setDate(start.getDate() - 84)
-        return { startDate: format(start), endDate: format(end) }
-    }
-    const start = new Date(y, m - 1, 1)
-    const end = new Date(y, m, 0)
-    return { startDate: format(start), endDate: format(end) }
-}
+/** 集計単位に応じた日付範囲。サーバー（series API）と同じ式を lib から使う */
+export const getRangeForGranularity = rangeForGranularity
 
 /**
  * グラフの対象期間ラベルを返す

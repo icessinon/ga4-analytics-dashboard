@@ -1,96 +1,70 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import DateInput from '@/components/DateInput'
-import BackLink from '@/components/BackLink'
-import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import { useEffect, useState } from 'react'
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import PeriodSelect from '@/components/PeriodSelect'
+import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import {
-    Bar,
-    BarChart,
-    Cell,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts'
-import type { ViewLabelRow, ViewLabelsByDevice } from './types'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import type { HeatmapPagePathsResponse, HeatmapViewLabelsResponse, ViewLabelRow } from '@/lib/services/heatmap/heatmapTypes'
 import styles from './HeatmapPage.module.css'
 
-function fmtLocal(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function getDefaultDates() {
-    const today = new Date()
-    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    return {
-        startDate: fmtLocal(firstOfMonth),
-        endDate: fmtLocal(today),
-    }
-}
-
-const HEAT_COLORS = [
-    '#dbeafe',
-    '#3b82f6',
-    '#3b82f6',
-    '#3b82f6',
-    '#1e3a8a',
-]
+/** 件数の多さを 5 段階の青で表す（薄 → 濃） */
+const HEAT_COLORS = ['#dbeafe', '#93c5fd', '#3b82f6', '#2563eb', '#1e3a8a']
 
 function getHeatColor(value: number, max: number): string {
     if (max <= 0) return HEAT_COLORS[0]
-    const ratio = value / max
-    const idx = Math.min(Math.floor(ratio * (HEAT_COLORS.length - 1)), HEAT_COLORS.length - 1)
+    const idx = Math.min(Math.floor((value / max) * (HEAT_COLORS.length - 1)), HEAT_COLORS.length - 1)
     return HEAT_COLORS[idx] ?? HEAT_COLORS[0]
 }
 
-function DeviceChart({ title, rows, badge }: { title: string; rows: ViewLabelRow[]; badge?: string }) {
+function shortPath(path: string): string {
+    return path.length > 60 ? `${path.slice(0, 57)}...` : path
+}
+
+function DeviceChart({ title, rows, badge }: { title: string; rows: ViewLabelRow[]; badge: string }) {
     const maxCount = rows.length > 0 ? Math.max(...rows.map((r) => r.count)) : 0
     return (
         <div className={styles.deviceChart}>
             <div className={styles.deviceChartHeader}>
                 <h3 className={styles.deviceChartTitle}>{title}</h3>
-                {badge && <span className={styles.deviceBadge}>{badge}</span>}
+                <span className={styles.deviceBadge}>{badge}</span>
                 <span className={styles.deviceTotal}>{rows.length} ラベル</span>
             </div>
             {rows.length === 0 ? (
-                <p className={styles.emptyText}>データなし</p>
+                <p className={ui.empty}>データなし</p>
             ) : (
                 <div className={styles.chartWrap}>
                     <ResponsiveContainer width="100%" height={Math.max(260, rows.length * 30)}>
-                        <BarChart
-                            data={rows}
-                            layout="vertical"
-                            margin={{ top: 4, right: 20, left: 8, bottom: 4 }}
-                        >
-                            <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+                        <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 20, left: 8, bottom: 4 }}>
+                            <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                             <YAxis
                                 type="category"
                                 dataKey="viewLabel"
                                 width={160}
-                                tick={{ fontSize: 11, fill: '#d1d5db' }}
+                                tick={{ fontSize: 11 }}
                                 tickLine={false}
                                 axisLine={false}
-                                tickFormatter={(v) => (String(v).length > 22 ? String(v).slice(0, 19) + '...' : v)}
+                                tickFormatter={(v) => (String(v).length > 22 ? `${String(v).slice(0, 19)}...` : v)}
                             />
                             <Tooltip
                                 formatter={(value: number) => [value.toLocaleString(), 'イベント数']}
-                                labelFormatter={(label) => `${label}`}
-                                cursor={{ fill: 'rgba(255,255,255,0.08)' }}
+                                cursor={{ fill: 'var(--bg-hover)' }}
                                 contentStyle={{
-                                    backgroundColor: '#1f2937',
-                                    border: '1px solid #4b5563',
-                                    borderRadius: '0.375rem',
+                                    backgroundColor: 'var(--bg-raised)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius-sm)',
                                     fontSize: '12px',
                                 }}
-                                labelStyle={{ color: '#f3f4f6', fontWeight: 600 }}
-                                itemStyle={{ color: '#d1d5db' }}
+                                labelStyle={{ color: 'var(--text-strong)', fontWeight: 600 }}
+                                itemStyle={{ color: 'var(--text-primary)' }}
                             />
                             <Bar dataKey="count" radius={[0, 3, 3, 0]} isAnimationActive={false}>
-                                {rows.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={getHeatColor(entry.count, maxCount)} />
+                                {rows.map((entry) => (
+                                    <Cell key={entry.viewLabel} fill={getHeatColor(entry.count, maxCount)} />
                                 ))}
                             </Bar>
                         </BarChart>
@@ -103,159 +77,79 @@ function DeviceChart({ title, rows, badge }: { title: string; rows: ViewLabelRow
 
 export default function HeatmapPage() {
     const { currentProduct } = useProduct()
-    const [startDate, setStartDate] = useState(getDefaultDates().startDate)
-    const [endDate, setEndDate] = useState(getDefaultDates().endDate)
-    const [pagePaths, setPagePaths] = useState<string[]>([])
-    const [pagePathsLoading, setPagePathsLoading] = useState(false)
+    const productId = currentProduct?.id
+    // 旧実装の既定は今月（1日〜今日）
+    const periodState = usePeriodRange('thisMonth')
+    const { range } = periodState
     const [pagePath, setPagePath] = useState('')
-    const [data, setData] = useState<ViewLabelsByDevice | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
 
+    // 期間内に view ラベルのあるページパス（セレクトの候補）
+    const paths = useReport<HeatmapPagePathsResponse>('/api/heatmap/page-paths', {
+        body: { productId, startDate: range?.startDate, endDate: range?.endDate },
+        enabled: !!productId && !!range,
+        keepPreviousData: true,
+    })
+    const pagePaths = paths.data?.pagePaths ?? []
+
+    // 候補が変わって今の選択が無くなったら「/」か先頭に寄せる（旧実装と同じ）
     useEffect(() => {
-        if (!currentProduct?.ga4PropertyId) {
-            setPagePaths([])
-            setPagePath('')
-            return
-        }
-        let cancelled = false
-        setPagePathsLoading(true)
-        fetch('/api/heatmap/page-paths', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                productId: currentProduct.id,
-                startDate,
-                endDate,
-            }),
-        })
-            .then((r) => r.json())
-            .then((d) => {
-                if (cancelled) return
-                const paths = d.pagePaths ?? []
-                setPagePaths(paths)
-                if (paths.length && !paths.includes(pagePath)) {
-                    setPagePath(paths.includes('/') ? '/' : paths[0] ?? '')
-                }
-            })
-            .catch(() => { if (!cancelled) setPagePaths([]) })
-            .finally(() => { if (!cancelled) setPagePathsLoading(false) })
-        return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, startDate, endDate])
+        if (!paths.data) return
+        const list = paths.data.pagePaths
+        if (list.length && !list.includes(pagePath)) setPagePath(list.includes('/') ? '/' : list[0])
+    }, [paths.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleFetch = async () => {
-        if (!currentProduct) {
-            setError('プロダクトを選択してください。')
-            return
-        }
-        setLoading(true)
-        setError(null)
-        setData(null)
-        try {
-            const res = await fetch('/api/heatmap/view-labels', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: currentProduct.id,
-                    startDate,
-                    endDate,
-                    pagePath: pagePath.trim() || undefined,
-                }),
-            })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error || json.message || '取得に失敗しました')
-            if (json.success && json.byDevice) {
-                setData(json.byDevice)
-            } else {
-                setData({ mobile: [], desktop: [], tablet: [] })
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : '取得に失敗しました')
-        } finally {
-            setLoading(false)
-        }
-    }
+    // 期間・ページパスを変えると即再取得（旧実装は「view ラベルを取得」ボタン）
+    const report = useReport<HeatmapViewLabelsResponse>('/api/heatmap/view-labels', {
+        body: { productId, startDate: range?.startDate, endDate: range?.endDate, pagePath: pagePath || undefined },
+        enabled: !!productId && !!range,
+        keepPreviousData: true,
+    })
+    const data = report.data?.byDevice ?? null
+    const totalLabels = data ? new Set([...data.mobile, ...data.desktop, ...data.tablet].map((r) => r.viewLabel)).size : 0
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>ヒートマップ分析（view ラベル）</h1>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            {!currentProduct ? (
-                <div className={styles.placeholderCard}>
-                    <p className={styles.description}>
-                        プロダクトを選択してください。ダッシュボードでプロダクトを選んでからこのページを開いてください。
+        <PageShell
+            pageId="heatmap"
+            requireProduct
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            keepChildrenWhileLoading
+            controls={
+                <FilterBar>
+                    <FilterField label="期間">
+                        <PeriodSelect state={periodState} resolved={report.data ? { startDate: report.data.startDate, endDate: report.data.endDate } : null} />
+                    </FilterField>
+                    <FilterField label="ページパス" hint={paths.loading ? '候補を取得中...' : undefined}>
+                        <select
+                            className={cx(ui.select, styles.pathSelect)}
+                            value={pagePaths.includes(pagePath) ? pagePath : ''}
+                            onChange={(e) => setPagePath(e.target.value)}
+                            disabled={paths.loading && pagePaths.length === 0}
+                            aria-label="ページパス"
+                        >
+                            <option value="">指定しない（全体）</option>
+                            {pagePaths.map((path) => (
+                                <option key={path} value={path}>{shortPath(path)}</option>
+                            ))}
+                        </select>
+                    </FilterField>
+                </FilterBar>
+            }
+        >
+            {data && (
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>view ラベル別イベント数（デバイス別）</h2>
+                    <p className={ui.sectionNote}>
+                        {pagePath ? <>対象ページ: <code>{pagePath}</code>。</> : '全ページ合算。'}
+                        GTM の view ラベル（要素が画面に入ったときのイベント）を集計し、色が濃いほど件数が多いことを示します。
+                        {totalLabels > 0 && ` ラベル種類: ${totalLabels}`}
                     </p>
-                </div>
-            ) : (
-                <>
-                    <div className={styles.formCard}>
-                        <h2 className={styles.formTitle}>条件</h2>
-                        <div className={styles.formRow}>
-                            <label className={styles.label}>プロダクト</label>
-                            <span className={styles.value}>{currentProduct.name}</span>
-                        </div>
-                        <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-start">開始日</label>
-                            <DateInput id="heatmap-start" className={styles.input} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        </div>
-                        <div className={styles.formRow}>
-                            <label className={styles.label} htmlFor="heatmap-end">終了日</label>
-                            <DateInput id="heatmap-end" className={styles.input} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        </div>
-                        <div className={styles.formRow}>
-                            <label className={styles.label} id="heatmap-pagepath-label">ページパス（任意）</label>
-                            <CustomSelect
-                                value={
-                                    pagePath === '' || (pagePaths.length > 0 && pagePaths.includes(pagePath))
-                                        ? pagePath
-                                        : (pagePaths[0] ?? '')
-                                }
-                                onChange={setPagePath}
-                                options={
-                                    pagePathsLoading
-                                        ? [{ value: '', label: '取得中...' }]
-                                        : [
-                                            { value: '', label: '指定しない（全体）' },
-                                            ...pagePaths.map((path) => ({
-                                                value: path,
-                                                label: path === '/' ? '/' : path.length > 60 ? path.slice(0, 57) + '...' : path,
-                                            })),
-                                        ]
-                                }
-                                triggerClassName={styles.select}
-                                disabled={pagePathsLoading}
-                                placeholder="選択してください"
-                                aria-labelledby="heatmap-pagepath-label"
-                            />
-                        </div>
-                        <div className={styles.formActions}>
-                            <button type="button" className={styles.submitButton} onClick={handleFetch} disabled={loading}>
-                                {loading ? '取得中...' : 'view ラベルを取得'}
-                            </button>
-                        </div>
+                    <div className={styles.chartsGrid}>
+                        <DeviceChart title="SP" rows={data.mobile} badge="mobile" />
+                        <DeviceChart title="PC" rows={data.desktop} badge="desktop" />
+                        {data.tablet.length > 0 && <DeviceChart title="タブレット" rows={data.tablet} badge="tablet" />}
                     </div>
-
-                    {loading && <div className={styles.loaderWrap}><Loader /></div>}
-
-                    {error && <div className={styles.errorCard}><p className={styles.errorText}>{error}</p></div>}
-
-                    {!loading && data && (
-                        <div className={styles.resultCard}>
-                            <h2 className={styles.resultTitle}>view ラベル別イベント数（デバイス別）</h2>
-                            <div className={styles.chartsGrid}>
-                                <DeviceChart title="SP" rows={data.mobile} badge="mobile" />
-                                <DeviceChart title="PC" rows={data.desktop} badge="desktop" />
-                                {data.tablet.length > 0 && (
-                                    <DeviceChart title="タブレット" rows={data.tablet} badge="tablet" />
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </>
+                </div>
             )}
-        </div>
+        </PageShell>
     )
 }

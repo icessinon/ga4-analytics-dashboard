@@ -1,3 +1,18 @@
+/**
+ * トップ（ダッシュボード）のクライアント側型。
+ * ページ別指標系は lib/services/dashboard/pageMetricsTypes が正で、ここは再エクスポートのみ。
+ */
+
+export type {
+    ChartMetric,
+    Granularity,
+    PageMetrics,
+    PageMetricsResponse,
+    PageMetricsSeriesPoint,
+    PageMetricsSeriesResponse,
+    SeriesDataPoint,
+} from '@/lib/services/dashboard/pageMetricsTypes'
+
 export interface DailyStat {
     date: string
     reportExecutions: number
@@ -17,6 +32,7 @@ export interface AbTestCompletedOutcome {
     defeat: number
 }
 
+/** GET /api/dashboard */
 export interface DashboardStats {
     month: string
     productCount: number
@@ -33,59 +49,7 @@ export interface DashboardStats {
     dailyStats: DailyStat[]
 }
 
-export interface PageMetrics {
-    pv: number
-    cv: number
-    cvr: number
-    sessions: number
-    newUsers: number
-    newUserRate: number
-    bounceRate: number
-    bounceCount: number
-    exitRate: number | null
-    exitRateNote?: string
-    averageSessionDurationSeconds: number
-    averageSessionDurationLabel: string
-    engagementRate: number
-    cvEventName?: string
-    cvDimension?: string
-}
-
 export interface MonthOption {
     value: string
     label: string
 }
-
-/** ページ指標の時系列1点（API series の要素）。グラフ用に t を付与したものが SeriesDataPoint */
-export interface SeriesDataPoint {
-    period: string
-    label: string
-    t: number
-    pv: number
-    cv: number
-    sessions: number
-    cvr?: number
-    newUsers?: number
-    newUserRate?: number
-    bounceRate?: number
-    bounceCount?: number
-    averageSessionDuration?: number
-    engagementRate?: number
-    exitRate?: number
-}
-
-/** API から返る series 1件（t なし） */
-export type PageMetricsSeriesPoint = Omit<SeriesDataPoint, 't'>
-
-/** 推移グラフで選択可能なメトリクス */
-export type ChartMetric =
-    | 'pv'
-    | 'cv'
-    | 'cvr'
-    | 'sessions'
-    | 'exitRate'
-    | 'newUserRate'
-    | 'bounceRate'
-    | 'bounceCount'
-    | 'averageSessionDuration'
-    | 'engagementRate'

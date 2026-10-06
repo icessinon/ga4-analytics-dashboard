@@ -557,20 +557,20 @@ export const PAGES: Record<PageId, PageDef> = {
     },
     heatmap: {
         href: '/heatmap',
-        title: 'ヒートマップ',
-        subtitle: 'クリック位置とスクロール深度の可視化',
+        title: 'ヒートマップ（view ラベル）',
+        subtitle: 'ページ内のどの要素が画面に入ったかをデバイス別に見る',
         category: 'behavior',
         productScoped: true,
         productIdInHref: true,
         tags: ['form', 'engagement'],
         doc: {
-            description: 'GTM 経由で収集したクリック座標・スクロール深度をヒートマップとして可視化します。ページのどの要素が注目されているかを視覚的に把握できます。',
+            description: 'GTM が送る view ラベル（要素が画面に表示されたときのイベント）の件数を、SP / PC / タブレット別に横棒グラフで表示します。ページパスを選ぶとそのページだけに絞れ、どの要素まで見られているか（スクロール到達の代替指標）を把握できます。',
             capabilities: [
-                'クリックヒートマップ（座標密度表示）',
-                'スクロール深度マップ',
-                'ビュー別ラベル管理',
+                'view ラベル別イベント数のデバイス別比較',
+                '期間・ページパスでの絞り込み（期間内にラベルのあるページだけが候補）',
+                '件数の多さを色の濃さで表示',
             ],
-            apiRoute: 'GET /api/heatmap/view-labels',
+            apiRoute: 'POST /api/heatmap/view-labels',
         },
     },
 

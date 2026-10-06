@@ -1,5 +1,6 @@
 import { getGA4AccessToken } from '@/lib/api/ga4/client'
 import { createGa4Reporter, type Ga4Reporter } from '@/lib/api/ga4/report'
+import { resolvePropertyId } from '@/lib/db/products'
 import { HttpError } from './errorResponse'
 
 export interface Ga4RequestBody {
@@ -22,6 +23,12 @@ export interface ReadGa4BodyOptions {
     propertyIdMissingMessage?: string
     /** 'YYYY-MM-DD' 以外（月指定など）を具体日付に直したい route 用 */
     resolveDates?: (startDate: string, endDate: string) => { startDate: string; endDate: string }
+    /**
+     * propertyId が無いとき body の productId から GA4 プロパティを引く（heatmap 系 route）。
+     * productId はあるがプロパティ未設定なら productNotConfiguredMessage で 400。
+     */
+    allowProductId?: boolean
+    productNotConfiguredMessage?: string
 }
 
 /**
@@ -30,7 +37,14 @@ export interface ReadGa4BodyOptions {
  */
 export async function readGa4Body(request: Request, opts: ReadGa4BodyOptions = {}): Promise<Ga4RequestBody> {
     const raw = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const propertyId = typeof raw.propertyId === 'string' || typeof raw.propertyId === 'number' ? String(raw.propertyId) : ''
+    let propertyId = typeof raw.propertyId === 'string' || typeof raw.propertyId === 'number' ? String(raw.propertyId) : ''
+    if (!propertyId && opts.allowProductId && raw.productId != null) {
+        const resolved = await resolvePropertyId({ productId: raw.productId as string | number })
+        if (!resolved) {
+            throw new HttpError(400, opts.productNotConfiguredMessage ?? 'プロダクトに GA4 プロパティが設定されていません。')
+        }
+        propertyId = resolved
+    }
     if (!propertyId) {
         throw new HttpError(400, opts.propertyIdMissingMessage ?? 'propertyId is required')
     }
