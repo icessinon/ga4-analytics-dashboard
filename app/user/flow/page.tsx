@@ -1,41 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import BackLink from '@/components/BackLink'
+import { useMemo, useState, type CSSProperties } from 'react'
 import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
-import RelatedPages from '@/components/RelatedPages'
-import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
-import { withCustomOption, PeriodOption } from '@/lib/utils/period'
-import { parseJsonResponse } from '@/lib/utils/fetch'
+import PageShell from '@/components/PageShell'
+import PeriodSelect from '@/components/PeriodSelect'
+import Alert from '@/components/Alert'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { type PeriodOption } from '@/lib/utils/period'
+import { CHART_COLORS } from '@/lib/constants/chartColors'
+import type { FlowGroup, UserFlowResponse } from '@/lib/services/userFlow/userFlowTypes'
 import styles from './UserFlowPage.module.css'
-
-interface FlowGroup {
-    key: 'applied' | 'signup' | 'browsed' | 'other'
-    sessions: number
-    avgDetails: number
-    medDetails: number
-    searchRatePct: number
-    medDurMin: number
-    medCvMin: number | null
-    dist: { d0: number; d1: number; d2_3: number; d4_9: number; d10p: number }
-}
-
-interface NextAction { action: string; count: number }
-
-interface DeviceFlowGroup extends FlowGroup { device: string }
-
-interface DailyDetailFlow { date: string; detailPv: number; toEntry: number; exit: number }
-
-interface UserFlowResponse {
-    startDate: string
-    endDate: string
-    clamped: boolean
-    groups: FlowGroup[]
-    deviceGroups?: DeviceFlowGroup[]
-    nextActions: NextAction[]
-    daily?: DailyDetailFlow[]
-    scannedMb: number
-}
 
 const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
@@ -66,9 +42,6 @@ const ACTION_LABELS: Record<string, string> = {
 
 const DEVICE_LABELS: Record<string, string> = { mobile: 'モバイル', desktop: 'PC', tablet: 'タブレット' }
 
-// 検証済みダークパレット（dataviz参照パレット準拠）
-const TREND_COLOR = '#3987e5'
-
 type TrendMetric = 'entryRate' | 'exitRate' | 'detailPv'
 const TREND_METRICS: Array<{ value: TrendMetric; label: string }> = [
     { value: 'entryRate', label: '詳細→フォーム進出率' },
@@ -84,37 +57,20 @@ const DIST_BUCKETS = [
     { key: 'd10p', label: '10件以上' },
 ] as const
 
+const ACCENT = { '--summary-accent': 'var(--violet-400)' } as CSSProperties
+
 export default function UserFlowPage() {
     const periodState = usePeriodRange('7daysAgo')
     const { range } = periodState
-    const [data, setData] = useState<UserFlowResponse | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
     const [byDevice, setByDevice] = useState(false)
     const [trendMetric, setTrendMetric] = useState<TrendMetric>('entryRate')
 
-    const load = useCallback(async () => {
-        if (!range) return
-        setLoading(true)
-        setError(null)
-        try {
-            const res = await fetch('/api/user-flow', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ startDate: range.startDate, endDate: range.endDate }),
-            })
-            const json = await parseJsonResponse<UserFlowResponse & { error?: string; message?: string }>(res)
-            if (!res.ok) throw new Error(json.message || json.error || '取得に失敗しました')
-            setData(json)
-        } catch (e) {
-            setError(e instanceof Error ? e.message : '取得に失敗しました')
-            setData(null)
-        } finally {
-            setLoading(false)
-        }
-    }, [range])
-
-    useEffect(() => { load() }, [load])
+    // データソースは x-work.jp の BQ エクスポート固定なので propertyId は送らない
+    const report = useReport<UserFlowResponse>('/api/user-flow', {
+        body: { startDate: range?.startDate, endDate: range?.endDate },
+        enabled: !!range,
+    })
+    const data = report.data
 
     const trendChart = useMemo(() => {
         if (!data?.daily?.length) return null
@@ -126,7 +82,7 @@ export default function UserFlowPage() {
             return Number(((n / d.detailPv) * 100).toFixed(2))
         })
         const label = TREND_METRICS.find((m) => m.value === trendMetric)?.label ?? ''
-        return { labels, series: [{ name: label, color: TREND_COLOR, data: values }] }
+        return { labels, series: [{ name: label, color: CHART_COLORS.blue, data: values }] }
     }, [data, trendMetric])
 
     const applied = data?.groups.find((g) => g.key === 'applied') ?? null
@@ -136,138 +92,102 @@ export default function UserFlowPage() {
     const maxNext = data ? Math.max(1, ...data.nextActions.map((a) => a.count)) : 1
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>CVセッション解剖（BQ）</h1>
-                    <p className={styles.subtitle}>
-                        BigQueryのGA4生イベント（x-work.jp）をセッション単位で集計。応募・登録した人が「何件の求人を見て・検索を使って・何分で」CVしたかと、求人詳細を見た直後の行動の実測です。
-                    </p>
-                </div>
-                <BackLink href="/">ダッシュボード</BackLink>
-            </div>
-
-            <RelatedPages pages={[
-                { href: '/journey', label: 'ユーザー経路分析' },
-                { href: '/pageflow', label: 'ページフロー分析' },
-                { href: '/cv-types', label: '求人種別CV分析' },
-            ]} />
-
-            <div className={styles.controls}>
-                <PeriodSelect
-                    state={periodState}
-                    options={withCustomOption(PERIOD_OPTIONS)}
-                    selectClassName={styles.select}
-                    noteClassName={styles.periodNote}
-                    resolved={data}
-                />
-                {data && <span className={styles.periodNote}>（BQスキャン {data.scannedMb}MB）</span>}
-            </div>
-
+        <PageShell
+            pageId="userFlow"
+            status={{ loading: report.loading, error: report.error, source: 'bq', onRetry: report.run }}
+            controls={
+                <>
+                    <PeriodSelect state={periodState} options={PERIOD_OPTIONS} resolved={data} />
+                    {data && <span className={ui.note}>（BQスキャン {data.scannedMb}MB）</span>}
+                </>
+            }
+        >
             {data?.clamped && (
-                <div className={styles.notice}>
-                    BQエクスポートの開始日（2026-08-07）より前は集計できないため、期間の先頭を 2026-08-07 に丸めています。
-                </div>
+                <Alert tone="warn">
+                    BQエクスポートの開始日より前は集計できないため、期間の先頭を {data.startDate} に丸めています。
+                </Alert>
             )}
 
-            {loading && <p className={styles.loading}>読み込み中...（BigQueryを直接集計しています）</p>}
-            {error && <div className={styles.error}>{error}</div>}
-
-            {data && !loading && (
+            {data && (
                 <>
-                    <div className={styles.summaryRow}>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.summaryLabel}>応募セッション</span>
-                            <span className={styles.summaryValue}>{applied ? applied.sessions.toLocaleString() : '－'}</span>
-                            <span className={styles.summaryHint}>
-                                {applied?.medCvMin != null ? `開始から応募まで中央値 ${applied.medCvMin}分` : '－'}
-                            </span>
+                    <div className={ui.summaryRow} style={ACCENT}>
+                        <div className={ui.summaryCard}>
+                            <span className={ui.summaryLabel}>応募セッション</span>
+                            <span className={ui.summaryValue}>{applied ? applied.sessions.toLocaleString() : '－'}</span>
+                            <span className={ui.summaryHint}>{applied?.medCvMin != null ? `開始から応募まで中央値 ${applied.medCvMin}分` : '－'}</span>
                         </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.summaryLabel}>会員登録セッション（応募なし）</span>
-                            <span className={styles.summaryValue}>{signup ? signup.sessions.toLocaleString() : '－'}</span>
-                            <span className={styles.summaryHint}>
-                                {signup?.medCvMin != null ? `開始から登録まで中央値 ${signup.medCvMin}分` : '－'}
-                            </span>
+                        <div className={ui.summaryCard}>
+                            <span className={ui.summaryLabel}>会員登録セッション（応募なし）</span>
+                            <span className={ui.summaryValue}>{signup ? signup.sessions.toLocaleString() : '－'}</span>
+                            <span className={ui.summaryHint}>{signup?.medCvMin != null ? `開始から登録まで中央値 ${signup.medCvMin}分` : '－'}</span>
                         </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.summaryLabel}>応募までの求人詳細閲覧（中央値）</span>
-                            <span className={styles.summaryValue}>{applied ? `${applied.medDetails}件` : '－'}</span>
-                            <span className={styles.summaryHint}>
-                                平均 {applied?.avgDetails ?? '－'}件 / 非CV閲覧者は中央値 {browsed?.medDetails ?? '－'}件
-                            </span>
+                        <div className={ui.summaryCard}>
+                            <span className={ui.summaryLabel}>応募までの求人詳細閲覧（中央値）</span>
+                            <span className={ui.summaryValue}>{applied ? `${applied.medDetails}件` : '－'}</span>
+                            <span className={ui.summaryHint}>平均 {applied?.avgDetails ?? '－'}件 / 非CV閲覧者は中央値 {browsed?.medDetails ?? '－'}件</span>
                         </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.summaryLabel}>検索ページ利用率（応募セッション）</span>
-                            <span className={styles.summaryValue}>{applied ? `${applied.searchRatePct}%` : '－'}</span>
-                            <span className={styles.summaryHint}>非CV（求人閲覧あり）は {browsed?.searchRatePct ?? '－'}%</span>
+                        <div className={ui.summaryCard}>
+                            <span className={ui.summaryLabel}>検索ページ利用率（応募セッション）</span>
+                            <span className={ui.summaryValue}>{applied ? `${applied.searchRatePct}%` : '－'}</span>
+                            <span className={ui.summaryHint}>非CV（求人閲覧あり）は {browsed?.searchRatePct ?? '－'}%</span>
                         </div>
                     </div>
 
-                    <div className={styles.card}>
+                    <div className={ui.card}>
                         <div className={styles.cardHeader}>
-                            <h2 className={styles.sectionTitle}>グループ別の行動量比較</h2>
+                            <h2 className={ui.sectionTitle}>グループ別の行動量比較</h2>
                             {(data.deviceGroups?.length ?? 0) > 0 && (
                                 <div className={styles.toggleGroup}>
-                                    <button
-                                        className={byDevice ? styles.toggleBtn : styles.toggleActive}
-                                        onClick={() => setByDevice(false)}
-                                    >全体</button>
-                                    <button
-                                        className={byDevice ? styles.toggleActive : styles.toggleBtn}
-                                        onClick={() => setByDevice(true)}
-                                    >デバイス別</button>
+                                    <button type="button" className={byDevice ? styles.toggleBtn : styles.toggleActive} onClick={() => setByDevice(false)}>全体</button>
+                                    <button type="button" className={byDevice ? styles.toggleActive : styles.toggleBtn} onClick={() => setByDevice(true)}>デバイス別</button>
                                 </div>
                             )}
                         </div>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>グループ</th>
-                                        <th className={styles.num}>セッション</th>
-                                        <th className={styles.num}>求人詳細閲覧（平均）</th>
-                                        <th className={styles.num}>同（中央値）</th>
-                                        <th className={styles.num}>検索利用率</th>
-                                        <th className={styles.num}>滞在時間（中央値）</th>
-                                        <th className={styles.num}>CVまで（中央値）</th>
+                                        <th className={ui.num}>セッション</th>
+                                        <th className={ui.num}>求人詳細閲覧（平均）</th>
+                                        <th className={ui.num}>同（中央値）</th>
+                                        <th className={ui.num}>検索利用率</th>
+                                        <th className={ui.num}>滞在時間（中央値）</th>
+                                        <th className={ui.num}>CVまで（中央値）</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {((byDevice ? (data.deviceGroups ?? []) : data.groups) as Array<FlowGroup & { device?: string }>).map((g) => (
-                                        <tr
-                                            key={g.device ? `${g.key}-${g.device}` : g.key}
-                                            className={g.key === 'applied' || g.key === 'signup' ? styles.cvRow : undefined}
-                                        >
+                                        <tr key={g.device ? `${g.key}-${g.device}` : g.key} className={g.key === 'applied' || g.key === 'signup' ? styles.cvRow : undefined}>
                                             <td>
                                                 {GROUP_LABELS[g.key]}
                                                 {g.device && <span className={styles.deviceTag}>{DEVICE_LABELS[g.device] ?? g.device}</span>}
                                             </td>
-                                            <td className={`${styles.num} ${styles.strong}`}>{g.sessions.toLocaleString()}</td>
-                                            <td className={styles.num}>{g.avgDetails}件</td>
-                                            <td className={styles.num}>{g.medDetails}件</td>
-                                            <td className={styles.num}>{g.searchRatePct}%</td>
-                                            <td className={styles.num}>{g.medDurMin}分</td>
-                                            <td className={styles.num}>{g.medCvMin != null ? `${g.medCvMin}分` : '－'}</td>
+                                            <td className={cx(ui.num, ui.strong)}>{g.sessions.toLocaleString()}</td>
+                                            <td className={ui.num}>{g.avgDetails}件</td>
+                                            <td className={ui.num}>{g.medDetails}件</td>
+                                            <td className={ui.num}>{g.searchRatePct}%</td>
+                                            <td className={ui.num}>{g.medDurMin}分</td>
+                                            <td className={ui.num}>{g.medCvMin != null ? `${g.medCvMin}分` : '－'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <p className={styles.tableNote}>
+                        <p className={ui.tableNote}>
                             ※ 応募 = EF__Job(R|A|H)__Btn クリック（送信ボタンは入力完了まで押せないため実応募と一致）。登録 = /members/signup/thanks 到達。検索利用 = /search・一覧・絞り込み・資格条件ページの閲覧。<br />
                             ※ 「会員登録あり」に応募同時登録（求人広告）は含まれません（応募ありに分類）。
                         </p>
                     </div>
 
-                    <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>求人詳細の閲覧数分布（セッションあたり）</h2>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>求人詳細の閲覧数分布（セッションあたり）</h2>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>グループ</th>
-                                        {DIST_BUCKETS.map((b) => <th key={b.key} className={styles.num}>{b.label}</th>)}
+                                        {DIST_BUCKETS.map((b) => <th key={b.key} className={ui.num}>{b.label}</th>)}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -277,7 +197,7 @@ export default function UserFlowPage() {
                                             <tr key={g.key} className={g.key === 'applied' || g.key === 'signup' ? styles.cvRow : undefined}>
                                                 <td>{GROUP_LABELS[g.key]}</td>
                                                 {DIST_BUCKETS.map((b) => (
-                                                    <td key={b.key} className={styles.num}>
+                                                    <td key={b.key} className={ui.num}>
                                                         {g.dist[b.key].toLocaleString()}
                                                         <span className={styles.distPct}>{total > 0 ? `${((g.dist[b.key] / total) * 100).toFixed(0)}%` : ''}</span>
                                                     </td>
@@ -288,35 +208,35 @@ export default function UserFlowPage() {
                                 </tbody>
                             </table>
                         </div>
-                        <p className={styles.tableNote}>
+                        <p className={ui.tableNote}>
                             ※ 応募ありで「0件」= 一覧モーダルやfeatured・LP等、求人詳細ページを経由しない応募導線。ここが多い場合は詳細ページ以外の導線が効いています。
                         </p>
                     </div>
 
                     {trendChart && (
-                        <div className={styles.card}>
+                        <div className={ui.card}>
                             <div className={styles.cardHeader}>
-                                <h2 className={styles.sectionTitle}>日次推移</h2>
-                                <select className={styles.select} value={trendMetric} onChange={(e) => setTrendMetric(e.target.value as TrendMetric)}>
+                                <h2 className={ui.sectionTitle}>日次推移</h2>
+                                <select className={ui.select} value={trendMetric} onChange={(e) => setTrendMetric(e.target.value as TrendMetric)} aria-label="指標">
                                     {TREND_METRICS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                                 </select>
                             </div>
                             <SignupTrendChart labels={trendChart.labels} series={trendChart.series} percent={trendMetric !== 'detailPv'} />
-                            <p className={styles.tableNote}>
+                            <p className={ui.tableNote}>
                                 ※ 詳細→フォーム進出率 = その日の求人詳細PVのうち直後に /entry/ へ進んだ割合。FV改善・CTA施策の主要KPI。母数が小さい日は振れます。
                             </p>
                         </div>
                     )}
 
-                    <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>求人詳細を見た「次のアクション」</h2>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>求人詳細を見た「次のアクション」</h2>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>次のアクション</th>
-                                        <th className={styles.num}>回数</th>
-                                        <th className={styles.num}>割合</th>
+                                        <th className={ui.num}>回数</th>
+                                        <th className={ui.num}>割合</th>
                                         <th style={{ width: '40%' }}></th>
                                     </tr>
                                 </thead>
@@ -324,21 +244,21 @@ export default function UserFlowPage() {
                                     {data.nextActions.map((a) => (
                                         <tr key={a.action}>
                                             <td>{ACTION_LABELS[a.action] ?? a.action}</td>
-                                            <td className={`${styles.num} ${styles.strong}`}>{a.count.toLocaleString()}</td>
-                                            <td className={styles.num}>{totalNext > 0 ? `${((a.count / totalNext) * 100).toFixed(1)}%` : '－'}</td>
+                                            <td className={cx(ui.num, ui.strong)}>{a.count.toLocaleString()}</td>
+                                            <td className={ui.num}>{totalNext > 0 ? `${((a.count / totalNext) * 100).toFixed(1)}%` : '－'}</td>
                                             <td><span className={styles.bar} style={{ width: `${(a.count / maxNext) * 100}%` }} /></td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <p className={styles.tableNote}>
+                        <p className={ui.tableNote}>
                             ※ 求人詳細のpage_view直後の次ページ（同一セッション内）。「離脱」はそのpage_viewがセッション最後だったもの。<br />
                             ※ 応募フォーム = /entry/media_(id)。詳細→フォーム進出率が施策（FV改善・5件ごとCTA等）の主要KPIになります。
                         </p>
                     </div>
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }
