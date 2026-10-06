@@ -55,8 +55,12 @@ export default function PageShell({
     const def = PAGES[pageId]
     const { currentProduct } = useProduct()
 
-    const backHref = back === null ? null : back?.href ?? (def.parent ? pageHref(def.parent, { productId: currentProduct?.id }) : '/')
-    const backLabel = back?.label ?? (def.parent ? `${PAGES[def.parent].title}に戻る` : 'ダッシュボードに戻る')
+    // 親が動的ルート（/ab-test/[id] など）のときは id をここで解決できないので、ページ側が back を渡す。
+    // 渡されなければダッシュボードに戻す（Link に '[id]' を含む href を渡すと app router が例外を投げる）
+    const parentHref = def.parent ? pageHref(def.parent, { productId: currentProduct?.id }) : null
+    const parentIsStatic = !!parentHref && !parentHref.includes('[')
+    const backHref = back === null ? null : back?.href ?? (parentIsStatic ? parentHref : '/')
+    const backLabel = back?.label ?? (parentIsStatic && def.parent ? `${PAGES[def.parent].title}に戻る` : 'ダッシュボードに戻る')
 
     const productMissing = requireProduct && !currentProduct
     const busy = status?.loading === true

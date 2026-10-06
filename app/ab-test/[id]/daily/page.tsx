@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
-import BackLink from '@/components/BackLink'
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
 import DateInput from '@/components/DateInput'
-import Loader from '@/components/Loader'
+import { ui, cx } from '@/components/ui'
+import { useReport } from '@/hooks/useReport'
+import { CHART_COLORS } from '@/lib/constants/chartColors'
 import styles from './DailyPage.module.css'
 
 interface VariantDaily {
@@ -19,242 +20,159 @@ interface VariantDaily {
     cumCvr: number
 }
 
-type DayRow = { date: string } & Partial<Record<'A' | 'B' | 'C' | 'D', VariantDaily>>
+type Variant = 'A' | 'B' | 'C' | 'D'
+type DayRow = { date: string } & Partial<Record<Variant, VariantDaily>>
+
+interface DailyResponse {
+    abTestName?: string
+    days?: DayRow[]
+    variants?: string[]
+    startDate?: string
+    endDate?: string
+}
 
 const VARIANT_COLORS: Record<string, string> = {
-    A: '#3b82f6',
-    B: '#16a34a',
-    C: '#8b5cf6',
-    D: '#fdba74',
+    A: CHART_COLORS.blue,
+    B: CHART_COLORS.green,
+    C: CHART_COLORS.violet,
+    D: CHART_COLORS.orange,
 }
+const colorOf = (v: string) => VARIANT_COLORS[v] ?? CHART_COLORS.violet
+
+type Mode = 'daily' | 'cumulative'
 
 export default function AbTestDailyCvrPage() {
     const params = useParams()
     const abTestId = params?.id as string
 
-    // 初回はAPI側のデフォルト（テスト期間）で取得し、レスポンスの期間をフォームに反映する
+    // 初回は API 側の既定（テスト期間）で取得し、レスポンスの期間をフォームに反映する
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [abTestName, setAbTestName] = useState('')
-    const [days, setDays] = useState<DayRow[] | null>(null)
-    const [variants, setVariants] = useState<string[]>([])
-    const [mode, setMode] = useState<'daily' | 'cumulative'>('cumulative')
+    const [mode, setMode] = useState<Mode>('cumulative')
 
+    const report = useReport<DailyResponse>(`/api/ab-test/${abTestId}/daily`, {
+        body: { startDate: startDate || undefined, endDate: endDate || undefined },
+        manual: true,
+        keepPreviousData: true,
+    })
+    const runRef = useRef(report.run)
+    runRef.current = report.run
+    useEffect(() => { if (abTestId) runRef.current() }, [abTestId])
     useEffect(() => {
-        if (abTestId) handleFetch()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [abTestId])
+        if (report.data?.startDate) setStartDate(report.data.startDate)
+        if (report.data?.endDate) setEndDate(report.data.endDate)
+    }, [report.data])
 
-    async function handleFetch(e?: React.FormEvent) {
-        if (e) e.preventDefault()
-        setLoading(true)
-        setError(null)
-
-        try {
-            const res = await fetch(`/api/ab-test/${abTestId}/daily`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    startDate: startDate || undefined,
-                    endDate: endDate || undefined,
-                }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
-
-            setAbTestName(data.abTestName ?? '')
-            setDays(data.days ?? [])
-            setVariants(data.variants ?? [])
-            if (data.startDate) setStartDate(data.startDate)
-            if (data.endDate) setEndDate(data.endDate)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-            setDays(null)
-        } finally {
-            setLoading(false)
-        }
-    }
-
+    const days = report.data?.days ?? null
+    const variants = report.data?.variants ?? []
+    const rateOf = (r: VariantDaily | undefined) => (r ? (mode === 'cumulative' ? r.cumCvr : r.cvr) : null)
     const chartData = (days ?? []).map((d) => {
         const row: Record<string, string | number | null> = { date: d.date }
         for (const v of variants) {
-            const r = d[v as 'A' | 'B' | 'C' | 'D']
-            row[v] = r ? (mode === 'cumulative' ? r.cumCvr : r.cvr) * 100 : null
+            const rate = rateOf(d[v as Variant])
+            row[v] = rate == null ? null : rate * 100
         }
         return row
     })
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>日次CVR推移</h1>
-                    {abTestName && <p className={styles.subtitle}>{abTestName}</p>}
-                </div>
-                <BackLink href={`/ab-test/${abTestId}`}>ABテスト詳細に戻る</BackLink>
-            </div>
-
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>条件</h2>
-                <form onSubmit={handleFetch}>
-                    <div className={styles.formGrid}>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>開始日</label>
-                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.formInput} />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>終了日</label>
-                            <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.formInput} />
-                        </div>
-                    </div>
-                    <div className={styles.formActions}>
-                        <button type="submit" disabled={loading} className="executionButton">
-                            {loading ? '取得中...' : '推移を取得'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {error && (
-                <div className={styles.errorBox}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
-                </div>
-            )}
-
-            {loading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <span>日次データを取得中...</span>
-                </div>
-            )}
-
-            {days && !loading && (
-                <div className={styles.section}>
+        <PageShell
+            pageId="abTestDaily"
+            back={{ href: `/ab-test/${abTestId}`, label: 'ABテスト詳細に戻る' }}
+            subtitle={report.data?.abTestName || undefined}
+            width="wide"
+            status={{ loading: report.loading, error: report.error, source: 'ga4', loadingText: '日次データを取得中...', onRetry: report.run }}
+            keepChildrenWhileLoading
+            controls={
+                <FilterBar onSubmit={report.run} submitLabel="推移を取得" submitting={report.loading}>
+                    <FilterField label="開始日">
+                        <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                    </FilterField>
+                    <FilterField label="終了日">
+                        <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    </FilterField>
+                </FilterBar>
+            }
+        >
+            {days && (
+                <div className={ui.card}>
                     <div className={styles.resultHeader}>
-                        <p className={styles.resultTitle}>
-                            バリアント別CVR推移（{mode === 'cumulative' ? '累積' : '日次'}）
-                        </p>
-                        <div className={styles.modeTabs}>
-                            <button
-                                type="button"
-                                className={`${styles.modeTab} ${mode === 'cumulative' ? styles.modeTabActive : ''}`}
-                                onClick={() => setMode('cumulative')}
-                            >
-                                累積CVR
-                            </button>
-                            <button
-                                type="button"
-                                className={`${styles.modeTab} ${mode === 'daily' ? styles.modeTabActive : ''}`}
-                                onClick={() => setMode('daily')}
-                            >
-                                日次CVR
-                            </button>
+                        <h2 className={ui.sectionTitle}>バリアント別CVR推移（{mode === 'cumulative' ? '累積' : '日次'}）</h2>
+                        <div className={ui.tabs} role="tablist">
+                            {([['cumulative', '累積CVR'], ['daily', '日次CVR']] as const).map(([m, label]) => (
+                                <button key={m} type="button" role="tab" aria-selected={mode === m} className={cx(ui.tab, mode === m && ui.tabActive)} onClick={() => setMode(m)}>
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
                     {days.length === 0 ? (
-                        <p className={styles.empty}>データがありません。期間を調整して再試行してください。</p>
+                        <p className={ui.empty}>データがありません。期間を調整して再試行してください。</p>
                     ) : (
                         <>
-                            <ResponsiveContainer width="100%" height={320}>
-                                <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                                    <XAxis
-                                        dataKey="date"
-                                        tick={{ fontSize: 11, fill: '#9ca3af' }}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickFormatter={(v: string) => v.slice(5)}
-                                    />
-                                    <YAxis
-                                        tick={{ fontSize: 11, fill: '#6b7280' }} tickLine={false} axisLine={false} width={48}
-                                        tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-                                    />
-                                    <Tooltip
-                                        cursor={{ stroke: 'rgba(99,102,241,0.35)', strokeWidth: 1 }}
-                                        content={({ active, payload, label }) => {
-                                            if (!active || !payload?.length) return null
-                                            return (
-                                                <div className={styles.chartTooltip}>
-                                                    <p className={styles.chartTooltipLabel}>{label}</p>
-                                                    {payload.map((p) => (
-                                                        <p key={String(p.dataKey)} className={styles.chartTooltipRow}>
-                                                            <span style={{ color: p.color as string }}>{String(p.dataKey)}</span>
-                                                            <span>{p.value != null ? `${(p.value as number).toFixed(2)}%` : '–'}</span>
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            )
-                                        }}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
-                                    {variants.map((v) => (
-                                        <Line
-                                            key={v}
-                                            type="monotone"
-                                            dataKey={v}
-                                            stroke={VARIANT_COLORS[v] ?? '#8b5cf6'}
-                                            strokeWidth={2}
-                                            dot={{ r: 2, fill: VARIANT_COLORS[v] ?? '#8b5cf6' }}
-                                            activeDot={{ r: 4 }}
-                                            connectNulls
+                            <div className={styles.chartWrap}>
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
+                                        <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: string) => v.slice(5)} />
+                                        <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => `${v.toFixed(1)}%`} />
+                                        <Tooltip
+                                            cursor={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+                                            content={({ active, payload, label }) => {
+                                                if (!active || !payload?.length) return null
+                                                return (
+                                                    <div className={styles.chartTooltip}>
+                                                        <p className={styles.chartTooltipLabel}>{label}</p>
+                                                        {payload.map((p) => (
+                                                            <p key={String(p.dataKey)} className={styles.chartTooltipRow}>
+                                                                <span style={{ color: p.color as string }}>{String(p.dataKey)}</span>
+                                                                <span>{p.value != null ? `${(p.value as number).toFixed(2)}%` : '–'}</span>
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )
+                                            }}
                                         />
-                                    ))}
-                                </LineChart>
-                            </ResponsiveContainer>
+                                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                                        {variants.map((v) => (
+                                            <Line key={v} type="monotone" dataKey={v} stroke={colorOf(v)} strokeWidth={2} dot={{ r: 2, fill: colorOf(v) }} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
 
-                            <div className={styles.tableWrapper}>
-                                <table className={styles.table}>
+                            <div className={ui.tableWrap}>
+                                <table className={ui.dataTable}>
                                     <thead>
                                         <tr>
-                                            <th className={styles.thLabel}>日付</th>
-                                            {variants.map((v) => (
-                                                <th key={v} className={styles.thNum}>
-                                                    {mode === 'cumulative' ? `累積CVR (${v})` : `CVR (${v})`}
-                                                </th>
-                                            ))}
-                                            {variants.map((v) => (
-                                                <th key={`pv-${v}`} className={styles.thNum}>PV/CV ({v})</th>
-                                            ))}
+                                            <th>日付</th>
+                                            {variants.map((v) => <th key={v} className={ui.num}>{mode === 'cumulative' ? `累積CVR (${v})` : `CVR (${v})`}</th>)}
+                                            {variants.map((v) => <th key={`pv-${v}`} className={ui.num}>PV/CV ({v})</th>)}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {[...days].reverse().map((d) => (
-                                            <tr key={d.date} className={styles.dataRow}>
-                                                <td className={styles.tdLabel}>{d.date}</td>
+                                            <tr key={d.date}>
+                                                <td>{d.date}</td>
                                                 {variants.map((v) => {
-                                                    const r = d[v as 'A' | 'B' | 'C' | 'D']
-                                                    const rate = r ? (mode === 'cumulative' ? r.cumCvr : r.cvr) : null
-                                                    return (
-                                                        <td key={v} className={styles.tdNum}>
-                                                            {rate != null ? `${(rate * 100).toFixed(2)}%` : '–'}
-                                                        </td>
-                                                    )
+                                                    const rate = rateOf(d[v as Variant])
+                                                    return <td key={v} className={ui.num}>{rate != null ? `${(rate * 100).toFixed(2)}%` : '–'}</td>
                                                 })}
                                                 {variants.map((v) => {
-                                                    const r = d[v as 'A' | 'B' | 'C' | 'D']
-                                                    return (
-                                                        <td key={`pv-${v}`} className={styles.tdNum}>
-                                                            {r ? `${r.pv.toLocaleString()} / ${r.cv.toLocaleString()}` : '–'}
-                                                        </td>
-                                                    )
+                                                    const r = d[v as Variant]
+                                                    return <td key={`pv-${v}`} className={ui.num}>{r ? `${r.pv.toLocaleString()} / ${r.cv.toLocaleString()}` : '–'}</td>
                                                 })}
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-
-                            <p className={styles.note}>
-                                * 累積CVRはテスト開始（取得期間の先頭）からの累計CV÷累計PV。日次CVRはその日1日のCV÷PVです。
-                            </p>
+                            <p className={ui.tableNote}>累積CVRはテスト開始（取得期間の先頭）からの累計CV÷累計PV。日次CVRはその日1日のCV÷PVです。</p>
                         </>
                     )}
                 </div>
             )}
-        </div>
+        </PageShell>
     )
 }

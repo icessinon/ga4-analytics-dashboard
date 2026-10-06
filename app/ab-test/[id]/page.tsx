@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import AISpinner from '@/components/AISpinner'
-import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { ui } from '@/components/ui'
 import AbTestCompletionModal from '@/components/ab-test/AbTestCompletionModal'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import type { AbTest, AbTestReportExecution } from './types'
@@ -103,7 +104,6 @@ function renderAiReportLine(line: string, i: number, className: string) {
 }
 
 export default function AbTestDetailPage() {
-    const router = useRouter()
     const params = useParams()
     const abTestId = params?.id as string
     const [abTest, setAbTest] = useState<AbTest | null>(null)
@@ -408,39 +408,24 @@ export default function AbTestDetailPage() {
     }
 
     if (loading) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ABテスト詳細</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
+        return <PageShell pageId="abTestDetail" status={{ loading: true, source: 'db' }}>{null}</PageShell>
     }
 
     if (error || !abTest) {
         return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ABテスト詳細</h1>
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラーが発生しました</p>
-                    <p>{error || 'ABテストが見つかりませんでした'}</p>
-                    <Link
-                        href="/ab-test"
-                        className={styles.errorLink}
-                    >
-                        一覧に戻る
-                    </Link>
-                </div>
-            </div>
+            <PageShell pageId="abTestDetail">
+                <Alert tone="error" title="エラーが発生しました" action={<Link href="/ab-test" className={ui.btnGhost}>一覧に戻る</Link>}>
+                    {error || 'ABテストが見つかりませんでした'}
+                </Alert>
+            </PageShell>
         )
     }
 
     function renderFinalReportSection() {
         if (!abTest?.finalAiReport) return null
         return (
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>AI最終レポート</h2>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>AI最終レポート</h2>
                 {abTest.finalAiReportAt && (
                     <p className={styles.currentMeta}>生成日時: {new Date(abTest.finalAiReportAt).toLocaleString('ja-JP')}</p>
                 )}
@@ -498,51 +483,34 @@ export default function AbTestDetailPage() {
         )
     }
 
-    return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div className={styles.headerRow}>
-                    <h1 className={styles.title}>
-                        {abTest.name}
-                        {(() => {
-                            const issue = resolveIssueLink(abTest.issueUrl)
-                            return issue && (
-                                <a href={issue.href} target="_blank" rel="noopener noreferrer" className={styles.issueLink}>
-                                    🔗 {issue.text}
-                                </a>
-                            )
-                        })()}
-                    </h1>
-                    <div className={styles.headerActions}>
-                        <BackLink href="/ab-test">一覧に戻る</BackLink>
-                        <button
-                            onClick={() => router.push(`/ab-test/${abTest.id}/segment`)}
-                            className={styles.segmentButton}
-                        >
-                            セグメント別CVR
-                        </button>
-                        <button
-                            onClick={() => router.push(`/ab-test/${abTest.id}/daily`)}
-                            className={styles.segmentButton}
-                        >
-                            日次CVR推移
-                        </button>
-                        <button
-                            onClick={() => router.push(`/ab-test?edit=${abTest.id}`)}
-                            className={styles.editButton}
-                        >
-                            この設定で編集
-                        </button>
-                    </div>
-                </div>
-                <p className={styles.subtitle}>
-                    作成日時: {formatDateTime(abTest.startDate)}
-                </p>
-            </div>
+    const issue = resolveIssueLink(abTest.issueUrl)
 
+    return (
+        <PageShell
+            pageId="abTestDetail"
+            width="wide"
+            title={
+                <>
+                    {abTest.name}
+                    {issue && (
+                        <a href={issue.href} target="_blank" rel="noopener noreferrer" className={styles.issueLink}>
+                            🔗 {issue.text}
+                        </a>
+                    )}
+                </>
+            }
+            subtitle={`作成日時: ${formatDateTime(abTest.startDate)}`}
+            actions={
+                <>
+                    <Link href={`/ab-test/${abTest.id}/segment`} className={ui.btnGhost}>セグメント別CVR</Link>
+                    <Link href={`/ab-test/${abTest.id}/daily`} className={ui.btnGhost}>日次CVR推移</Link>
+                    <Link href={`/ab-test?edit=${abTest.id}`} className={ui.btnGhost}>この設定で編集</Link>
+                </>
+            }
+        >
             {abTest.status === 'completed' && (
-                <div className={`${styles.section} ${styles.resultSummary}`}>
-                    <h2 className={styles.sectionTitle}>テスト結果サマリー</h2>
+                <div className={`${ui.card} ${styles.resultSummary}`}>
+                    <h2 className={ui.sectionTitle}>テスト結果サマリー</h2>
                     <div className={styles.resultSummaryGrid}>
                         <div className={styles.resultSummaryCard}>
                             <p className={styles.resultSummaryLabel}>勝者バリアント</p>
@@ -592,8 +560,8 @@ export default function AbTestDetailPage() {
 
             {abTest.status === 'completed' && renderFinalReportSection()}
 
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>基本情報</h2>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>基本情報</h2>
                 <div className={styles.infoGrid}>
                     <div className={styles.infoItem}>
                         <p className={styles.infoLabel}>ステータス</p>
@@ -664,9 +632,9 @@ export default function AbTestDetailPage() {
             {abTest.status !== 'completed' && renderFinalReportSection()}
 
             {abTest.ga4Config && (
-                <div className={styles.section}>
+                <div className={ui.card}>
                     <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>
+                        <h2 className={ui.sectionTitle}>
                             {abTest.status === 'completed' ? '最終結果（バリアント別CVR）' : '現在の途中経過'}
                         </h2>
                         {abTest.status !== 'completed' && (
@@ -894,9 +862,9 @@ export default function AbTestDetailPage() {
             )}
 
             {canShowFunnel(abTest.ga4Config) && (
-                <div className={styles.section}>
+                <div className={ui.card}>
                     <div className={styles.sectionHeader}>
-                        <h2 className={styles.sectionTitle}>
+                        <h2 className={ui.sectionTitle}>
                             {abTest.status === 'completed' ? '最終ファネル（バリアント別）' : '途中経過ファネル'}
                         </h2>
                         <div className={styles.funnelControls}>
@@ -1093,8 +1061,8 @@ export default function AbTestDetailPage() {
             )}
 
             {abTest.ga4Config && (
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>テストしているラベル</h2>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>テストしているラベル</h2>
                     <div className={styles.labelSection}>
                         {abTest.ga4Config.dimensions && (
                             <div className={styles.labelBlock}>
@@ -1142,8 +1110,8 @@ export default function AbTestDetailPage() {
             )}
 
             {abTest.status !== 'completed' && abTest.scheduleConfig && (
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>スケジュール設定</h2>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>スケジュール設定</h2>
                     <div className={styles.scheduleList}>
                         <div className={styles.scheduleItem}>
                             <span className={styles.scheduleLabel}>自動実行:</span>
@@ -1178,9 +1146,9 @@ export default function AbTestDetailPage() {
                 </div>
             )}
 
-            <div className={styles.section}>
+            <div className={ui.card}>
                 <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>生成されたレポート</h2>
+                    <h2 className={ui.sectionTitle}>生成されたレポート</h2>
                     {abTest.status === 'running' && (
                         <button
                             className={styles.refreshButton}
@@ -1243,10 +1211,6 @@ export default function AbTestDetailPage() {
                 )}
             </div>
 
-            <div className={styles.footer}>
-                <BackLink href="/ab-test">一覧に戻る</BackLink>
-            </div>
-
             <AbTestCompletionModal
                 isOpen={showCompletionModal}
                 onClose={() => setShowCompletionModal(false)}
@@ -1257,6 +1221,6 @@ export default function AbTestDetailPage() {
                 initialVictoryFactors={abTest?.victoryFactors ?? ''}
                 initialDefeatFactors={abTest?.defeatFactors ?? ''}
             />
-        </div>
+        </PageShell>
     )
 }

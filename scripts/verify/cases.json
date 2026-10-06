@@ -698,5 +698,135 @@
     "volatile": [
       "fetchedAt"
     ]
+  },
+  {
+    "name": "abtest-current",
+    "path": "/api/ab-test/34/current",
+    "method": "GET",
+    "volatile": [
+      "fetchedAt",
+      "endDate",
+      "elapsedDays",
+      "reliability",
+      "variants",
+      "comparisons",
+      "leader",
+      "filterSegments"
+    ]
+  },
+  {
+    "name": "abtest-current-shape",
+    "path": "/api/ab-test/34/current",
+    "method": "GET",
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "abtest-daily",
+    "path": "/api/ab-test/34/daily",
+    "body": {
+      "startDate": "2026-09-14",
+      "endDate": "2026-09-21"
+    }
+  },
+  {
+    "name": "abtest-segment-device",
+    "path": "/api/ab-test/34/segment",
+    "body": {
+      "segmentDimension": "deviceCategory",
+      "startDate": "2026-09-14",
+      "endDate": "2026-09-21"
+    }
+  },
+  {
+    "name": "abtest-segment-country",
+    "path": "/api/ab-test/34/segment",
+    "body": {
+      "segmentDimension": "country",
+      "startDate": "2026-09-14",
+      "endDate": "2026-09-16"
+    }
+  },
+  {
+    "name": "abtest-segment-bad",
+    "path": "/api/ab-test/34/segment",
+    "body": {
+      "segmentDimension": "pagePath"
+    }
+  },
+  {
+    "name": "abtest-test-execute",
+    "path": "/api/ab-test/test-execute",
+    "body": {
+      "ga4Config": {
+        "cvrA": {
+          "metric": "totalUsers",
+          "numeratorLabels": [
+            "SU__*__Label__StepLast_求人を探しに行く"
+          ],
+          "denominatorLabels": [
+            "SU__Line__Area__新規会員登録"
+          ],
+          "numeratorDimension": "customEvent:click_label",
+          "denominatorDimension": "customEvent:view_label"
+        },
+        "cvrB": {
+          "metric": "totalUsers",
+          "numeratorLabels": [
+            "SU__*__Label__StepLast_求人を探しに行く__B-1800"
+          ],
+          "denominatorLabels": [
+            "SU__Line__Area__新規会員登録__B-1800"
+          ],
+          "numeratorDimension": "customEvent:click_label",
+          "denominatorDimension": "customEvent:view_label"
+        },
+        "limit": 50000,
+        "metrics": [
+          {
+            "name": "eventCount"
+          },
+          {
+            "name": "totalUsers"
+          }
+        ],
+        "dimensions": [
+          {
+            "name": "customEvent:click_label"
+          },
+          {
+            "name": "customEvent:view_label"
+          }
+        ],
+        "propertyId": "534098180",
+        "geminiConfig": {
+          "enabled": false
+        },
+        "excludeFilter": {
+          "operator": "CONTAINS",
+          "dimension": "pageLocation",
+          "expression": "userId="
+        },
+        "abTestEvaluationConfig": {
+          "minPV": 200,
+          "minDays": 7,
+          "minDifferencePt": 0.5,
+          "minSignificance": 60,
+          "minImprovementRate": 5
+        }
+      },
+      "startDate": "2026-09-14",
+      "endDate": "2026-09-21"
+    }
+  },
+  {
+    "name": "abtest-test-execute-missing",
+    "path": "/api/ab-test/test-execute",
+    "body": {
+      "ga4Config": {
+        "propertyId": "534098180"
+      }
+    }
   }
 ]

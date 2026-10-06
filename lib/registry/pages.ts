@@ -732,6 +732,7 @@ export const PAGES: Record<PageId, PageDef> = {
         title: 'ABテスト完了一覧',
         subtitle: '完了したABテストの勝利・負けと改善率',
         category: 'abtest',
+        parent: 'abTest',
         productScoped: true,
         productIdInHref: true,
         tags: ['abtest'],
@@ -748,6 +749,7 @@ export const PAGES: Record<PageId, PageDef> = {
         title: '施策提案AI壁打ち',
         subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価',
         category: 'abtest',
+        parent: 'abTest',
         productScoped: true,
         tags: ['abtest', 'ai'],
         doc: {

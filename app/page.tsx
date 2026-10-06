@@ -1,603 +1,271 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
 import DateInput from '@/components/DateInput'
 import Link from '@/components/Link'
-import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import InfoTooltip from '@/components/InfoTooltip'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import LoadState from '@/components/LoadState'
 import AbTestDonutCharts from '@/components/dashboard/AbTestDonutCharts'
 import PageMetricsChart from '@/components/dashboard/PageMetricsChart'
+import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import type { ChartMetric, DashboardStats, PageMetrics, PageMetricsSeriesPoint, SeriesDataPoint } from '@/app/dashboard/types'
+import { useReport } from '@/hooks/useReport'
 import { navGroups } from '@/lib/registry'
-import { getChartPeriodLabel, getMonthOptions, getRangeForGranularity, periodToTimestamp } from '@/app/dashboard/utils'
-import { parseJsonResponse } from '@/lib/utils/fetch'
-import InfoTooltip from '@/components/InfoTooltip'
+import { CHART_COLORS } from '@/lib/constants/chartColors'
+import type { DashboardStats } from '@/app/dashboard/types'
+import type { ChartMetric, Granularity, PageMetricsResponse, PageMetricsSeriesResponse, SeriesDataPoint } from '@/lib/services/dashboard/pageMetricsTypes'
+import { monthToRange, rangeForGranularity } from '@/lib/services/dashboard/pageMetricsPeriod'
+import { getChartPeriodLabel, getMonthOptions, periodToTimestamp } from '@/app/dashboard/utils'
 import styles from './DashboardPage.module.css'
+
+const GRANULARITIES: ReadonlyArray<{ id: Granularity; label: string }> = [
+    { id: 'daily', label: '日別' },
+    { id: 'weekly', label: '週別' },
+    { id: 'monthly', label: '月別' },
+]
+
+/** 推移グラフで選べる 6 指標。カードの並び順＝CSS の nth-child 配色 */
+const METRIC_CARDS: ReadonlyArray<{ key: ChartMetric; label: string; tooltip: string; valueClass: string; lowerIsBetter?: boolean }> = [
+    { key: 'pv', label: 'PV', tooltip: 'ページビュー数。ユーザーがページを閲覧した総回数（リロード含む）。', valueClass: 'statValueBlue' },
+    { key: 'exitRate', label: '離脱率', tooltip: 'このページからサイトを離れた割合（exits ÷ pageViews）。数値が低いほど良好。', valueClass: 'statValuePink', lowerIsBetter: true },
+    { key: 'newUserRate', label: '新規訪問率', tooltip: 'このページを訪れたユーザーのうち、初回訪問ユーザーの割合（newUsers ÷ activeUsers）。', valueClass: 'statValueCyan' },
+    { key: 'bounceCount', label: '直帰数', tooltip: 'このページ1ページのみ閲覧してサイトを離れたセッション数。直帰率ではなく実数値。', valueClass: 'statValueOrange', lowerIsBetter: true },
+    { key: 'averageSessionDuration', label: '平均滞在時間', tooltip: '1セッションあたりの平均滞在時間（averageSessionDuration）。GA4は離脱ページの滞在時間は計測されない。', valueClass: 'statValueCyan' },
+    { key: 'engagementRate', label: 'エンゲージメント率', tooltip: 'エンゲージドセッション ÷ 全セッション。エンゲージドセッション＝10秒以上滞在 or 2ページ以上閲覧 or CVが発生したセッション。', valueClass: 'statValueGreen' },
+]
+
+const currentMonth = () => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+const previousMonth = (month: string) => {
+    const [y, m] = month.split('-').map(Number)
+    return m <= 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`
+}
+const pctChange = (cur: number | null | undefined, prev: number | null | undefined) =>
+    prev == null || prev === 0 || cur == null ? null : ((cur - prev) / prev) * 100
+
+function metricValue(m: PageMetricsResponse, key: ChartMetric): string {
+    switch (key) {
+        case 'pv': return m.pv.toLocaleString()
+        case 'exitRate': return m.exitRate != null ? `${m.exitRate.toFixed(2)}%` : '—'
+        case 'newUserRate': return `${m.newUserRate.toFixed(2)}%`
+        case 'bounceCount': return m.bounceCount.toLocaleString()
+        case 'averageSessionDuration': return m.averageSessionDurationLabel
+        case 'engagementRate': return `${m.engagementRate.toFixed(2)}%`
+        default: return '—'
+    }
+}
+function metricNumber(m: PageMetricsResponse, key: ChartMetric): number | null {
+    switch (key) {
+        case 'pv': return m.pv
+        case 'exitRate': return m.exitRate
+        case 'newUserRate': return m.newUserRate
+        case 'bounceCount': return m.bounceCount
+        case 'averageSessionDuration': return m.averageSessionDurationSeconds
+        case 'engagementRate': return m.engagementRate
+        default: return null
+    }
+}
 
 export default function DashboardPage() {
     const { currentProduct, setCurrentProduct, products, loading: productsLoading } = useProduct()
-    const [stats, setStats] = useState<DashboardStats | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const now = new Date()
-    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
-    const [pagePaths, setPagePaths] = useState<string[]>([])
-    const [pagePathsLoading, setPagePathsLoading] = useState(false)
+    const productId = currentProduct?.id
+    const propertyId = currentProduct?.ga4PropertyId ?? ''
+    const [selectedMonth, setSelectedMonth] = useState(currentMonth)
     const [selectedPagePath, setSelectedPagePath] = useState('/')
-    const [pageMetrics, setPageMetrics] = useState<PageMetrics | null>(null)
-    const [pageMetricsPrev, setPageMetricsPrev] = useState<PageMetrics | null>(null)
-    const [granularity, setGranularity] = useState<'daily' | 'weekly' | 'monthly'>('daily')
-    const [seriesData, setSeriesData] = useState<PageMetricsSeriesPoint[]>([])
-    const [seriesLoading, setSeriesLoading] = useState(false)
+    const [granularity, setGranularity] = useState<Granularity>('daily')
     const [chartMetric, setChartMetric] = useState<ChartMetric>('pv')
-    const [customStartDate, setCustomStartDate] = useState<string>('')
-    const [customEndDate, setCustomEndDate] = useState<string>('')
-    const [pageMetricsLoading, setPageMetricsLoading] = useState(false)
-    const selectedPagePathRef = useRef('')
-    selectedPagePathRef.current = selectedPagePath
+    const [customStartDate, setCustomStartDate] = useState('')
+    const [customEndDate, setCustomEndDate] = useState('')
+    const useCustomRange = Boolean(customStartDate && customEndDate)
 
-    const chartData = useMemo<SeriesDataPoint[]>(() => {
-        return seriesData.map((d) => ({
-            ...d,
-            t: periodToTimestamp(d.period, granularity),
-        }))
-    }, [seriesData, granularity])
+    // KPI サマリー（AB テスト件数など。DB 由来）
+    const stats = useReport<DashboardStats>(`/api/dashboard?productId=${productId ?? ''}&month=${selectedMonth}`, {
+        enabled: !!productId,
+        keepPreviousData: true,
+    })
 
-    const momChanges = useMemo(() => {
-        if (!pageMetrics || !pageMetricsPrev) {
-            return {
-                pv: null,
-                exitRate: null,
-                newUserRate: null,
-                bounceCount: null,
-                averageSessionDuration: null,
-                engagementRate: null,
-            }
-        }
-        const prev = pageMetricsPrev
-        const cur = pageMetrics
-        const pv = prev.pv === 0 ? null : (cur.pv - prev.pv) / prev.pv * 100
-        const exitRate =
-            prev.exitRate == null || prev.exitRate === 0
-                ? null
-                : (cur.exitRate != null ? (cur.exitRate - prev.exitRate) / prev.exitRate * 100 : null)
-        const newUserRate = prev.newUserRate === 0 ? null : (cur.newUserRate - prev.newUserRate) / prev.newUserRate * 100
-        const bounceCount = prev.bounceCount === 0 ? null : (cur.bounceCount - prev.bounceCount) / prev.bounceCount * 100
-        const averageSessionDuration =
-            prev.averageSessionDurationSeconds === 0
-                ? null
-                : (cur.averageSessionDurationSeconds - prev.averageSessionDurationSeconds) / prev.averageSessionDurationSeconds * 100
-        const engagementRate = prev.engagementRate === 0 ? null : (cur.engagementRate - prev.engagementRate) / prev.engagementRate * 100
-        return {
-            pv,
-            exitRate: exitRate ?? null,
-            newUserRate,
-            bounceCount,
-            averageSessionDuration,
-            engagementRate,
-        }
-    }, [pageMetrics, pageMetricsPrev])
-
-    const fetchStats = useCallback(async () => {
-        if (!currentProduct) {
-            setLoading(false)
-            return
-        }
-        setLoading(true)
-        setError(null)
-        try {
-            const url = `/api/dashboard?productId=${currentProduct.id}&month=${selectedMonth}`
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                cache: 'no-store',
-            })
-            if (!response.ok) {
-                let errorData: { message?: string; error?: string }
-                try {
-                    errorData = await response.json()
-                } catch {
-                    errorData = { message: `HTTP ${response.status}: ${response.statusText}` }
-                }
-                throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: データの取得に失敗しました`)
-            }
-            const data = await parseJsonResponse<DashboardStats & { error?: string; message?: string }>(response)
-            if (data.error) throw new Error(data.message || data.error)
-            setStats(data)
-        } catch (err) {
-            let errorMessage = 'エラーが発生しました'
-            if (err instanceof TypeError && err.message.includes('fetch')) {
-                errorMessage = 'サーバーに接続できませんでした。開発サーバーが起動しているか確認してください。'
-            } else if (err instanceof Error) {
-                errorMessage = err.message
-            }
-            setError(errorMessage)
-        } finally {
-            setLoading(false)
-        }
-    }, [currentProduct, selectedMonth])
-
+    // ページ別指標の候補パス（エンゲージメントファネルで取得しているページ）
+    const monthRange = useMemo(() => monthToRange(selectedMonth), [selectedMonth])
+    const paths = useReport<{ pagePaths?: string[] }>('/api/funnel/engagement/page-paths', {
+        body: { propertyId, startDate: monthRange.startDate, endDate: monthRange.endDate },
+        enabled: !!propertyId,
+        keepPreviousData: true,
+    })
+    const pagePaths = paths.data?.pagePaths ?? []
     useEffect(() => {
-        fetchStats()
-    }, [fetchStats])
+        if (!paths.data) return
+        const list = paths.data.pagePaths ?? []
+        if (list.length && !list.includes(selectedPagePath)) setSelectedPagePath(list.includes('/') ? '/' : list[0])
+    }, [paths.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const monthToRange = useCallback((month: string) => {
-        const [y, m] = month.split('-').map(Number)
-        const start = new Date(y, m - 1, 1)
-        const end = new Date(y, m, 0)
-        return {
-            startDate: start.toISOString().slice(0, 10),
-            endDate: end.toISOString().slice(0, 10),
-        }
-    }, [])
+    // 今期間の指標。カスタム期間 > 月（日別）> 集計単位に応じた期間
+    const metricsBody = useMemo(() => {
+        const base = { propertyId, productId, pagePath: selectedPagePath }
+        if (useCustomRange) return { ...base, startDate: customStartDate, endDate: customEndDate }
+        if (granularity === 'daily') return { ...base, month: selectedMonth }
+        return { ...base, ...rangeForGranularity(selectedMonth, granularity) }
+    }, [propertyId, productId, selectedPagePath, useCustomRange, customStartDate, customEndDate, granularity, selectedMonth])
+    const metricsEnabled = !!propertyId && !!selectedPagePath
+    const metrics = useReport<PageMetricsResponse>('/api/dashboard/page-metrics', { body: metricsBody, enabled: metricsEnabled, keepPreviousData: true })
+    // 先月比（カスタム期間では出さない）
+    const metricsPrev = useReport<PageMetricsResponse>('/api/dashboard/page-metrics', {
+        body: { propertyId, productId, pagePath: selectedPagePath, month: previousMonth(selectedMonth) },
+        enabled: metricsEnabled && !useCustomRange,
+        keepPreviousData: true,
+    })
+    const series = useReport<PageMetricsSeriesResponse>('/api/dashboard/page-metrics/series', {
+        body: useCustomRange
+            ? { propertyId, productId, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate, granularity }
+            : { propertyId, productId, pagePath: selectedPagePath, month: selectedMonth, granularity },
+        enabled: metricsEnabled,
+        keepPreviousData: true,
+    })
 
-    const getPreviousMonth = useCallback((month: string) => {
-        const [y, m] = month.split('-').map(Number)
-        if (m <= 1) return `${y - 1}-12`
-        return `${y}-${String(m - 1).padStart(2, '0')}`
-    }, [])
+    const chartData = useMemo<SeriesDataPoint[]>(
+        () => (series.data?.series ?? []).map((d) => ({ ...d, t: periodToTimestamp(d.period, granularity) })),
+        [series.data, granularity],
+    )
+    const pageMetrics = metrics.data
+    const prev = useCustomRange ? null : metricsPrev.data
 
-    useEffect(() => {
-        if (!currentProduct?.ga4PropertyId) {
-            setPagePaths([])
-            setSelectedPagePath('')
-            return
-        }
-        let cancelled = false
-        setPagePathsLoading(true)
-        const { startDate, endDate } = monthToRange(selectedMonth)
-        fetch('/api/funnel/engagement/page-paths', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                propertyId: currentProduct.ga4PropertyId,
-                startDate,
-                endDate,
-            }),
-        })
-            .then((r) => parseJsonResponse<{ error?: string; pagePaths?: string[] }>(r))
-            .then((data) => {
-                if (cancelled) return
-                if (data.error) throw new Error(data.error)
-                const paths = data.pagePaths || []
-                setPagePaths(paths)
-                const current = selectedPagePathRef.current
-                if (paths.length && !paths.includes(current)) {
-                    setSelectedPagePath(paths.includes('/') ? '/' : (paths[0] ?? ''))
-                } else if (paths.length && (current === '' || current === '/') && paths.includes('/')) {
-                    setSelectedPagePath('/')
-                }
-            })
-            .catch(() => {
-                if (!cancelled) setPagePaths([])
-            })
-            .finally(() => {
-                if (!cancelled) setPagePathsLoading(false)
-            })
-        return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth])
-
-    useEffect(() => {
-        if (!currentProduct?.ga4PropertyId || !selectedPagePath) {
-            setPageMetrics(null)
-            setPageMetricsPrev(null)
-            return
-        }
-        let cancelled = false
-        setPageMetricsLoading(true)
-        const useCustomRange = Boolean(customStartDate && customEndDate)
-        const body = useCustomRange
-            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate }
-            : granularity === 'daily'
-                ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth }
-                : (() => {
-                        const { startDate, endDate } = getRangeForGranularity(selectedMonth, granularity)
-                        return { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate, endDate }
-                    })()
-        const prevMonth = getPreviousMonth(selectedMonth)
-        const bodyPrev = useCustomRange
-            ? null
-            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: prevMonth }
-        if (!useCustomRange && bodyPrev) {
-            Promise.all([
-                fetch('/api/dashboard/page-metrics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => parseJsonResponse<PageMetrics & { error?: string }>(r)),
-                fetch('/api/dashboard/page-metrics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyPrev) }).then((r) => parseJsonResponse<PageMetrics & { error?: string }>(r)),
-            ])
-                .then(([data, dataPrev]) => {
-                    if (cancelled) return
-                    if (data.error) throw new Error(data.error)
-                    setPageMetrics(data)
-                    setPageMetricsPrev(dataPrev?.error ? null : dataPrev)
-                })
-                .catch(() => {
-                    if (!cancelled) {
-                        setPageMetrics(null)
-                        setPageMetricsPrev(null)
-                    }
-                })
-                .finally(() => {
-                    if (!cancelled) setPageMetricsLoading(false)
-                })
-        } else {
-            setPageMetricsPrev(null)
-            fetch('/api/dashboard/page-metrics', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            })
-                .then((r) => parseJsonResponse<PageMetrics & { error?: string }>(r))
-                .then((data) => {
-                    if (cancelled) return
-                    if (data.error) throw new Error(data.error)
-                    setPageMetrics(data)
-                })
-                .catch(() => {
-                    if (!cancelled) setPageMetrics(null)
-                })
-                .finally(() => {
-                    if (!cancelled) setPageMetricsLoading(false)
-                })
-        }
-        return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate, getPreviousMonth])
-
-    useEffect(() => {
-        if (!currentProduct?.ga4PropertyId || !selectedPagePath) {
-            setSeriesData([])
-            return
-        }
-        const useCustomRange = Boolean(customStartDate && customEndDate)
-        if (!useCustomRange && !selectedMonth) return
-        let cancelled = false
-        setSeriesLoading(true)
-        const seriesBody = useCustomRange
-            ? { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, startDate: customStartDate, endDate: customEndDate, granularity }
-            : { propertyId: currentProduct.ga4PropertyId, productId: currentProduct.id, pagePath: selectedPagePath, month: selectedMonth, granularity }
-        fetch('/api/dashboard/page-metrics/series', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(seriesBody),
-        })
-            .then((r) => parseJsonResponse<{ error?: string; series?: PageMetricsSeriesPoint[] }>(r))
-            .then((data) => {
-                if (cancelled) return
-                if (data.error) throw new Error(data.error)
-                setSeriesData(data.series ?? [])
-            })
-            .catch(() => {
-                if (!cancelled) setSeriesData([])
-            })
-            .finally(() => {
-                if (!cancelled) setSeriesLoading(false)
-            })
-        return () => { cancelled = true }
-    }, [currentProduct?.id, currentProduct?.ga4PropertyId, selectedMonth, selectedPagePath, granularity, customStartDate, customEndDate])
-
-    if (loading) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ダッシュボード</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
-    }
-
-    if (error) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ダッシュボード</h1>
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラーが発生しました</p>
-                    <p className={styles.errorMessage}>{error}</p>
-                    <div className={styles.errorList}>
-                        <p className={styles.errorListTitle}>確認事項：</p>
-                        <ul className={styles.errorListItems}>
-                            <li className={styles.errorListItem}>データベースが起動しているか確認してください</li>
-                            <li className={styles.errorListItem}>.env または .env.local が正しく設定されているか確認してください（Docker の場合は .env）</li>
-                            <li className={styles.errorListItem}>ブラウザのコンソールで詳細なエラーを確認してください</li>
-                        </ul>
-                    </div>
-                    <button
-                        onClick={() => {
-                            setError(null)
-                            fetchStats()
-                        }}
-                        className={styles.retryButton}
-                    >
-                        再試行
-                    </button>
-                </div>
-            </div>
-        )
-    }
+    const [sy, sm] = selectedMonth.split('-').map(Number)
+    const monthLabel = `${sy}年${sm}月${selectedMonth === currentMonth() ? '（今月）' : ''}`
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div className={styles.headerContent}>
-                    <div>
-                        <h1 className={styles.title}>ダッシュボード</h1>
-                        <p className={styles.subtitle}>GA4 Analytics Dashboard の概要</p>
+        <PageShell
+            pageId="dashboard"
+            width="wide"
+            back={null}
+            related={false}
+            subtitle={`${monthLabel}のサマリー。${currentProduct ? `${currentProduct.name}${currentProduct.domain ? `（${currentProduct.domain}）` : ''}${propertyId ? ` / GA4 プロパティ ${propertyId}` : ''}` : 'プロダクトを選んでください'}`}
+            status={{ loading: stats.loading && !stats.data, error: stats.error, source: 'db', onRetry: stats.run }}
+            keepChildrenWhileLoading
+            controls={
+                <FilterBar>
+                    <FilterField label="プロダクト">
+                        <select
+                            className={ui.select}
+                            value={String(productId ?? '')}
+                            onChange={(e) => { const p = products.find((x) => x.id === parseInt(e.target.value, 10)); if (p) setCurrentProduct(p) }}
+                            disabled={productsLoading}
+                            aria-label="プロダクト選択"
+                        >
+                            {products.length === 0 && <option value="">プロダクトがありません</option>}
+                            {products.map((p) => <option key={p.id} value={p.id}>{p.name}{p.domain ? ` (${p.domain})` : ''}</option>)}
+                        </select>
+                    </FilterField>
+                    <FilterField label="表示月">
+                        <select className={ui.select} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} aria-label="表示月選択">
+                            {getMonthOptions().map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                    </FilterField>
+                </FilterBar>
+            }
+        >
+            {stats.data && (
+                <div className={ui.summaryRow}>
+                    <div className={ui.summaryCard} style={{ '--summary-accent': CHART_COLORS.green } as CSSProperties}>
+                        <span className={ui.summaryLabel}>テスト中のAB施策</span>
+                        <span className={ui.summaryValue}>{stats.data.abTestCount ?? 0}</span>
                     </div>
-                    <div className={styles.headerSelectors}>
-                        <div className={styles.productSelector}>
-                            <label className={styles.productLabel}>プロダクト:</label>
-                            <CustomSelect
-                                value={String(currentProduct?.id ?? '')}
-                                onChange={(v) => {
-                                    const product = products.find((p) => p.id === parseInt(v, 10))
-                                    if (product) setCurrentProduct(product)
-                                }}
-                                options={products.length === 0 ? [{ value: '', label: 'プロダクトがありません' }] : products.map((p) => ({ value: String(p.id), label: `${p.name} ${p.domain ? `(${p.domain})` : ''}` }))}
-                                triggerClassName={styles.productSelect}
-                                disabled={productsLoading}
-                                aria-label="プロダクト選択"
-                            />
-                        </div>
-                        <div className={styles.monthSelector}>
-                            <label className={styles.monthLabel}>表示月:</label>
-                            <CustomSelect
-                                value={selectedMonth}
-                                onChange={setSelectedMonth}
-                                options={getMonthOptions().map((opt) => ({ value: opt.value, label: opt.label }))}
-                                triggerClassName={styles.monthSelect}
-                                aria-label="表示月選択"
-                            />
-                        </div>
+                    <div className={ui.summaryCard} style={{ '--summary-accent': CHART_COLORS.cyan } as CSSProperties}>
+                        <span className={ui.summaryLabel}>ABテスト勝利数</span>
+                        <span className={ui.summaryValue}>{stats.data.abTestVictoryCount ?? 0}</span>
+                    </div>
+                    <div className={ui.summaryCard} style={{ '--summary-accent': CHART_COLORS.violet } as CSSProperties}>
+                        <span className={ui.summaryLabel}>追加したAB施策</span>
+                        <span className={ui.summaryValue}>{stats.data.abTestAddedThisMonth ?? 0}</span>
                     </div>
                 </div>
-                {currentProduct && (
-                    <div className={styles.currentProduct}>
-                        <p className={styles.currentProductText}>
-                            <strong>現在のプロダクト:</strong> {currentProduct.name}
-                            {currentProduct.domain && ` (${currentProduct.domain})`}
-                            {currentProduct.ga4PropertyId && ` - GA4プロパティID: ${currentProduct.ga4PropertyId}`}
-                        </p>
-                    </div>
-                )}
-            </div>
-
-            <p className={styles.monthCaption}>
-                {stats?.month ? (() => {
-                    const [y, m] = stats.month.split('-').map(Number)
-                    return `${y}年${m}月` + (stats.month === defaultMonth ? '（今月）' : '')
-                })() : ''}
-            </p>
-
-            <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                    <h3 className={styles.statTitle}>テスト中のAB施策</h3>
-                    <p className={`${styles.statValue} ${styles.statValueGreen}`}>
-                        {stats?.abTestCount ?? 0}
-                    </p>
-                </div>
-                <div className={styles.statCard}>
-                    <h3 className={styles.statTitle}>ABテスト勝利数</h3>
-                    <p className={`${styles.statValue} ${styles.statValueCyan}`}>
-                        {stats?.abTestVictoryCount ?? 0}
-                    </p>
-                </div>
-                <div className={styles.statCard}>
-                    <h3 className={styles.statTitle}>追加したAB施策</h3>
-                    <p className={`${styles.statValue} ${styles.statValuePurple}`}>
-                        {stats?.abTestAddedThisMonth ?? 0}
-                    </p>
-                </div>
-            </div>
-
-            {stats?.abTestCountByStatus != null && stats?.abTestCompletedOutcome != null && (
-                <AbTestDonutCharts
-                    countByStatus={stats.abTestCountByStatus}
-                    completedOutcome={stats.abTestCompletedOutcome}
-                    productId={currentProduct?.id}
-                />
             )}
 
-            {currentProduct?.ga4PropertyId && (
-                <div className={styles.pageMetricsSection}>
-                    <h2 className={styles.pageMetricsSectionTitle}>ページ別指標</h2>
-                    <p className={styles.pageMetricsSectionDesc}>
-                        エンゲージメントファネルで取得しているページパスを選択すると、そのページのGA4指標を表示します。
-                    </p>
-                    <div className={styles.pagePathRow}>
-                        <div className={styles.pageControlRow}>
-                            <label className={styles.pageControlLabel}>ページパス:</label>
-                            <CustomSelect
-                                className={styles.pagePathSelectWrapper}
-                                value={pagePaths.length && pagePaths.includes(selectedPagePath) ? selectedPagePath : (pagePaths[0] ?? '')}
-                                onChange={setSelectedPagePath}
-                                options={pagePathsLoading ? [{ value: '', label: '取得中...' }] : pagePaths.length === 0 ? [{ value: '', label: '選択してください' }] : pagePaths.map((path) => ({ value: path, label: path === '/' ? '/' : path.length > 60 ? path.slice(0, 57) + '...' : path }))}
-                                triggerClassName={styles.pagePathSelect}
-                                disabled={pagePathsLoading}
-                                placeholder="選択してください"
+            {stats.data?.abTestCountByStatus != null && stats.data?.abTestCompletedOutcome != null && (
+                <AbTestDonutCharts countByStatus={stats.data.abTestCountByStatus} completedOutcome={stats.data.abTestCompletedOutcome} productId={productId} />
+            )}
+
+            {propertyId && (
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>ページ別指標</h2>
+                    <p className={ui.sectionNote}>エンゲージメントファネルで取得しているページパスを選択すると、そのページのGA4指標を表示します。カードをクリックすると推移グラフの指標が切り替わります。</p>
+                    <FilterBar>
+                        <FilterField label="ページパス" hint={paths.loading ? '候補を取得中...' : undefined}>
+                            <select
+                                className={cx(ui.select, styles.pathSelect)}
+                                value={pagePaths.includes(selectedPagePath) ? selectedPagePath : ''}
+                                onChange={(e) => setSelectedPagePath(e.target.value)}
+                                disabled={paths.loading && pagePaths.length === 0}
                                 aria-label="ページパス選択"
-                            />
-                        </div>
-                        <div className={styles.pageControlRow}>
-                            <span className={styles.pageControlLabel}>集計:</span>
-                            <div className={styles.granularityRow}>
-                                <button
-                                    type="button"
-                                    onClick={() => setGranularity('daily')}
-                                    className={granularity === 'daily' ? styles.granularityBtnActive : styles.granularityBtn}
-                                >
-                                    日別
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setGranularity('weekly')}
-                                    className={granularity === 'weekly' ? styles.granularityBtnActive : styles.granularityBtn}
-                                >
-                                    週別
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setGranularity('monthly')}
-                                    className={granularity === 'monthly' ? styles.granularityBtnActive : styles.granularityBtn}
-                                >
-                                    月別
-                                </button>
-                            </div>
-                        </div>
-                        <div className={styles.pageControlRow}>
-                            <span className={styles.pageControlLabel}>期間を指定:</span>
-                            <div className={styles.pageDateRangeRow}>
-                                                                    <DateInput
-                                                                    value={customStartDate}
-                                    onChange={(e) => setCustomStartDate(e.target.value)}
-                                    className={styles.pageDateInput}
-                                />
-                                <span className={styles.pageDateRangeSep}>〜</span>
-                                                                    <DateInput
-                                                                    value={customEndDate}
-                                    onChange={(e) => setCustomEndDate(e.target.value)}
-                                    className={styles.pageDateInput}
-                                />
-                                {(customStartDate || customEndDate) && (
-                                    <button
-                                        type="button"
-                                        onClick={() => { setCustomStartDate(''); setCustomEndDate('') }}
-                                        className={styles.pageDateClearBtn}
-                                    >
-                                        クリア
+                            >
+                                {pagePaths.length === 0 && <option value="">{paths.loading ? '取得中...' : '選択してください'}</option>}
+                                {pagePaths.map((path) => <option key={path} value={path}>{path.length > 60 ? `${path.slice(0, 57)}...` : path}</option>)}
+                            </select>
+                        </FilterField>
+                        <FilterField label="集計">
+                            <div className={ui.tabs} role="tablist">
+                                {GRANULARITIES.map((g) => (
+                                    <button key={g.id} type="button" role="tab" aria-selected={granularity === g.id} className={cx(ui.tab, granularity === g.id && ui.tabActive)} onClick={() => setGranularity(g.id)}>
+                                        {g.label}
                                     </button>
-                                )}
+                                ))}
                             </div>
-                        </div>
-                    </div>
-                    {pageMetricsLoading && selectedPagePath && (
-                        <div className={styles.pageMetricsLoader}>
-                            <Loader />
-                        </div>
-                    )}
-                    {pageMetrics && !pageMetricsLoading && (
-                        <>
-                            <div className={styles.pageMetricsGrid}>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'pv' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('pv')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('pv') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>PV<InfoTooltip text="ページビュー数。ユーザーがページを閲覧した総回数（リロード含む）。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueBlue}`}>
-                                            {pageMetrics.pv.toLocaleString()}
-                                        </p>
-                                        <p className={momChanges.pv == null ? styles.momNone : momChanges.pv >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.pv == null ? '—' : `先月比 ${momChanges.pv >= 0 ? '+' : ''}${momChanges.pv.toFixed(1)}%`}
-                                        </p>
-                                    </span>
+                        </FilterField>
+                        <FilterField label="期間を指定" hint="指定すると表示月より優先。先月比は出ません">
+                            <DateInput value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} aria-label="開始日" />
+                            <span className={ui.note}>〜</span>
+                            <DateInput value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} aria-label="終了日" />
+                            {(customStartDate || customEndDate) && (
+                                <button type="button" className={ui.btnGhost} onClick={() => { setCustomStartDate(''); setCustomEndDate('') }}>クリア</button>
+                            )}
+                        </FilterField>
+                    </FilterBar>
+
+                    <LoadState loading={metrics.loading && !pageMetrics} error={metrics.error} source="ga4" variant="inline" onRetry={metrics.run}>
+                        {pageMetrics && (
+                            <>
+                                <div className={styles.pageMetricsGrid}>
+                                    {METRIC_CARDS.map((card) => {
+                                        const change = prev ? pctChange(metricNumber(pageMetrics, card.key), metricNumber(prev, card.key)) : null
+                                        const good = change == null ? null : card.lowerIsBetter ? change <= 0 : change >= 0
+                                        return (
+                                            <div
+                                                key={card.key}
+                                                role="button"
+                                                tabIndex={0}
+                                                aria-pressed={chartMetric === card.key}
+                                                className={cx(styles.statCard, styles.statCardClickable, chartMetric === card.key && styles.statCardSelected)}
+                                                onClick={() => setChartMetric(card.key)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric(card.key) } }}
+                                            >
+                                                <span className={styles.statCardInner}>
+                                                    <h3 className={styles.statTitle}>{card.label}<InfoTooltip text={card.tooltip} /></h3>
+                                                    <p className={cx(styles.statValue, styles[card.valueClass])}>{metricValue(pageMetrics, card.key)}</p>
+                                                    <p className={change == null ? styles.momNone : good ? styles.momPositive : styles.momNegative}>
+                                                        {change == null ? '—' : `先月比 ${change >= 0 ? '+' : ''}${change.toFixed(1)}%`}
+                                                    </p>
+                                                </span>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'exitRate' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('exitRate')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('exitRate') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>離脱率<InfoTooltip text="このページからサイトを離れた割合（exits ÷ pageViews）。数値が低いほど良好。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValuePink}`}>
-                                            {pageMetrics.exitRate != null ? `${pageMetrics.exitRate.toFixed(2)}%` : '—'}
-                                        </p>
-                                        <p className={momChanges.exitRate == null ? styles.momNone : momChanges.exitRate <= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.exitRate == null ? '—' : `先月比 ${momChanges.exitRate >= 0 ? '+' : ''}${momChanges.exitRate.toFixed(1)}%`}
-                                        </p>
-                                    </span>
+                                <div className={styles.pageChartSection}>
+                                    <h3 className={styles.pageChartTitle}>推移グラフ</h3>
+                                    <p className={ui.note}>対象期間: {getChartPeriodLabel(selectedMonth, granularity, customStartDate || null, customEndDate || null)}</p>
+                                    <PageMetricsChart chartData={chartData} chartMetric={chartMetric} granularity={granularity} isLoading={series.loading} />
                                 </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'newUserRate' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('newUserRate')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('newUserRate') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>新規訪問率<InfoTooltip text="このページを訪れたユーザーのうち、初回訪問ユーザーの割合（newUsers ÷ activeUsers）。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueCyan}`}>
-                                            {pageMetrics.newUserRate.toFixed(2)}%
-                                        </p>
-                                        <p className={momChanges.newUserRate == null ? styles.momNone : momChanges.newUserRate >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.newUserRate == null ? '—' : `先月比 ${momChanges.newUserRate >= 0 ? '+' : ''}${momChanges.newUserRate.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'bounceCount' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('bounceCount')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('bounceCount') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>直帰数<InfoTooltip text="このページ1ページのみ閲覧してサイトを離れたセッション数。直帰率ではなく実数値。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueOrange}`}>
-                                            {pageMetrics.bounceCount.toLocaleString()}
-                                        </p>
-                                        <p className={momChanges.bounceCount == null ? styles.momNone : momChanges.bounceCount <= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.bounceCount == null ? '—' : `先月比 ${momChanges.bounceCount >= 0 ? '+' : ''}${momChanges.bounceCount.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'averageSessionDuration' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('averageSessionDuration')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('averageSessionDuration') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>平均滞在時間<InfoTooltip text="1セッションあたりの平均滞在時間（averageSessionDuration）。GA4は離脱ページの滞在時間は計測されない。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueCyan}`}>
-                                            {pageMetrics.averageSessionDurationLabel}
-                                        </p>
-                                        <p className={momChanges.averageSessionDuration == null ? styles.momNone : momChanges.averageSessionDuration >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.averageSessionDuration == null ? '—' : `先月比 ${momChanges.averageSessionDuration >= 0 ? '+' : ''}${momChanges.averageSessionDuration.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    className={`${styles.statCard} ${styles.statCardClickable} ${styles.statCardFrame} ${chartMetric === 'engagementRate' ? styles.statCardSelected : ''}`}
-                                    onClick={() => setChartMetric('engagementRate')}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChartMetric('engagementRate') } }}
-                                >
-                                    <span className={styles.statCardInner}>
-                                        <h3 className={styles.statTitle}>エンゲージメント率<InfoTooltip text="エンゲージドセッション ÷ 全セッション。エンゲージドセッション＝10秒以上滞在 or 2ページ以上閲覧 or CVが発生したセッション。" /></h3>
-                                        <p className={`${styles.statValue} ${styles.statValueGreen}`}>
-                                            {pageMetrics.engagementRate.toFixed(2)}%
-                                        </p>
-                                        <p className={momChanges.engagementRate == null ? styles.momNone : momChanges.engagementRate >= 0 ? styles.momPositive : styles.momNegative}>
-                                            {momChanges.engagementRate == null ? '—' : `先月比 ${momChanges.engagementRate >= 0 ? '+' : ''}${momChanges.engagementRate.toFixed(1)}%`}
-                                        </p>
-                                    </span>
-                                </div>
-                            </div>
-                            <div className={styles.pageChartSection}>
-                                <h3 className={styles.pageChartTitle}>推移グラフ</h3>
-                                <p className={styles.pageChartPeriod}>対象期間: {getChartPeriodLabel(selectedMonth, granularity, customStartDate || null, customEndDate || null)}</p>
-                                <PageMetricsChart
-                                    chartData={chartData}
-                                    chartMetric={chartMetric}
-                                    granularity={granularity}
-                                    isLoading={seriesLoading}
-                                />
-                            </div>
-                        </>
-                    )}
+                            </>
+                        )}
+                    </LoadState>
                 </div>
             )}
 
             <div className={styles.quickAccess}>
-                <h2 className={styles.quickAccessTitle}>クイックアクセス</h2>
-                {navGroups(currentProduct?.id).map((group) => (
+                <h2 className={ui.sectionTitle}>クイックアクセス</h2>
+                {navGroups(productId).map((group) => (
                     <div key={group.id} className={styles.quickAccessGroup}>
                         <h3 className={styles.quickAccessGroupTitle}>{group.label}</h3>
                         {group.hint && <p className={styles.quickAccessGroupHint}>{group.hint}</p>}
@@ -622,6 +290,6 @@ export default function DashboardPage() {
                     </div>
                 ))}
             </div>
-        </div>
+        </PageShell>
     )
 }

@@ -1,185 +1,46 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--gray-100);
-}
-
-.loaderWrap {
-    display: flex;
-    justify-content: center;
-    padding: 3rem;
-}
-
-.productRow {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.productLabel {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.productSelect {
-    min-width: 200px;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    background-color: var(--gray-800);
-    color: var(--gray-100);
-}
-
-.errorBox {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    color: var(--red-300);
-}
-
-.filterRow {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.filterLabel {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.filterTabs {
-    display: flex;
-    gap: 0.25rem;
-}
-
-.filterTab {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background-color: var(--gray-700);
-    color: var(--gray-200);
-    cursor: pointer;
-}
-
-.filterTab:hover {
-    background-color: var(--gray-600);
-}
-
-.filterTabActive {
-    background-color: var(--blue-600);
-    border-color: var(--blue-600);
-    color: #fff;
-}
-
-.filterTabActive:hover {
-    background-color: var(--blue-700);
-}
-
-.tableWrap {
-    overflow-x: auto;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.th {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    background-color: var(--gray-700);
-    border-bottom: 1px solid var(--gray-600);
-    color: var(--gray-200);
-}
-
-.tr {
-    border-bottom: 1px solid var(--gray-600);
-    background-color: var(--gray-800);
-}
-
-.tr:hover {
-    background-color: var(--gray-700);
-}
-
-.td {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    color: var(--gray-100);
-}
-
-.tdClip {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--gray-100);
-}
-
-.emptyCell {
-    padding: 2rem;
-    text-align: center;
-    color: var(--gray-400);
-}
-
 .name {
-    font-weight: 600;
     display: block;
-    color: var(--gray-100);
+    font-weight: 600;
+    color: var(--text-strong);
 }
 
 .desc {
-    font-size: 0.75rem;
-    color: var(--gray-400);
     display: block;
     margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: normal;
+}
+
+.clip {
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.badgeWin,
+.badgeLose {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .badgeWin {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    background-color: rgba(22, 101, 52, 0.3);
-    color: var(--green-300);
+    background-color: rgba(22, 163, 74, 0.18);
+    color: var(--text-on-tint-green);
 }
 
-.link {
-    color: var(--blue-400);
-    text-decoration: none;
-    font-size: 0.875rem;
-}
-
-.link:hover {
-    text-decoration: underline;
+.badgeLose {
+    background-color: rgba(239, 68, 68, 0.18);
+    color: var(--text-on-tint-red);
 }
 
 .pagination {
@@ -188,25 +49,4 @@
     justify-content: center;
     gap: 1rem;
     margin-top: 1rem;
-    padding: 0.75rem 0;
 }
-
-.pageBtn {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background-color: var(--gray-800);
-    color: var(--gray-200);
-    cursor: pointer;
-}
-
-.pageBtn:hover:not(:disabled) {
-    background-color: var(--gray-700);
-}
-
-.pageBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-

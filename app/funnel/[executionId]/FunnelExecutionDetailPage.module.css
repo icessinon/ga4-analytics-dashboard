@@ -1,138 +1,12 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    margin-bottom: 1.5rem;
-}
-
-.headerRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-}
-
-.headerActions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin: 0;
-    color: var(--gray-100);
-}
-
-.rerunButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 2.75rem;
-    padding: 0 1.5rem;
-    border-radius: 10px;
-    border: 2px dashed var(--green-600);
-    background-color: var(--green-600);
-    color: #fff;
-    font-size: 0.875rem;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: 0.4s;
-    box-sizing: border-box;
-    box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
-}
-
-.rerunButton:hover {
-    background-color: var(--gray-800);
-    color: var(--green-600);
-    border: 2px dashed var(--green-600);
-}
-
-.rerunButton:active {
-    background-color: var(--green-300);
-    color: #fff;
-}
-
-.rerunButton {
-        box-shadow: rgba(0, 0, 0, 0.3) 0 2px 5px -1px, rgba(0, 0, 0, 0.5) 0 1px 3px -1px;
-    }
-
-.executionDate {
-    color: var(--gray-400);
-    margin-top: 0.5rem;
-}
-
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 60vh;
-    padding: 3rem 0;
-}
-
-.errorContainer {
-    background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--red-300);
-}
-
-.errorTitle {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--red-300);
-}
-
-.errorLink {
-    margin-top: 1rem;
-    display: inline-block;
-    padding: 0.5rem 1rem;
-    background-color: var(--red-600);
-    color: white;
-    border-radius: 0.25rem;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-
-.errorLink:hover {
-    background-color: var(--red-700);
-}
-
-.card {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.cardTitle {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--gray-100);
-}
-
 .infoGrid {
     display: grid;
     grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: 1rem;
 }
 
-@media (min-width: 768px) {
-    .infoGrid {
+.infoGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-}
 
 .infoLabel {
     font-size: 0.875rem;
@@ -170,17 +44,13 @@
     gap: 1rem;
 }
 
-@media (min-width: 768px) {
-    .summaryGrid {
+.summaryGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-}
 
-@media (min-width: 1024px) {
-    .summaryGrid {
+.summaryGrid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-}
 
 .summaryLabel {
     font-size: 0.875rem;
@@ -270,63 +140,4 @@
 
 .tableBody {
     border-top: 1px solid var(--gray-600);
-}
-
-.footer {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--gray-600);
-}
-
-.footerLink {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    background-color: var(--blue-600);
-    color: white;
-    border-radius: 0.5rem;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-
-.footerLink:hover {
-    background-color: var(--blue-700);
-}
-
-.pdfButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 2.75rem;
-    padding: 0 1.25rem;
-    border-radius: 10px;
-    border: 2px solid var(--gray-600);
-    background-color: var(--gray-700);
-    color: var(--gray-200);
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: 0.2s;
-    box-sizing: border-box;
-}
-
-.pdfButton:hover {
-    background-color: var(--gray-600);
-    color: #fff;
-}
-
-@media print {
-    .headerActions {
-        display: none;
-    }
-    .footer {
-        display: none;
-    }
-    .container {
-        padding: 0;
-        max-width: 100%;
-    }
-    .card {
-        break-inside: avoid;
-        margin-bottom: 1rem;
-    }
 }

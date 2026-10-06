@@ -442,3 +442,46 @@ input.input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not(
     line-height: 1.7;
     margin-bottom: 0.5rem;
 }
+
+/* ── タブ切替（表示モード・期間単位・履歴の種類など） ──
+   沈んだトラックの上に選択中だけが浮く。/history /data /ai-usage /ab-test 系で共通 */
+.tabs {
+    display: inline-flex;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-sunken);
+    box-shadow: var(--shadow-sunken);
+}
+
+.tab {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--text-strong);
+}
+
+.tabActive {
+    color: var(--accent-text);
+    background: var(--bg-raised);
+    background-image: var(--control-gradient);
+    box-shadow: var(--shadow-card);
+    font-weight: 600;
+}
+
+/* 複数行入力。globals.css の textarea 既定（幅 100%・沈んだ面）に質感を揃える */
+.textarea {
+    width: 100%;
+    resize: vertical;
+    line-height: 1.6;
+    font-size: 0.875rem;
+}

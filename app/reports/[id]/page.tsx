@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { useParams, useRouter } from 'next/navigation'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { ui } from '@/components/ui'
 import type { ReportDetail } from './types'
 import InfoTooltip from '@/components/InfoTooltip'
 import styles from './ReportDetailPage.module.css'
@@ -73,29 +74,19 @@ export default function ReportDetailPage() {
         })
     }
 
+    const back = { href: '/history?tab=reports', label: '履歴一覧に戻る' }
+
     if (loading) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>レポート詳細</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
+        return <PageShell pageId="reportDetail" back={back} status={{ loading: true, source: 'db' }}>{null}</PageShell>
     }
 
     if (error || !detail) {
         return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>レポート詳細</h1>
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラーが発生しました</p>
-                    <p>{error || 'レポートが見つかりませんでした'}</p>
-                    <Link href="/history?tab=reports" className={styles.errorLink}>
-                        履歴に戻る
-                    </Link>
-                </div>
-            </div>
+            <PageShell pageId="reportDetail" back={back}>
+                <Alert tone="error" title="エラーが発生しました" action={<Link href={back.href} className={ui.btnGhost}>履歴に戻る</Link>}>
+                    {error || 'レポートが見つかりませんでした'}
+                </Alert>
+            </PageShell>
         )
     }
 
@@ -105,19 +96,9 @@ export default function ReportDetailPage() {
 
     if (!detail.report) {
         return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <div className={styles.headerRow}>
-                        <h1 className={styles.title}>ABテストレポート</h1>
-                        <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
-                    </div>
-                    <p className={styles.executionDate}>
-                        実行日時: {formatDate(detail.createdAt)}
-                    </p>
-                </div>
-
-                <div className={styles.card}>
-                    <h2 className={styles.cardTitle}>基本情報</h2>
+            <PageShell pageId="reportDetail" width="wide" back={back} title="ABテストレポート" subtitle={`実行日時: ${formatDate(detail.createdAt)}`}>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>基本情報</h2>
                     <div className={styles.infoGrid}>
                         <div>
                             <p className={styles.infoLabel}>ステータス</p>
@@ -147,8 +128,8 @@ export default function ReportDetailPage() {
                 </div>
 
                 {(cvrResults.dataA || cvrResults.dataB || cvrResults.dataC || cvrResults.dataD) && (
-                    <div className={styles.card}>
-                        <h2 className={styles.cardTitle}>CVR結果</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>CVR結果</h2>
                         <div className={styles.cvrGrid}>
                             {cvrResults.dataA && (
                                 <div className={styles.cvrCard}>
@@ -195,8 +176,8 @@ export default function ReportDetailPage() {
                 )}
 
                 {abTestEvaluation && (
-                    <div className={styles.card}>
-                        <h2 className={styles.cardTitle}>ABテスト評価</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>ABテスト評価</h2>
                         <div className={styles.evaluationSection}>
                             <div>
                                 <p className={styles.evaluationLabel}>総合判定</p>
@@ -212,7 +193,7 @@ export default function ReportDetailPage() {
                                             <p className={styles.evaluationValue}>
                                                 {abTestEvaluation.checks.significance?.passed ? '✅' : '❌'}{' '}
                                                 {abTestEvaluation.checks.significance?.value !== undefined
-                                                    ? `${abTestEvaluation.checks.significance.value.toFixed(2)}%`
+                                                    ? `${(abTestEvaluation.checks.significance.value?.toFixed(2) ?? '-')}%`
                                                     : 'N/A'}
                                             </p>
                                             {abTestEvaluation.checks.significance?.zScore && (
@@ -268,12 +249,12 @@ export default function ReportDetailPage() {
                                             <p className={styles.evaluationValue}>
                                                 {abTestEvaluation.checks.improvement?.passed ? '✅' : '❌'}{' '}
                                                 {abTestEvaluation.checks.improvement?.improvementRate !== undefined
-                                                    ? `${abTestEvaluation.checks.improvement.improvementRate.toFixed(2)}%`
+                                                    ? `${(abTestEvaluation.checks.improvement.improvementRate?.toFixed(2) ?? '-')}%`
                                                     : 'N/A'}
                                             </p>
                                             {abTestEvaluation.checks.improvement?.differencePt !== undefined && (
                                                 <p className={styles.evaluationSubtext}>
-                                                    差分: {abTestEvaluation.checks.improvement.differencePt.toFixed(2)}pt
+                                                    差分: {(abTestEvaluation.checks.improvement.differencePt?.toFixed(2) ?? '-')}pt
                                                 </p>
                                             )}
                                         </div>
@@ -292,32 +273,21 @@ export default function ReportDetailPage() {
                     </div>
                 )}
 
-                <div className={styles.footer}>
-                    <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
-                </div>
-            </div>
+            </PageShell>
         )
     }
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div className={styles.headerRow}>
-                    <h1 className={styles.title}>{detail.report.name}</h1>
-                    <div className={styles.headerActions}>
-                        <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
-                        <button onClick={handleRerun} className={styles.rerunButton}>
-                            再実行
-                        </button>
-                    </div>
-                </div>
-                <p className={styles.executionDate}>
-                    実行日時: {formatDate(detail.createdAt)}
-                </p>
-            </div>
-
-            <div className={styles.card}>
-                <h2 className={styles.cardTitle}>基本情報</h2>
+        <PageShell
+            pageId="reportDetail"
+            width="wide"
+            back={back}
+            title={detail.report.name}
+            subtitle={`実行日時: ${formatDate(detail.createdAt)}`}
+            actions={<button type="button" onClick={handleRerun} className={ui.btnPrimary}>再実行</button>}
+        >
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>基本情報</h2>
                 <div className={styles.infoGrid}>
                     <div>
                         <p className={styles.infoLabel}>ステータス</p>
@@ -350,8 +320,8 @@ export default function ReportDetailPage() {
                 (cvrResults.dataB && (cvrResults.dataB.pv !== undefined || cvrResults.dataB.cv !== undefined)) ||
                 (cvrResults.dataC && (cvrResults.dataC.pv !== undefined || cvrResults.dataC.cv !== undefined)) ||
                 (cvrResults.dataD && (cvrResults.dataD.pv !== undefined || cvrResults.dataD.cv !== undefined))) && (
-                <div className={styles.card}>
-                    <h2 className={styles.cardTitle}>CVR結果</h2>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>CVR結果</h2>
                     <div className={styles.cvrGrid}>
                         {cvrResults.dataA && (
                             <div className={styles.cvrCard}>
@@ -398,8 +368,8 @@ export default function ReportDetailPage() {
             )}
 
             {abTestEvaluation && (
-                <div className={styles.card}>
-                    <h2 className={styles.cardTitle}>ABテスト評価</h2>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>ABテスト評価</h2>
                     <div className={styles.evaluationSection}>
                         <div>
                             <p className={styles.evaluationLabel}>総合判定</p>
@@ -415,7 +385,7 @@ export default function ReportDetailPage() {
                                         <p className={styles.evaluationValue}>
                                             {abTestEvaluation.checks.significance?.passed ? '✅' : '❌'}{' '}
                                             {abTestEvaluation.checks.significance?.value !== undefined
-                                                ? `${abTestEvaluation.checks.significance.value.toFixed(2)}%`
+                                                ? `${(abTestEvaluation.checks.significance.value?.toFixed(2) ?? '-')}%`
                                                 : 'N/A'}
                                         </p>
                                         {abTestEvaluation.checks.significance?.zScore && (
@@ -471,12 +441,12 @@ export default function ReportDetailPage() {
                                         <p className={styles.evaluationValue}>
                                             {abTestEvaluation.checks.improvement?.passed ? '✅' : '❌'}{' '}
                                             {abTestEvaluation.checks.improvement?.improvementRate !== undefined
-                                                ? `${abTestEvaluation.checks.improvement.improvementRate.toFixed(2)}%`
+                                                ? `${(abTestEvaluation.checks.improvement.improvementRate?.toFixed(2) ?? '-')}%`
                                                 : 'N/A'}
                                         </p>
                                         {abTestEvaluation.checks.improvement?.differencePt !== undefined && (
                                             <p className={styles.evaluationSubtext}>
-                                                差分: {abTestEvaluation.checks.improvement.differencePt.toFixed(2)}pt
+                                                差分: {(abTestEvaluation.checks.improvement.differencePt?.toFixed(2) ?? '-')}pt
                                             </p>
                                         )}
                                     </div>
@@ -495,8 +465,8 @@ export default function ReportDetailPage() {
                 </div>
             )}
 
-            <div className={styles.card}>
-                <h2 className={styles.cardTitle}>設定情報</h2>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>設定情報</h2>
                 <div className={styles.configContainer}>
                     <pre className={styles.configPre}>
                         {JSON.stringify(detail.report.config, null, 2)}
@@ -504,9 +474,6 @@ export default function ReportDetailPage() {
                 </div>
             </div>
 
-            <div className={styles.footer}>
-                <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
-            </div>
-        </div>
+        </PageShell>
     )
 }

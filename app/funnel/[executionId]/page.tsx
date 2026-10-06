@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { useParams, useRouter } from 'next/navigation'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { ui } from '@/components/ui'
 import FunnelChart from '@/components/funnel/FunnelChart'
 import ConversionRateChart from '@/components/funnel/ConversionRateChart'
 import DropoffRateChart from '@/components/funnel/DropoffRateChart'
@@ -101,29 +102,19 @@ export default function FunnelExecutionDetailPage() {
         window.print()
     }
 
+    const back = { href: '/history?tab=funnel', label: '履歴一覧に戻る' }
+
     if (loading) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ファネル実行詳細</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
+        return <PageShell pageId="funnelExecution" back={back} status={{ loading: true, source: 'db' }}>{null}</PageShell>
     }
 
     if (error || !execution) {
         return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ファネル実行詳細</h1>
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラーが発生しました</p>
-                    <p>{error || 'ファネル実行が見つかりませんでした'}</p>
-                    <Link href="/history?tab=funnel" className={styles.errorLink}>
-                        履歴に戻る
-                    </Link>
-                </div>
-            </div>
+            <PageShell pageId="funnelExecution" back={back}>
+                <Alert tone="error" title="エラーが発生しました" action={<Link href={back.href} className={ui.btnGhost}>履歴に戻る</Link>}>
+                    {error || 'ファネル実行が見つかりませんでした'}
+                </Alert>
+            </PageShell>
         )
     }
 
@@ -153,27 +144,21 @@ export default function FunnelExecutionDetailPage() {
         (selectedPeriod === 'A' ? periodAFunnelData : selectedPeriod === 'B' ? periodBFunnelData : null)
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div className={styles.headerRow}>
-                    <h1 className={styles.title}>{execution.name || 'ファネル分析'}</h1>
-                    <div className={styles.headerActions}>
-                        <BackLink href="/history?tab=funnel">履歴一覧に戻る</BackLink>
-                        <button onClick={handlePrint} className={styles.pdfButton}>
-                            PDFで書き出し
-                        </button>
-                        <button onClick={handleRerun} className={styles.rerunButton}>
-                            この設定で再実行
-                        </button>
-                    </div>
-                </div>
-                <p className={styles.executionDate}>
-                    実行日時: {formatDate(execution.createdAt)}
-                </p>
-            </div>
-
-            <div className={styles.card}>
-                <h2 className={styles.cardTitle}>基本情報</h2>
+        <PageShell
+            pageId="funnelExecution"
+            width="wide"
+            back={back}
+            title={execution.name || 'ファネル分析'}
+            subtitle={`実行日時: ${formatDate(execution.createdAt)}`}
+            actions={
+                <>
+                    <button type="button" onClick={handlePrint} className={ui.btnGhost}>PDFで書き出し</button>
+                    <button type="button" onClick={handleRerun} className={ui.btnPrimary}>この設定で再実行</button>
+                </>
+            }
+        >
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>基本情報</h2>
                 <div className={styles.infoGrid}>
                     <div>
                         <p className={styles.infoLabel}>ステータス</p>
@@ -210,7 +195,7 @@ export default function FunnelExecutionDetailPage() {
                 <>
                     <ComparisonSummary periods={periods} />
 
-                    <div className={styles.card}>
+                    <div className={ui.card}>
                         <ComparisonCharts
                             periods={periods}
                             periodA={comparisonData.periodA}
@@ -218,8 +203,8 @@ export default function FunnelExecutionDetailPage() {
                         />
                     </div>
 
-                    <div className={styles.card}>
-                        <h2 className={styles.cardTitle}>詳細比較テーブル</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>詳細比較テーブル</h2>
                         <ComparisonTable
                             comparison={comparisonData.comparison}
                             periods={periods}
@@ -229,15 +214,15 @@ export default function FunnelExecutionDetailPage() {
                     </div>
 
                     {periods.some((p) => (p.data.channelBreakdown?.length ?? 0) > 0) && (
-                        <div className={styles.card}>
-                            <h2 className={styles.cardTitle}>チャネル別CVR変化</h2>
+                        <div className={ui.card}>
+                            <h2 className={ui.sectionTitle}>チャネル別CVR変化</h2>
                             <ChannelComparisonTable periods={periods} />
                         </div>
                     )}
 
                     {(comparisonData.geminiEvaluation || execution.geminiEvaluation) && (
-                        <div className={styles.card}>
-                            <h2 className={styles.cardTitle}>AI評価（期間比較分析）</h2>
+                        <div className={ui.card}>
+                            <h2 className={ui.sectionTitle}>AI評価（期間比較分析）</h2>
                             <div className={styles.geminiContainer}>
                                 <p className={styles.geminiText}>
                                     {comparisonData.geminiEvaluation || execution.geminiEvaluation}
@@ -262,8 +247,8 @@ export default function FunnelExecutionDetailPage() {
                         
                         return (
                             <>
-                                <div className={styles.card}>
-                                    <h2 className={styles.cardTitle}>サマリー</h2>
+                                <div className={ui.card}>
+                                    <h2 className={ui.sectionTitle}>サマリー</h2>
                                     <div className={styles.summaryGrid}>
                                         <div>
                                             <p className={styles.summaryLabel}>総エントリー数</p>
@@ -292,24 +277,24 @@ export default function FunnelExecutionDetailPage() {
                                     </div>
                                 </div>
 
-                                <div className={styles.card}>
-                                    <h2 className={styles.cardTitle}>ファネルチャート</h2>
+                                <div className={ui.card}>
+                                    <h2 className={ui.sectionTitle}>ファネルチャート</h2>
                                     <FunnelChart data={displaySingleData.steps} />
                                 </div>
 
-                                <div className={styles.card}>
-                                    <h2 className={styles.cardTitle}>コンバージョン率グラフ</h2>
+                                <div className={ui.card}>
+                                    <h2 className={ui.sectionTitle}>コンバージョン率グラフ</h2>
                                     <ConversionRateChart data={displaySingleData.steps} />
                                 </div>
 
-                                <div className={styles.card}>
-                                    <h2 className={styles.cardTitle}>ドロップオフ率グラフ</h2>
+                                <div className={ui.card}>
+                                    <h2 className={ui.sectionTitle}>ドロップオフ率グラフ</h2>
                                     <DropoffRateChart data={displaySingleData.steps} />
                                 </div>
 
                                 {(displaySingleData.channelBreakdown?.length ?? 0) > 0 && (
-                                    <div className={styles.card}>
-                                        <h2 className={styles.cardTitle}>チャネル別ファネル</h2>
+                                    <div className={ui.card}>
+                                        <h2 className={ui.sectionTitle}>チャネル別ファネル</h2>
                                         <ChannelBreakdownTable
                                             breakdown={displaySingleData.channelBreakdown!}
                                             overallSteps={displaySingleData.steps}
@@ -318,8 +303,8 @@ export default function FunnelExecutionDetailPage() {
                                 )}
 
                                 {(displaySingleData.geminiEvaluation || execution.geminiEvaluation) && (
-                                    <div className={styles.card}>
-                                        <h2 className={styles.cardTitle}>AI評価</h2>
+                                    <div className={ui.card}>
+                                        <h2 className={ui.sectionTitle}>AI評価</h2>
                                         <div className={styles.geminiContainer}>
                                             <p className={styles.geminiText}>
                                                 {displaySingleData.geminiEvaluation || execution.geminiEvaluation}
@@ -328,8 +313,8 @@ export default function FunnelExecutionDetailPage() {
                                     </div>
                                 )}
 
-                                <div className={styles.card}>
-                                    <h2 className={styles.cardTitle}>詳細データ</h2>
+                                <div className={ui.card}>
+                                    <h2 className={ui.sectionTitle}>詳細データ</h2>
                                     <div className={styles.tableContainer}>
                                         <table className={styles.table}>
                                             <thead className={styles.tableHeader}>
@@ -382,9 +367,6 @@ export default function FunnelExecutionDetailPage() {
                 </>
             ) : null}
 
-            <div className={styles.footer}>
-                <BackLink href="/history?tab=funnel">履歴一覧に戻る</BackLink>
-            </div>
-        </div>
+        </PageShell>
     )
 }
