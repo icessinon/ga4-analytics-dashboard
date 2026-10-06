@@ -1,26 +1,21 @@
 .wideInput {
-    width: 24rem;
-    min-width: 0;
+    --input-width: 24rem;
 }
 
 .dimInput {
-    width: 10rem;
-    min-width: 0;
+    --input-width: 10rem;
 }
 
 .exprInput {
-    width: 16rem;
-    min-width: 0;
+    --input-width: 16rem;
 }
 
 .searchInput {
-    width: 14rem;
-    min-width: 0;
+    --input-width: 14rem;
 }
 
 .limitInput {
-    min-width: 7rem;
-    width: 7rem;
+    --input-width: 7rem;
 }
 
 .dataHeader {

@@ -1,5 +1,5 @@
 .searchInput {
-    min-width: 18rem;
+    --input-width: 18rem;
 }
 
 .mono {
