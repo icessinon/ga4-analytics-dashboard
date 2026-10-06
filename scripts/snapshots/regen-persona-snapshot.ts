@@ -8,17 +8,17 @@
  *
  * ── 使い方 ─────────────────────────────────────────────
  * 1) 下記 QUERIES の各SOQLを Salesforce で実行（Claude/MCP、Workbench、sfdx どれでも）。
- * 2) 各結果を scripts/data/persona/<key>.json に保存（{records:[...]} でも [...] でも可）。
- * 3) npx tsx scripts/regen-persona-snapshot.ts [--asof=YYYY-MM-DD]
+ * 2) 各結果を scripts/snapshots/data/persona/<key>.json に保存（{records:[...]} でも [...] でも可）。
+ * 3) npx tsx scripts/snapshots/regen-persona-snapshot.ts [--asof=YYYY-MM-DD]
  *    → lib/constants/personaSnapshot.ts を上書き生成。未マップの登録サービスがあれば警告する。
  *
- * Docker内で走らせる場合: docker exec ga4-dashboard-app-local npx tsx scripts/regen-persona-snapshot.ts
+ * Docker内で走らせる場合: docker exec ga4-dashboard-app-local npx tsx scripts/snapshots/regen-persona-snapshot.ts
  * ──────────────────────────────────────────────────────
  */
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 
-const DATA_DIR = join(process.cwd(), 'scripts/data/persona')
+const DATA_DIR = join(process.cwd(), 'scripts/snapshots/data/persona')
 const OUT_FILE = join(process.cwd(), 'lib/constants/personaSnapshot.ts')
 
 /** 各入力JSONに対応するSOQL（コピペ用に明記）。alias（k/c/svc/occ/g）を必ずこの通りに。 */
@@ -160,7 +160,7 @@ function main() {
     if (unmapped.length) {
         console.warn('⚠️ DOMAIN_MAP 未マップの登録サービス（personaSnapshot に含まれません）:')
         for (const s of unmapped) console.warn(`   - ${s} (age件数 ${Object.values(svcAge.get(s) ?? {}).reduce((a, b) => a + b, 0)})`)
-        console.warn('   → scripts/regen-persona-snapshot.ts の DOMAIN_MAP に追記して再実行してください。')
+        console.warn('   → scripts/snapshots/regen-persona-snapshot.ts の DOMAIN_MAP に追記して再実行してください。')
     }
 
     // occupation（希望職種・細分類）
@@ -180,8 +180,8 @@ function main() {
 
     const out = `/**
  * 求職者ペルソナ用の属性スナップショット。
- * 【自動生成】scripts/regen-persona-snapshot.ts が Salesforce CustomObject1__c のSOQL結果から生成。
- * 手で編集しない。更新はスクリプトのヘッダー手順（SOQL→scripts/data/persona/*.json→再実行）に従う。
+ * 【自動生成】scripts/snapshots/regen-persona-snapshot.ts が Salesforce CustomObject1__c のSOQL結果から生成。
+ * 手で編集しない。更新はスクリプトのヘッダー手順（SOQL→scripts/snapshots/data/persona/*.json→再実行）に従う。
  *
  * 数値の癖（必ず添えること）:
  *  - これは「登録者（人材紹介側リード）」の姿であって、サイト訪問者全体ではない。

@@ -1,5 +1,5 @@
 /**
- * スカウト送信先 求職者属性スナップショット（自動生成: scripts/build-scout-snapshot.ts）。
+ * スカウト送信先 求職者属性スナップショット（自動生成: scripts/snapshots/build-scout-snapshot.ts）。
  * ダッシュボード /scout の属性ブレイクダウン用。集計値のみ・個人情報なし。
  * 送信=DDB / 属性=Salesforce CustomObject1__c / 閲覧・応募=GA4。更新はスクリプト再実行。
  */

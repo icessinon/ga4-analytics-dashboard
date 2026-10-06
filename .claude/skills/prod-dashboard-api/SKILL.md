@@ -16,11 +16,11 @@ GA4分析ダッシュボードの本番環境（EC2 上の docker-compose）に 
 ## 使い方
 
 ```bash
-scripts/prod-api.sh GET    '/api/ab-test?status=running&limit=10'
-scripts/prod-api.sh POST   /api/ab-test payload.json
-scripts/prod-api.sh PUT    /api/ab-test '{"id":12,"endDate":"2026-10-31"}'
-scripts/prod-api.sh DELETE '/api/ab-test?id=12'
-scripts/prod-api.sh --relogin GET /api/products   # Cookie が壊れたとき
+scripts/ops/prod-api.sh GET    '/api/ab-test?status=running&limit=10'
+scripts/ops/prod-api.sh POST   /api/ab-test payload.json
+scripts/ops/prod-api.sh PUT    /api/ab-test '{"id":12,"endDate":"2026-10-31"}'
+scripts/ops/prod-api.sh DELETE '/api/ab-test?id=12'
+scripts/ops/prod-api.sh --relogin GET /api/products   # Cookie が壊れたとき
 ```
 
 - 第3引数は JSON ファイルパスでも JSON 文字列でもよい。日本語を含む長いペイロードはファイルにする（scratchpad に置く）。

@@ -6,7 +6,7 @@
  *   - 属性: Salesforce CustomObject1__c（scripts/_scout_attrs.json = candidateId→属性, MCP経由で取得, PIIなし）
  *   - 成果: GA4 (/scout/{scoutId} 閲覧, scoutId= 付き応募クリック)
  * 出力: lib/constants/scoutRecipientSnapshot.ts（集計値のみ・個人情報なし）
- * 実行: docker exec ga4-dashboard-app-local npx tsx scripts/build-scout-snapshot.ts
+ * 実行: docker exec ga4-dashboard-app-local npx tsx scripts/snapshots/build-scout-snapshot.ts
  */
 import { readFileSync, writeFileSync } from 'fs'
 import { fetchGA4Data, getGA4AccessToken } from '@/lib/api/ga4/client'
@@ -177,7 +177,7 @@ async function main() {
         },
     }
 
-    const header = `/**\n * スカウト送信先 求職者属性スナップショット（自動生成: scripts/build-scout-snapshot.ts）。\n * ダッシュボード /scout の属性ブレイクダウン用。集計値のみ・個人情報なし。\n * 送信=DDB / 属性=Salesforce CustomObject1__c / 閲覧・応募=GA4。更新はスクリプト再実行。\n */\n`
+    const header = `/**\n * スカウト送信先 求職者属性スナップショット（自動生成: scripts/snapshots/build-scout-snapshot.ts）。\n * ダッシュボード /scout の属性ブレイクダウン用。集計値のみ・個人情報なし。\n * 送信=DDB / 属性=Salesforce CustomObject1__c / 閲覧・応募=GA4。更新はスクリプト再実行。\n */\n`
     writeFileSync(OUT, `${header}export const SCOUT_RECIPIENT_SNAPSHOT_ASOF = '${end}'\n\nexport const SCOUT_RECIPIENT_SNAPSHOT = ${JSON.stringify(snapshot, null, 2)} as const\n`)
     console.log(`書き出し: ${OUT}`)
     console.log(`sends=${snapshot.totals.sends} matchedAttrs=${matched} (${(matched / sends.length * 100).toFixed(0)}%) companies=${byCompany.size} jobs=${byJob.size}`)

@@ -8,12 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "check:registry": "tsx scripts/check-page-registry.ts",
+    "check:registry": "tsx scripts/check/check-page-registry.ts",
     "verify:api": "tsx scripts/verify/api-snapshot.ts",
     "check": "npm run typecheck && npm run check:registry",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:seed": "tsx scripts/db/seed.ts",
     "worker": "tsx workers/index.ts",
     "scheduler": "tsx workers/ab-test-scheduler.ts"
   },

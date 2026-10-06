@@ -2,7 +2,7 @@
  * CV単価（期待売上換算）再生成スクリプト。
  *
  * lib/constants/cvUnitValue.ts はSalesforce実績からの逆算値だが、アプリはSFにランタイム接続していないため手動更新。
- * 本スクリプトは scripts/data/cv-unit/derivations.json（コホート集計値）から
+ * 本スクリプトは scripts/snapshots/data/cv-unit/derivations.json（コホート集計値）から
  * 単価 unitYen = round((受注額 grossFeeYen − 返金想定額 refundYen) ÷ CV件数 events) を計算し、
  * lib/constants/cvUnitValue.ts を丸ごと再生成する（算術ミス・ASOF付け忘れを無くす）。
  *
@@ -15,9 +15,9 @@
  *    d) events = そのCV種別のCV件数、uniq = ユニーク求職者数
  *    e) 応募3種別は同一入社の二重計上を除去（優先度 人材紹介>求人広告>ハローワーク）
  *    f) コホート: 登録2025-01〜2025-12（会員登録のみ2025-08〜2025-12）、直近2ヶ月は成約未成熟のため除外
- * 2) 結果を scripts/data/cv-unit/derivations.json の各フィールド（events/uniq/hires/grossFeeYen/refundYen/note）に反映。
+ * 2) 結果を scripts/snapshots/data/cv-unit/derivations.json の各フィールド（events/uniq/hires/grossFeeYen/refundYen/note）に反映。
  *    asof も更新。
- * 3) npx tsx scripts/regen-cv-unit-value.ts   → lib/constants/cvUnitValue.ts を再生成。
+ * 3) npx tsx scripts/snapshots/regen-cv-unit-value.ts   → lib/constants/cvUnitValue.ts を再生成。
  *    （--asof=YYYY-MM-DD で上書き可。既定は derivations.json の asof）
  *
  * 注: 会員登録の単価は「純登録＋下流価値」の運用値だが、算術上も (受注額−返金)/events と一致する。
@@ -27,7 +27,7 @@
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-const IN_FILE = join(process.cwd(), 'scripts/data/cv-unit/derivations.json')
+const IN_FILE = join(process.cwd(), 'scripts/snapshots/data/cv-unit/derivations.json')
 const OUT_FILE = join(process.cwd(), 'lib/constants/cvUnitValue.ts')
 
 interface RawDerivation {
@@ -76,7 +76,7 @@ function main() {
 
     const out = `/**
  * CV1件あたりの期待売上（円）。CA活動履歴基準（${asof}算出）。
- * 【自動生成】scripts/regen-cv-unit-value.ts が scripts/data/cv-unit/derivations.json から生成。手で編集しない。
+ * 【自動生成】scripts/snapshots/regen-cv-unit-value.ts が scripts/snapshots/data/cv-unit/derivations.json から生成。手で編集しない。
  *
  * 算出: CV(RegistHistory__c) → そのCVのCA活動履歴(RH_AgentActivityHistory__c = AgentActivityHistory__c)
  *   → 紐づくマッチング(Matching__c.MA_AgentActivityHistory__c) のうち フェーズ Field2__c=「7.入社済」の
@@ -90,7 +90,7 @@ function main() {
  *   指標のため応募との重複を許容し据え置き（合算はしない前提）。
  * コホート: 登録日2025-01〜2025-12（会員登録のみ2025-08〜2025-12）。成約リードタイム確保のため
  *   登録上限を2025-12に固定（直近コホートは入社が未成熟で単価が過小になるため）。
- * 受注額ベース（検収・入金ベースではない）。再算出手順は scripts/regen-cv-unit-value.ts ヘッダー、
+ * 受注額ベース（検収・入金ベースではない）。再算出手順は scripts/snapshots/regen-cv-unit-value.ts ヘッダー、
  *   背景はメモリ project_cv_unit_value.md 参照。
  */
 export const CV_UNIT_VALUE_YEN: Record<string, number> = {

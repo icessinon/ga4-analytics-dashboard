@@ -6,7 +6,7 @@ import { CATEGORY_IDS, CATEGORIES, type CategoryId } from './categories'
  *
  * - PAGE_IDS に足して PAGES に書き忘れる（逆も）と型エラー
  * - nav を省略したページは doc 必須（判別共用体）。サイドバーに載るのに機能ドキュメントに無い、を防ぐ
- * - scripts/check-page-registry.ts が app/**\/page.tsx と突合し、未登録を CI で落とす
+ * - scripts/check/check-page-registry.ts が app/**\/page.tsx と突合し、未登録を CI で落とす
  */
 
 export const PAGE_IDS = [

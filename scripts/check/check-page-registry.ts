@@ -8,9 +8,9 @@
  */
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { PAGES, PAGE_IDS, getRelatedPages, type PageId } from '../lib/registry'
+import { PAGES, PAGE_IDS, getRelatedPages, type PageId } from '../../lib/registry'
 
-const APP_DIR = join(__dirname, '..', 'app')
+const APP_DIR = join(__dirname, '..', '..', 'app')
 /** レジストリに載せないページ */
 const IGNORED_HREFS = new Set(['/login'])
 

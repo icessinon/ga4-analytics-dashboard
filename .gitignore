@@ -47,11 +47,10 @@ service-account-key.json
 # 使い捨ての集計・調査スクリプト（施策検討ごとに生成。恒久管理しない）
 # 再現クエリとして手元には残すが、git の差分ノイズには含めない
 scripts/tmp-*
-scripts/data/persona/
+scripts/snapshots/data/persona/
 
 # scout attribute snapshot inputs (per-candidate, regenerated via MCP/DDB — do not commit)
-scripts/_scout_dump.json
-scripts/_scout_attrs.json
+scripts/_*.json
 xmile-drm-*.json
 
 # API スナップショット（scripts/verify/api-snapshot.ts の出力。ローカル検証用）

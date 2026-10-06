@@ -1,7 +1,7 @@
 /**
  * 求職者ペルソナ用の属性スナップショット。
- * 【自動生成】scripts/regen-persona-snapshot.ts が Salesforce CustomObject1__c のSOQL結果から生成。
- * 手で編集しない。更新はスクリプトのヘッダー手順（SOQL→scripts/data/persona/*.json→再実行）に従う。
+ * 【自動生成】scripts/snapshots/regen-persona-snapshot.ts が Salesforce CustomObject1__c のSOQL結果から生成。
+ * 手で編集しない。更新はスクリプトのヘッダー手順（SOQL→scripts/snapshots/data/persona/*.json→再実行）に従う。
  *
  * 数値の癖（必ず添えること）:
  *  - これは「登録者（人材紹介側リード）」の姿であって、サイト訪問者全体ではない。

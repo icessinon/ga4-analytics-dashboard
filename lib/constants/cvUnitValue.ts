@@ -1,6 +1,6 @@
 /**
  * CV1件あたりの期待売上（円）。CA活動履歴基準（2026-08-27算出）。
- * 【自動生成】scripts/regen-cv-unit-value.ts が scripts/data/cv-unit/derivations.json から生成。手で編集しない。
+ * 【自動生成】scripts/snapshots/regen-cv-unit-value.ts が scripts/snapshots/data/cv-unit/derivations.json から生成。手で編集しない。
  *
  * 算出: CV(RegistHistory__c) → そのCVのCA活動履歴(RH_AgentActivityHistory__c = AgentActivityHistory__c)
  *   → 紐づくマッチング(Matching__c.MA_AgentActivityHistory__c) のうち フェーズ Field2__c=「7.入社済」の
@@ -14,7 +14,7 @@
  *   指標のため応募との重複を許容し据え置き（合算はしない前提）。
  * コホート: 登録日2025-01〜2025-12（会員登録のみ2025-08〜2025-12）。成約リードタイム確保のため
  *   登録上限を2025-12に固定（直近コホートは入社が未成熟で単価が過小になるため）。
- * 受注額ベース（検収・入金ベースではない）。再算出手順は scripts/regen-cv-unit-value.ts ヘッダー、
+ * 受注額ベース（検収・入金ベースではない）。再算出手順は scripts/snapshots/regen-cv-unit-value.ts ヘッダー、
  *   背景はメモリ project_cv_unit_value.md 参照。
  */
 export const CV_UNIT_VALUE_YEN: Record<string, number> = {

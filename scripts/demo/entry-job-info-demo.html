@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>応募フォーム求人情報デモ</title>
+<style>
+:root{
+  --brand:#2453e6; --brand-weak:#e9eefc; --ink:#111; --sub:#555; --mute:#888;
+  --line:#ccc; --soft:#f4f4f4; --page:#f6f7f9; --card:#fff; --accent:#d9480f;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px}
+.lead{color:var(--sub);font-size:14px;margin:0 0 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 20px}
+.kpi{background:var(--card);border:1px solid #e3e5ea;border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:22px}
+.kpi span{font-size:12px;color:var(--sub)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.tabs a{font-size:14px;padding:8px 14px;border-radius:999px;border:1px solid #d0d4dc;background:#fff;color:var(--ink);text-decoration:none}
+.tabs a[aria-current="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.stage{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.col h2{font-size:15px;margin:0}
+.col p.cap{font-size:12px;color:var(--sub);margin:0;max-width:340px;text-align:center}
+.phone{width:360px;max-width:100%;height:720px;background:#fff;border:10px solid #1b1b1f;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.scr{overflow-y:auto;flex:1}
+.bar{background:var(--brand);color:#fff;text-align:center}
+.bar small{display:block;font-size:10px;border-bottom:1px solid rgba(255,255,255,.3);padding:2px 0}
+.bar strong{display:block;font-size:22px;letter-spacing:.06em;padding:8px 0 10px;font-weight:900}
+.form{padding:16px}
+.form h3{text-align:center;font-size:20px;margin:4px 0 12px}
+.ttl{background:var(--soft);border-radius:8px;padding:14px 16px;font-weight:700;font-size:15px}
+.login{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:11px;color:var(--sub)}
+.login button{flex:none;border:1px solid var(--brand);color:var(--brand);background:#fff;border-radius:8px;padding:10px 22px;font-weight:700;font-size:14px}
+.f{margin:0 0 14px}
+.f label{display:block;font-weight:700;font-size:15px;margin-bottom:6px}
+.f div{border:1px solid var(--line);border-radius:8px;padding:14px;color:#aaa;font-size:15px}
+.submit{background:var(--brand);color:#fff;text-align:center;border-radius:8px;padding:14px;font-weight:700;margin-top:6px}
+
+/* B: 求人情報ブロック */
+.ji{border:1px solid #dfe5f7;background:var(--brand-weak);border-radius:8px;margin-top:-4px;overflow:hidden}
+.ji .sal{padding:10px 14px 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ji .sal em{font-style:normal;font-size:12px;color:var(--sub);flex:none}
+.ji .sal b{font-size:17px;color:var(--accent)}
+.ji .tags{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.ji .tags span{font-size:11px;background:#fff;border:1px solid #d5dbee;border-radius:4px;padding:1px 6px}
+.ji details{border-top:1px solid #dfe5f7;background:#fff}
+.ji summary{list-style:none;cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:var(--brand);display:flex;justify-content:space-between}
+.ji summary::-webkit-details-marker{display:none}
+.ji summary::after{content:"＋"}
+.ji details[open] summary::after{content:"－"}
+.ji dl{margin:0;padding:0 14px 12px;display:grid;grid-template-columns:72px 1fr;gap:6px 10px;font-size:13px}
+.ji dt{color:var(--sub)}
+.ji dd{margin:0}
+.diff{outline:2px dashed var(--accent);outline-offset:3px}
+.notes{max-width:760px;margin:28px auto 0;background:#fff;border:1px solid #e3e5ea;border-radius:10px;padding:16px 20px;font-size:14px}
+.notes h2{font-size:16px;margin:0 0 8px}
+.notes ul{margin:0;padding-left:20px}
+.notes li{margin:4px 0}
+.only-b{display:none}
+body[data-view="b"] .only-a{display:none}
+body[data-view="b"] .only-b{display:flex}
+body[data-view="a"] .only-b{display:none}
+body[data-view="compare"] .only-b, body[data-view="compare"] .only-a{display:flex}
+@media (max-width:420px){.phone{border-width:6px;border-radius:24px;height:640px}}
+</style>
+</head>
+<body data-view="compare">
+<div class="wrap">
+  <h1>応募フォームに求人情報を掲載する — デモ</h1>
+  <p class="lead">応募フォーム（/entry/[id]）のモバイル表示（390px相当）。A＝本番の現行、B＝提案。B で増えるのは点線で囲んだブロックだけで、入力項目や送信ボタンは変わらない。求人は本番の公開求人（求人広告）の内容を例に使っている。</p>
+
+  <div class="kpis">
+    <div class="kpi"><b>29.9%</b><span>フォーム到達→完了（2026年9月・1,497到達）</span></div>
+    <div class="kpi"><b>18.4% vs 32.3%</b><span>詳細を見ずに来た人 vs 詳細経由の完了率</span></div>
+    <div class="kpi"><b>+3pt で約+55万円/月</b><span>完了 +45件/月 × 種別別CV単価</span></div>
+  </div>
+
+  <nav class="tabs" aria-label="表示切替">
+    <a href="#compare" data-v="compare">A / B 並べて比較</a>
+    <a href="#a" data-v="a">A（現行）</a>
+    <a href="#b" data-v="b">B（提案）</a>
+    <a href="#b-open" data-v="b-open">B：詳細を開いた状態</a>
+  </nav>
+
+  <div class="stage">
+    <div class="col only-a">
+      <h2>A（現行）</h2>
+      <p class="cap">見出しは求人タイトル（会社名・職種・雇用形態）＋勤務地のみ。給与・勤務時間・休日はフォームから見えない。</p>
+      <div class="phone"><div class="scr">
+        <div class="bar"><small>ドライバー・運転手・建設職・製造職の求人サイト</small><strong>クロスワーク</strong></div>
+        <div class="form">
+          <h3>この求人に応募する</h3>
+          <div class="ttl">国際交通株式会社のタクシードライバー求人（正社員） - 東京都北区</div>
+          <div class="login"><span>会員登録済みの方はログインするとプロフィールの入力を省略できます</span><button>ログイン</button></div>
+          <div class="f"><label>氏名</label><div>山田太郎</div></div>
+          <div class="f"><label>フリガナ</label><div>ヤマダタロウ</div></div>
+          <div class="f"><label>生まれ年</label><div>選択してください</div></div>
+          <div class="f"><label>郵便番号</label><div>1234567</div></div>
+          <div class="f"><label>電話番号</label><div>09012345678</div></div>
+          <div class="f"><label>メールアドレス</label><div>x-work@example.com</div></div>
+          <div class="submit">応募する</div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col only-b">
+      <h2>B（提案）</h2>
+      <p class="cap">見出し直下に給与（強調）と特徴タグを常時表示。勤務時間・休日などは「この求人の条件を見る」で開閉（初期は閉じて縦長化を防ぐ）。</p>
+      <div class="phone"><div class="scr">
+        <div class="bar"><small>ドライバー・運転手・建設職・製造職の求人サイト</small><strong>クロスワーク</strong></div>
+        <div class="form">
+          <h3>この求人に応募する</h3>
+          <div class="ttl">国際交通株式会社のタクシードライバー求人（正社員） - 東京都北区</div>
+          <div class="ji diff">
+            <div class="sal"><em>給与</em><b>月給 300,000円〜900,000円</b></div>
+            <div class="tags"><span>正社員</span><span>賞与</span><span>交通費一部支給</span><span>残業手当</span></div>
+            <details id="jidetails">
+              <summary>この求人の条件を見る</summary>
+              <dl>
+                <dt>勤務時間</dt><dd>隔日勤（月11回乗務）／昼日勤・夜日勤（月22日）から選択</dd>
+                <dt>休日</dt><dd>月8日以上（長期休暇取得可）</dd>
+                <dt>必須資格</dt><dd>普通一種（AT限定）</dd>
+                <dt>勤務地</dt><dd>東京都北区 志茂</dd>
+              </dl>
+            </details>
+          </div>
+          <div class="login"><span>会員登録済みの方はログインするとプロフィールの入力を省略できます</span><button>ログイン</button></div>
+          <div class="f"><label>氏名</label><div>山田太郎</div></div>
+          <div class="f"><label>フリガナ</label><div>ヤマダタロウ</div></div>
+          <div class="f"><label>生まれ年</label><div>選択してください</div></div>
+          <div class="f"><label>郵便番号</label><div>1234567</div></div>
+          <div class="f"><label>電話番号</label><div>09012345678</div></div>
+          <div class="f"><label>メールアドレス</label><div>x-work@example.com</div></div>
+          <div class="submit">応募する</div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h2>B で変えるもの・変えないもの</h2>
+    <ul>
+      <li><b>変える</b>：見出しボックスの直下に求人情報ブロックを1つ追加（給与＋特徴タグは常時表示、勤務時間・休日などは開閉式）。</li>
+      <li><b>変えない</b>：入力項目・並び順・送信ボタン・GTMラベル（追加ブロックの計測ラベルは新設）。求人詳細へのリンクは置かない（回遊で離脱する恐れがあるため別検証）。</li>
+      <li><b>データ</b>：フォームのサーバー側取得で求人データ全体を既に持っているため、追加の取得は不要。給与・タグの表示は求人詳細と同じ整形処理を流用する。</li>
+      <li><b>人材紹介・ハロワ</b>：入力3項目のフォームでも同じブロックを出す（表示内容は全種別共通）。</li>
+    </ul>
+  </section>
+</div>
+<script>
+(function(){
+  var valid=['compare','a','b','b-open'];
+  function apply(){
+    var h=(location.hash||'#compare').slice(1);
+    if(valid.indexOf(h)<0)h='compare';
+    document.body.setAttribute('data-view',h==='b-open'?'b':h);
+    var d=document.getElementById('jidetails');
+    if(d)d.open=(h==='b-open');
+    document.querySelectorAll('.tabs a').forEach(function(a){a.setAttribute('aria-current',a.getAttribute('data-v')===h?'true':'false')});
+  }
+  window.addEventListener('hashchange',apply);
+  apply();
+})();
+</script>
+</body>
+</html>
