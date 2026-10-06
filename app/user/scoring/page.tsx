@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, Fragment } from 'react'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import AISpinner from '@/components/AISpinner'
 import InfoTooltip from '@/components/InfoTooltip'
 import PageShell from '@/components/PageShell'

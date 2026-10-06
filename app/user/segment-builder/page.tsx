@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import InfoTooltip from '@/components/InfoTooltip'
 import PageShell from '@/components/PageShell'
 import FilterBar, { FilterField } from '@/components/FilterBar'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useId } from 'react'
-import { useLabels } from '@/lib/contexts/LabelContext'
+import { useLabels } from '@/contexts/LabelContext'
 import styles from './LabelInput.module.css'
 
 interface LabelInputProps {

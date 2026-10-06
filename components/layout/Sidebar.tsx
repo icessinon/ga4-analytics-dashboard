@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { usePathname } from 'next/navigation'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import { PAGES, matchPage, navGroups } from '@/lib/registry'
 import styles from './Sidebar.module.css'
 

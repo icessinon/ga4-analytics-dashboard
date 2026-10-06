@@ -2,7 +2,7 @@
 
 import { type CSSProperties } from 'react'
 import Link from 'next/link'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
 import PeriodSelect from '@/components/PeriodSelect'
 import LoadState from '@/components/LoadState'

@@ -13,7 +13,7 @@ import { usePeriodRange } from '@/hooks/usePeriodRange'
 import { useReport } from '@/hooks/useReport'
 import { fetchJson } from '@/lib/utils/fetch'
 import { CHART_COLORS } from '@/lib/constants/chartColors'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import type { StickinessResponse } from '@/lib/services/user/stickinessTypes'
 import styles from './StickinessPage.module.css'
 

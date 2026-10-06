@@ -1,8 +1,8 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { ProductProvider } from '@/lib/contexts/ProductContext'
-import { LabelProvider } from '@/lib/contexts/LabelContext'
+import { ProductProvider } from '@/contexts/ProductContext'
+import { LabelProvider } from '@/contexts/LabelContext'
 import AppShell from './AppShell'
 
 export default function LayoutSwitcher({ children }: { children: React.ReactNode }) {

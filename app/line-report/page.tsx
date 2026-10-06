@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
 import LoadState from '@/components/LoadState'
 import Alert from '@/components/Alert'

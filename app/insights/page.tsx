@@ -10,7 +10,7 @@ import { ui, cx } from '@/components/ui'
 import { useReport } from '@/hooks/useReport'
 import { fetchJson } from '@/lib/utils/fetch'
 import { CHART_COLORS } from '@/lib/constants/chartColors'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import type { InsightsReport } from '@/lib/services/insights/insightsTypes'
 import styles from './InsightsPage.module.css'
 

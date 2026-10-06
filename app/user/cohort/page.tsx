@@ -9,7 +9,7 @@ import { ui } from '@/components/ui'
 import { usePeriodRange } from '@/hooks/usePeriodRange'
 import { useReport } from '@/hooks/useReport'
 import { CHART_SERIES } from '@/lib/constants/chartColors'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import type { CohortResponse } from '@/lib/services/user/cohortTypes'
 import styles from './CohortPage.module.css'
 

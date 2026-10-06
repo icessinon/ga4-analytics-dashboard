@@ -6,7 +6,7 @@ import PageShell from '@/components/PageShell'
 import Alert from '@/components/Alert'
 import AISpinner from '@/components/AISpinner'
 import { ui, cx } from '@/components/ui'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import { fetchJson } from '@/lib/utils/fetch'
 import styles from './AdvisorPage.module.css'
 

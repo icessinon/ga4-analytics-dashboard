@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
 import PeriodSelect from '@/components/PeriodSelect'
 import Alert from '@/components/Alert'

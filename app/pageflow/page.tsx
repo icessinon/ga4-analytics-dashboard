@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
 import FilterBar, { FilterField } from '@/components/FilterBar'
 import PeriodSelect from '@/components/PeriodSelect'

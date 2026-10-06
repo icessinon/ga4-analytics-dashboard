@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, type CSSProperties } from 'react'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import SignupTrendChart, { type TrendSeries } from '@/components/signup-funnel/SignupTrendChart'
 import PageShell from '@/components/PageShell'
 import PeriodSelect from '@/components/PeriodSelect'

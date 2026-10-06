@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
 import ScoutAttributeSections from '@/components/scout/ScoutAttributeSections'
 import ScoutFunnelStages from '@/components/scout/ScoutFunnelStages'

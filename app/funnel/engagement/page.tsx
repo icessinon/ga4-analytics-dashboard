@@ -9,7 +9,7 @@ import { ui, cx } from '@/components/ui'
 import { usePeriodRange } from '@/hooks/usePeriodRange'
 import { useReport } from '@/hooks/useReport'
 import { fetchJson } from '@/lib/utils/fetch'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import { ENGAGEMENT_MILESTONES, type EngagementFunnelData } from '@/lib/services/funnel/engagementFunnelTypes'
 import styles from './EngagementFunnelPage.module.css'
 

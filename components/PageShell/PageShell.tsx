@@ -6,7 +6,7 @@ import RelatedPages from '@/components/RelatedPages'
 import Alert from '@/components/Alert'
 import LoadState, { type DataSource } from '@/components/LoadState'
 import { ui, cx } from '@/components/ui'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import { PAGES, pageHref, type PageId } from '@/lib/registry'
 
 export interface PageStatus {

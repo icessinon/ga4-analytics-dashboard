@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import { PAGES, getRelatedPages, pageHref, type PageId } from '@/lib/registry'
 import styles from './RelatedPages.module.css'
 

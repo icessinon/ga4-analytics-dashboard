@@ -1,6 +1,6 @@
 'use client'
 
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
 import PeriodSelect from '@/components/PeriodSelect'
 import { ui } from '@/components/ui'
