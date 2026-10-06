@@ -94,8 +94,8 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
     const isDelivery = granularity === 'delivery'
     const hasData = isTotal ? totals.length > 0 : isDelivery ? perDelivery.length > 0 : perMonth.length > 0
 
-    const tooltipStyle = { backgroundColor: SURFACE, border: `1px solid ${GRID_COLOR}`, color: TEXT_COLOR }
-    const axis = { stroke: TEXT_COLOR, tick: { fill: TEXT_COLOR, fontSize: 11 } }
+    const tooltipStyle = { backgroundColor: SURFACE, border: `1px solid ${GRID_COLOR}`, color: '#e5e7eb' }
+    const axis = { stroke: TEXT_COLOR, tick: { fill: TEXT_COLOR, fontSize: 12 } }
 
     const TABS: { key: Granularity; label: string }[] = [
         { key: 'total', label: '累計（連携者数）' },
