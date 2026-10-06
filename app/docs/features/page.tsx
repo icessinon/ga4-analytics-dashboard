@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import BackLink from '@/components/BackLink'
+import PageShell from '@/components/PageShell'
 import DocsAsk from '@/components/docs/DocsAsk'
+import { ui } from '@/components/ui'
 import { FEATURE_LIST, FEATURE_CATEGORY_IDS, CATEGORIES } from '@/lib/registry'
 import type { FeatureDoc } from '@/lib/registry'
 import styles from './FeatureDocs.module.css'
@@ -75,22 +76,19 @@ function FeatureCard({ feature }: { feature: FeatureDoc }) {
 
 export default function FeatureDocsPage() {
     return (
-        <div className={styles.wrapper}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>機能ドキュメント</h1>
-                    <p className={styles.lead}>
-                        ダッシュボードの全機能の概要・使い方・使用GA4メトリクスをまとめています。
-                        ✦ AI分析 バッジがある機能は、分析結果をもとに AI が自然言語でインサイトを生成します。
-                        なお、海外botトラフィック対策として全GA4集計にデフォルトで国=日本フィルタを適用しています（国別軸の分析を除く）。
-                    </p>
-                </div>
-                <div className={styles.headerLinks}>
-                    <Link href="/docs/api" className={styles.subLink}>API ドキュメント →</Link>
-                    <Link href="/docs/glossary" className={styles.subLink}>用語・ドメイン知識 →</Link>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-            </div>
+        <PageShell
+            pageId="docsFeatures"
+            actions={
+                <>
+                    <Link href="/docs/api" className={ui.btnGhost}>API ドキュメント</Link>
+                    <Link href="/docs/glossary" className={ui.btnGhost}>用語・ドメイン知識</Link>
+                </>
+            }
+        >
+            <p className={ui.note}>
+                ✦ AI分析 バッジがある機能は、分析結果をもとに AI が自然言語でインサイトを生成します。
+                海外 bot トラフィック対策として全 GA4 集計にデフォルトで国=日本フィルタを適用しています（国別軸の分析を除く）。
+            </p>
 
             <DocsAsk />
 
@@ -133,9 +131,6 @@ export default function FeatureDocsPage() {
                 })}
             </div>
 
-            <div className={styles.footer}>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-        </div>
+        </PageShell>
     )
 }

@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import BackLink from '@/components/BackLink'
+import PageShell from '@/components/PageShell'
 import DocsAsk from '@/components/docs/DocsAsk'
+import { ui, cx } from '@/components/ui'
 import { CV_UNIT_DERIVATIONS, CV_UNIT_VALUE_ASOF, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './GlossaryPage.module.css'
 
@@ -21,8 +22,8 @@ const CV_UNIT_ROW_NOTE: Record<string, string> = {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{title}</h2>
+        <section className={ui.card}>
+            <h2 className={ui.sectionTitle}>{title}</h2>
             {children}
         </section>
     )
@@ -30,25 +31,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function GlossaryPage() {
     return (
-        <div className={styles.wrapper}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>用語・ドメイン知識</h1>
-                    <p className={styles.lead}>
-                        クロスワーク（x-work.jp）の事業用語・CV定義・GTM/GA4計測仕様・データ基盤のリファレンスです。
-                        数字の食い違いを調査するときは、まず「どのプロパティ・どのラベル基準の数字か」をこのページで確認してください。
-                    </p>
-                </div>
-                <div className={styles.headerLinks}>
-                    <Link href="/docs/features" className={styles.subLink}>機能ドキュメント →</Link>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-            </div>
+        <PageShell
+            pageId="docsGlossary"
+            width="wide"
+            actions={<Link href="/docs/features" className={ui.btnGhost}>機能ドキュメント</Link>}
+        >
+            <p className={ui.note}>
+                数字の食い違いを調査するときは、まず「どのプロパティ・どのラベル基準の数字か」をこのページで確認してください。
+            </p>
 
             <DocsAsk />
 
             <Section title="事業・サービス用語">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>用語</th><th>意味</th></tr></thead>
                     <tbody>
                         <tr><td>クロスワーク</td><td>x-work.jp。ドライバー・建設・製造等の現場系職種に特化した求人転職プラットフォーム</td></tr>
@@ -63,7 +58,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="求人の契約種別（contractType）">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th></th><th>求人広告</th><th>人材紹介</th><th>ハローワーク</th></tr></thead>
                     <tbody>
                         <tr><td>掲載元</td><td>企業が直接掲載</td><td>自社の紹介事業</td><td>ハローワーク求人の転載</td></tr>
@@ -82,7 +77,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="CVの定義（ダッシュボードの指標）">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>指標</th><th>計測方法</th><th>意味・注意点</th></tr></thead>
                     <tbody>
                         <tr><td>応募CV</td><td>/entry/thanks 到達ユーザー（page_view）</td><td>サイト内フォームからの応募。<strong>求人広告・人材紹介・ハロワの3種が混在</strong>（種別分解は求人種別CV分析ページで）</td></tr>
@@ -106,7 +101,7 @@ export default function GlossaryPage() {
                     求職者単位で全マッチングを合算せず（過大評価）、応募求人だけにも絞らない（CAが別求人＝特に人材紹介案件へ再マッチして生んだ成約を取りこぼす）<strong>CA活動履歴基準</strong>の中庸。
                     ダッシュボードの金額表示（<Link href="/cv-value" className={styles.subLink}>CV単価・お金まわり</Link>、求人種別CV分析、会員登録ファネル）はすべてこの係数を使っています。
                 </p>
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>CV種別</th><th>成約率</th><th>平均手数料（純額）</th><th>単価</th></tr></thead>
                     <tbody>
                         {CV_UNIT_DERIVATIONS.map((d) => {
@@ -145,7 +140,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="応募ソース（JobApplicationSource）">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>source値</th><th>意味</th></tr></thead>
                     <tbody>
                         <tr><td>null（なし）</td><td>通常応募＝自然応募。ユーザーが自力でサイトに来て応募</td></tr>
@@ -158,7 +153,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="URL構造">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>パターン</th><th>ページ</th></tr></thead>
                     <tbody>
                         <tr><td>/</td><td>トップページ（主要導線は検索モーダルと職種ボタン）</td></tr>
@@ -176,7 +171,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="GTM / GA4 の構成（重要: 二重構成）">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th></th><th>分析用（このダッシュボード）</th><th>マーケ用</th></tr></thead>
                     <tbody>
                         <tr><td>GTMコンテナ</td><td>GTM-TG9PR444</td><td>GTM-W7NPT5M（広告タグ・Criteo・LINE Tag等も同居）</td></tr>
@@ -228,7 +223,7 @@ export default function GlossaryPage() {
                     <li><code>utm_campaign</code>=施策名</li>
                 </ul>
                 <h3 className={styles.subTitle}>自社プロダクト通知（utm_source=product）</h3>
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>施策</th><th>medium / campaign</th><th>実測 séss/登録CV</th></tr></thead>
                     <tbody>
                         <tr><td>おすすめ求人LINE（→詳細）</td><td>line / job_description</td><td>449 / 0</td></tr>
@@ -240,7 +235,7 @@ export default function GlossaryPage() {
                 </table>
                 <p className={styles.note}>⚠️ <code>keep_remider</code> は <code>keep_reminder</code> のタイポ（n欠落・Reminder.ts:48-50）。実データにもタイポのまま流入している。<code>lp_thanks</code> は発行元コードが未特定（配信基盤側の可能性・要追跡）。</p>
                 <h3 className={styles.subTitle}>LINE公式アカウント（source=line / medium=social）※drm-front外・LINE側設定</h3>
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>campaign</th><th>実測 séss / 登録CV / CVR</th></tr></thead>
                     <tbody>
                         <tr><td>survey_thanks_scout（サーベイ完了→スカウト誘導）</td><td><strong>227 / 95 / 41.9% ★突出</strong></td></tr>
@@ -267,7 +262,7 @@ export default function GlossaryPage() {
             </Section>
 
             <Section title="データ基盤">
-                <table className={styles.table}>
+                <table className={cx(ui.dataTable, styles.glossaryTable)}>
                     <thead><tr><th>システム</th><th>内容</th></tr></thead>
                     <tbody>
                         <tr><td>DynamoDB（本体AWS 662907192686）</td><td>JobApplication-prd（会員応募）/ GuestJobApplication-prd（ゲスト応募、articleIdのみ）/ JobDescriptions-prd（求人。pk=media_id, sk=&apos;info&apos;、contractType保持）</td></tr>
@@ -295,9 +290,6 @@ export default function GlossaryPage() {
                 </ul>
             </Section>
 
-            <div className={styles.footer}>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-        </div>
+        </PageShell>
     )
 }

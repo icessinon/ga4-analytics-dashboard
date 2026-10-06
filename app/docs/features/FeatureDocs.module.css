@@ -1,49 +1,3 @@
-.wrapper {
-    max-width: 64rem;
-    margin: 0 auto;
-    padding: 1.5rem 1.25rem 3rem;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-}
-
-.headerLinks {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-.title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin: 0 0 0.5rem;
-}
-
-.lead {
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    color: var(--gray-400);
-    margin: 0;
-    max-width: 44rem;
-}
-
-.subLink {
-    font-size: 0.875rem;
-    color: var(--indigo-400);
-    text-decoration: none;
-}
-
-.subLink:hover { text-decoration: underline; }
-
 /* ── TOC ── */
 .toc {
     background: rgba(31,41,55,0.6);
@@ -99,10 +53,6 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-}
-
-@media (max-width: 800px) {
-    .cardGrid { grid-template-columns: 1fr; }
 }
 
 /* ── Cards ── */
@@ -244,14 +194,15 @@
 
 .openLink:hover { color: var(--indigo-300); }
 
-.footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--gray-800);
-}
-
 /* 数値を読むときの注意点 */
 .noteList { margin: 10px 0 0; padding: 10px 12px; list-style: none; background-color: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 0.5rem; }
+
 .noteItem { font-size: 11px; color: var(--amber-400); line-height: 1.6; padding-left: 14px; position: relative; }
+
 .noteItem + .noteItem { margin-top: 5px; }
+
 .noteItem::before { content: '注'; position: absolute; left: 0; top: 0; font-size: 10px; font-weight: 700; }
+
+@media (max-width: 800px) {
+    .cardGrid { grid-template-columns: 1fr; }
+}

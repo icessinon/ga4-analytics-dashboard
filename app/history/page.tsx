@@ -2,8 +2,8 @@
 
 import { Suspense, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
+import { cx } from '@/components/ui'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import ReportHistoryTab from './components/ReportHistoryTab'
 import FunnelHistoryTab from './components/FunnelHistoryTab'
@@ -11,7 +11,11 @@ import AbTestHistoryTab from './components/AbTestHistoryTab'
 import styles from './HistoryPage.module.css'
 
 type HistoryTab = 'reports' | 'funnel' | 'ab-test'
-const HISTORY_TABS: readonly HistoryTab[] = ['reports', 'funnel', 'ab-test']
+const TABS: ReadonlyArray<{ id: HistoryTab; label: string }> = [
+    { id: 'reports', label: 'レポート履歴' },
+    { id: 'funnel', label: 'ファネル履歴' },
+    { id: 'ab-test', label: 'ABテスト履歴' },
+]
 
 function HistoryPageContent() {
     const { currentProduct } = useProduct()
@@ -21,7 +25,7 @@ function HistoryPageContent() {
     // 旧 /funnel/history・/reports/history からのリダイレクトは ?tab= で着地するタブを指定する
     const tabParam = searchParams?.get('tab')
     const [activeTab, setActiveTab] = useState<HistoryTab>(
-        HISTORY_TABS.includes(tabParam as HistoryTab) ? (tabParam as HistoryTab) : 'reports'
+        TABS.some((t) => t.id === tabParam) ? (tabParam as HistoryTab) : 'reports'
     )
     function selectTab(tab: HistoryTab) {
         setActiveTab(tab)
@@ -33,56 +37,36 @@ function HistoryPageContent() {
     const productId = productIdParam ? parseInt(productIdParam, 10) : currentProduct?.id
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>履歴一覧</h1>
-                    <p className={styles.description}>
-                        過去に実行したレポート、ファネル分析、ABテストの履歴を確認できます
-                    </p>
+        <PageShell
+            pageId="history"
+            width="wide"
+            controls={
+                <div className={styles.tabs} role="tablist">
+                    {TABS.map((t) => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === t.id}
+                            className={cx(styles.tab, activeTab === t.id && styles.tabActive)}
+                            onClick={() => selectTab(t.id)}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            <div className={styles.tabContainer}>
-                <div className={styles.tabList}>
-                    <button
-                        onClick={() => selectTab('reports')}
-                        className={`${styles.tabButton} ${
-                            activeTab === 'reports' ? styles.tabButtonActive : styles.tabButtonInactive
-                        }`}
-                    >
-                        レポート履歴
-                    </button>
-                    <button
-                        onClick={() => selectTab('funnel')}
-                        className={`${styles.tabButton} ${
-                            activeTab === 'funnel' ? styles.tabButtonActive : styles.tabButtonInactive
-                        }`}
-                    >
-                        ファネル履歴
-                    </button>
-                    <button
-                        onClick={() => selectTab('ab-test')}
-                        className={`${styles.tabButton} ${
-                            activeTab === 'ab-test' ? styles.tabButtonActive : styles.tabButtonInactive
-                        }`}
-                    >
-                        ABテスト履歴
-                    </button>
-                </div>
-            </div>
-
+            }
+        >
             {activeTab === 'reports' && <ReportHistoryTab productId={productId} />}
             {activeTab === 'funnel' && <FunnelHistoryTab productId={productId} />}
             {activeTab === 'ab-test' && <AbTestHistoryTab productId={productId} />}
-        </div>
+        </PageShell>
     )
 }
 
 export default function HistoryPage() {
     return (
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={<PageShell pageId="history" width="wide" status={{ loading: true, source: 'db' }}>{null}</PageShell>}>
             <HistoryPageContent />
         </Suspense>
     )

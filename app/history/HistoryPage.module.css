@@ -1,86 +1,33 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.backLink {
+/* タブ切替。/data の表示モード切替と同じ「沈んだトラックに浮いたボタン」 */
+.tabs {
     display: inline-flex;
-    align-items: center;
-    color: var(--blue-600);
-    text-decoration: none;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--blue-300);
-    border-radius: 0.5rem;
-    transition: background-color 0.2s;
-}
-
-.backLink:hover {
-    background-color: #eff6ff;
-    text-decoration: underline;
-}
-
-.backLink {
-        color: var(--blue-400);
-        border-color: var(--blue-900);
-    }
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.description {
-    color: var(--gray-600);
-}
-
-.tabContainer {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1rem;
+    gap: 0.2rem;
+    padding: 0.25rem;
     margin-bottom: 1.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-sunken);
+    box-shadow: var(--shadow-sunken);
 }
 
-.tabList {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.tabButton {
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    transition: background-color 0.2s;
-    border: none;
-    cursor: pointer;
+.tab {
+    padding: 0.45rem 1rem;
     font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-sm) - 2px);
+    cursor: pointer;
 }
 
-.tabButtonActive {
-    background-color: var(--blue-600);
-    color: white;
+.tab:hover {
+    color: var(--text-strong);
 }
 
-.tabButtonInactive {
-    background-color: var(--gray-600);
-    color: var(--gray-700);
+.tabActive {
+    color: var(--accent-text);
+    background: var(--bg-raised);
+    background-image: var(--control-gradient);
+    box-shadow: var(--shadow-card);
+    font-weight: 600;
 }
-
-.tabButtonInactive:hover {
-    background-color: var(--gray-300);
-}
-
-.tabButtonInactive {
-        background-color: var(--gray-700);
-        color: var(--gray-300);
-    }
-

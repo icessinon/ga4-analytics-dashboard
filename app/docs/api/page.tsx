@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import BackLink from '@/components/BackLink'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
 import DocsAsk from '@/components/docs/DocsAsk'
+import { ui } from '@/components/ui'
 import { API_LIST } from './apiList'
 import type { ApiEndpoint, ApiParam } from './types'
 import styles from './ApiDocs.module.css'
@@ -67,16 +69,14 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
 
 export default function ApiDocsPage() {
     return (
-        <div className={styles.wrapper}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>API ドキュメント</h1>
-                <p className={styles.lead}>
-                    ダッシュボードで利用している API エンドポイントの一覧と説明です。必要に応じてクエリパラメータやレスポンスの概要を確認できます。
-                </p>
-                <p className={styles.lead}>
-                    <strong>認証:</strong> Basic認証を有効にしている場合、未ログイン時は /login にリダイレクトされます。ログイン成功後はクッキー（ga4_auth）でセッションが維持され、本ドキュメントの API の多くはそのクッキーがある状態で利用します。/api/auth/login と /api/auth/logout は認証不要で呼び出せます。
-                </p>
-            </div>
+        <PageShell
+            pageId="docsApi"
+            actions={<Link href="/docs/features" className={ui.btnGhost}>機能ドキュメント</Link>}
+        >
+            <Alert tone="info" title="認証">
+                Basic 認証を有効にしている場合、未ログイン時は /login にリダイレクトされます。ログイン後はクッキー（ga4_auth）でセッションが維持され、
+                ここに載っている API の多くはそのクッキーがある状態で利用します。/api/auth/login と /api/auth/logout は認証不要で呼び出せます。
+            </Alert>
 
             <DocsAsk />
 
@@ -108,12 +108,6 @@ export default function ApiDocsPage() {
                     </section>
                 ))}
             </div>
-            <div className={styles.footer}>
-                <Link href="/docs/features" style={{ fontSize: '0.875rem', color: '#8b5cf6', textDecoration: 'none', marginRight: '1.5rem' }}>
-                    機能ドキュメントを見る →
-                </Link>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-        </div>
+        </PageShell>
     )
 }
