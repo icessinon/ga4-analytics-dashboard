@@ -9,7 +9,7 @@ import AbTestDonutCharts from '@/components/dashboard/AbTestDonutCharts'
 import PageMetricsChart from '@/components/dashboard/PageMetricsChart'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import type { ChartMetric, DashboardStats, PageMetrics, PageMetricsSeriesPoint, SeriesDataPoint } from '@/app/dashboard/types'
-import { QUICK_ACCESS_GROUPS } from '@/app/dashboard/types'
+import { navGroups } from '@/lib/registry'
 import { getChartPeriodLabel, getMonthOptions, getRangeForGranularity, periodToTimestamp } from '@/app/dashboard/utils'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
@@ -597,15 +597,14 @@ export default function DashboardPage() {
 
             <div className={styles.quickAccess}>
                 <h2 className={styles.quickAccessTitle}>クイックアクセス</h2>
-                {QUICK_ACCESS_GROUPS.map((group) => (
-                    <div key={group.label} className={styles.quickAccessGroup}>
+                {navGroups(currentProduct?.id).map((group) => (
+                    <div key={group.id} className={styles.quickAccessGroup}>
                         <h3 className={styles.quickAccessGroupTitle}>{group.label}</h3>
                         <div className={styles.quickAccessGrid}>
                             {group.items.map((item) => {
-                                const href = item.getHref(currentProduct?.id)
-                                const subtitle = item.productPrefix && currentProduct ? `${currentProduct.name}の${item.subtitle}` : item.subtitle
+                                const subtitle = item.productScoped && currentProduct ? `${currentProduct.name}の${item.subtitle}` : item.subtitle
                                 return (
-                                    <Link key={item.title} href={href} className={styles.quickAccessLink}>
+                                    <Link key={item.id} href={item.href} className={styles.quickAccessLink}>
                                         <span className={styles.quickAccessLinkInner}>
                                             <h3 className={styles.quickAccessLinkTitle}>{item.title}</h3>
                                             <p className={styles.quickAccessLinkText}>{subtitle}</p>

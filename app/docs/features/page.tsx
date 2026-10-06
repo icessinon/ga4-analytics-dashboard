@@ -3,20 +3,9 @@
 import Link from 'next/link'
 import BackLink from '@/components/BackLink'
 import DocsAsk from '@/components/docs/DocsAsk'
-import { FEATURE_LIST, FEATURE_CATEGORIES } from './featureList'
-import type { FeatureDoc } from './featureList'
+import { FEATURE_LIST, FEATURE_CATEGORY_IDS, CATEGORIES } from '@/lib/registry'
+import type { FeatureDoc } from '@/lib/registry'
 import styles from './FeatureDocs.module.css'
-
-const CATEGORY_COLORS: Record<string, { border: string; bg: string; label: string }> = {
-    'KPI・レポート':            { border: '#3b82f6', bg: 'rgba(96,165,250,0.08)',  label: '#3b82f6' },
-    'CV分析':                   { border: '#16a34a', bg: 'rgba(74,222,128,0.08)',  label: '#16a34a' },
-    'チャネル・集客':           { border: '#0891b2', bg: 'rgba(34,211,238,0.08)',  label: '#0891b2' },
-    'ABテスト':                 { border: '#d97706', bg: 'rgba(251,191,36,0.08)',  label: '#d97706' },
-    'コンバージョン・ファネル': { border: '#16a34a', bg: 'rgba(52,211,153,0.08)',  label: '#16a34a' },
-    '可視化・経路分析':         { border: '#ef4444', bg: 'rgba(248,113,113,0.08)', label: '#ef4444' },
-    'ユーザー分析':             { border: '#8b5cf6', bg: 'rgba(99,102,241,0.08)',  label: '#8b5cf6' },
-    'データ・ツール':           { border: '#9ca3af', bg: 'rgba(156,163,175,0.08)', label: '#9ca3af' },
-}
 
 function AIBadge() {
     return (
@@ -27,7 +16,7 @@ function AIBadge() {
 }
 
 function FeatureCard({ feature }: { feature: FeatureDoc }) {
-    const color = CATEGORY_COLORS[feature.category] ?? CATEGORY_COLORS['KPI・レポート']
+    const color = CATEGORIES[feature.categoryId].color
     return (
         <div className={styles.card} style={{ borderColor: color.border, background: color.bg }}>
             <div className={styles.cardHeader}>
@@ -108,8 +97,8 @@ export default function FeatureDocsPage() {
             <nav className={styles.toc}>
                 <p className={styles.tocTitle}>カテゴリ</p>
                 <div className={styles.tocList}>
-                    {FEATURE_CATEGORIES.map((cat) => {
-                        const color = CATEGORY_COLORS[cat]
+                    {FEATURE_CATEGORY_IDS.map((cat) => {
+                        const { color, label } = CATEGORIES[cat]
                         return (
                             <a
                                 key={cat}
@@ -117,7 +106,7 @@ export default function FeatureDocsPage() {
                                 className={styles.tocChip}
                                 style={{ borderColor: color.border, color: color.label }}
                             >
-                                {cat}
+                                {label}
                             </a>
                         )
                     })}
@@ -125,14 +114,14 @@ export default function FeatureDocsPage() {
             </nav>
 
             <div className={styles.content}>
-                {FEATURE_CATEGORIES.map((cat) => {
-                    const features = FEATURE_LIST.filter((f) => f.category === cat)
+                {FEATURE_CATEGORY_IDS.map((cat) => {
+                    const features = FEATURE_LIST.filter((f) => f.categoryId === cat)
                     if (features.length === 0) return null
-                    const color = CATEGORY_COLORS[cat]
+                    const { color, label } = CATEGORIES[cat]
                     return (
                         <section key={cat} id={`cat-${cat}`} className={styles.section}>
                             <h2 className={styles.sectionTitle} style={{ borderColor: color.border, color: color.label }}>
-                                {cat}
+                                {label}
                             </h2>
                             <div className={styles.cardGrid}>
                                 {features.map((f) => (

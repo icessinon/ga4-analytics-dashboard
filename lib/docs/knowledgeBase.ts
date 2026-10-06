@@ -1,4 +1,4 @@
-import { FEATURE_LIST } from '@/app/docs/features/featureList'
+import { FEATURE_LIST } from '@/lib/registry'
 import { BQ_TABLES } from '@/lib/bq/schemas'
 import { API_LIST } from '@/app/docs/api/apiList'
 

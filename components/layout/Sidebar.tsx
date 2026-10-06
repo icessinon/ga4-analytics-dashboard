@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { usePathname } from 'next/navigation'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import { QUICK_ACCESS_GROUPS } from '@/app/dashboard/types'
+import { navGroups } from '@/lib/registry'
 import styles from './Sidebar.module.css'
 
 const STORAGE_KEY = 'sidebar-collapsed'
@@ -16,6 +16,7 @@ export default function Sidebar() {
     const [collapsed, setCollapsed] = useState(false)
     // グループの開閉状態。項目が増えたため、現在ページを含むグループ以外は初期状態で閉じる
     const [openGroups, setOpenGroups] = useState<Record<string, boolean> | null>(null)
+    const groups = navGroups(currentProduct?.id)
 
     useEffect(() => {
         try {
@@ -40,9 +41,9 @@ export default function Sidebar() {
         } catch {
         }
         const next: Record<string, boolean> = {}
-        for (const group of QUICK_ACCESS_GROUPS) {
-            const containsActive = group.items.some((item) => isActive(item.getHref(currentProduct?.id).split('?')[0]))
-            next[group.label] = containsActive || stored[group.label] === true
+        for (const group of groups) {
+            const containsActive = group.items.some((item) => isActive(item.href))
+            next[group.id] = containsActive || stored[group.id] === true
         }
         setOpenGroups(next)
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,14 +94,14 @@ export default function Sidebar() {
                 >
                     ダッシュボード
                 </Link>
-                {QUICK_ACCESS_GROUPS.map((group) => {
-                    const isOpen = openGroups?.[group.label] ?? true
+                {groups.map((group) => {
+                    const isOpen = openGroups?.[group.id] ?? true
                     return (
-                        <div key={group.label} className={styles.group}>
+                        <div key={group.id} className={styles.group}>
                             <button
                                 type="button"
                                 className={styles.groupButton}
-                                onClick={() => toggleGroup(group.label)}
+                                onClick={() => toggleGroup(group.id)}
                                 aria-expanded={isOpen}
                             >
                                 <span className={styles.groupLabel}>{group.label}</span>
@@ -109,12 +110,11 @@ export default function Sidebar() {
                             {isOpen && (
                                 <ul className={styles.list}>
                                     {group.items.map((item) => {
-                                        const href = item.getHref(currentProduct?.id)
-                                        const active = isActive(href.split('?')[0])
+                                        const active = isActive(item.href)
                                         return (
-                                            <li key={item.title}>
+                                            <li key={item.id}>
                                                 <Link
-                                                    href={href}
+                                                    href={item.href}
                                                     className={`${styles.link} ${active ? styles.active : ''}`}
                                                 >
                                                     {item.title}
