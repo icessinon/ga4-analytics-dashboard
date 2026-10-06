@@ -1,772 +1,105 @@
 /**
- * API エンドポイント一覧（docs/api 表示用）
+ * API エンドポイント一覧（/docs/api と AI Q&A の知識ベースが使う）。
+ *
+ * 実在する route は lib/docs/apiList.generated.ts（scripts/check/gen-api-list.ts が app/api から生成）、
+ * 表示名・パラメータ・カテゴリの注釈は lib/docs/apiAnnotations.ts。ここで 2 つを合成する。
+ * route を足せば自動で一覧に載り、消せば消える（手書きだけだった頃は 19 本の未掲載と 1 本の幽霊があった）。
  */
 
+import { GENERATED_ENDPOINTS, type GeneratedEndpoint } from './apiList.generated'
+import { API_ANNOTATIONS, type ApiAnnotation } from './apiAnnotations'
 import type { ApiEndpoint } from './apiTypes'
 
-export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
-    {
-        category: '認証',
-        endpoints: [
-            {
-                path: '/api/auth/login',
-                method: 'POST',
-                name: 'ログイン',
-                description: 'Basic認証用。ユーザー名・パスワードを送信し、成功時に HTTP-only クッキー（ga4_auth）をセットします。環境変数 BASIC_AUTH_USER / BASIC_AUTH_PASSWORD と照合します。',
-                params: [
-                    { name: 'username', type: 'string', required: true, description: 'Body JSON。ログインID' },
-                    { name: 'password', type: 'string', required: true, description: 'Body JSON。パスワード' },
-                ],
-                responseNote: '成功時 { ok: true } と Set-Cookie。失敗時 401 で { error: "メッセージ" }',
-            },
-            {
-                path: '/api/auth/logout',
-                method: 'POST',
-                name: 'ログアウト',
-                description: '認証クッキー（ga4_auth）を削除します。',
-                params: [],
-                responseNote: '{ ok: true }',
-            },
-        ],
-    },
-    {
-        category: 'ダッシュボード',
-        endpoints: [
-            {
-                path: '/api/dashboard',
-                method: 'GET',
-                name: 'ダッシュボード統計',
-                description: '月次統計・ABテスト数・ファネル数・日別サマリなどを取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: false, description: 'プロダクトIDで絞り込み' },
-                    { name: 'month', type: 'string', required: false, description: 'YYYY-MM 形式の対象月' },
-                ],
-                responseNote: 'DashboardStats（month, productCount, abTestCount, dailyStats 等）',
-            },
-            {
-                path: '/api/dashboard/page-metrics',
-                method: 'GET',
-                name: 'ページメトリクス',
-                description: '指定期間のページ別 PV/CV/CVR 等のメトリクスを取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                    { name: 'startDate', type: 'string', required: true, description: '開始日 YYYY-MM-DD' },
-                    { name: 'endDate', type: 'string', required: true, description: '終了日 YYYY-MM-DD' },
-                ],
-                responseNote: 'PageMetrics 配列',
-            },
-            {
-                path: '/api/dashboard/page-metrics/series',
-                method: 'GET',
-                name: 'ページメトリクス時系列',
-                description: '期間内の日別・週別などの時系列メトリクスを取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                    { name: 'startDate', type: 'string', required: true, description: '開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: '終了日' },
-                    { name: 'granularity', type: 'string', required: false, description: 'day / week など' },
-                ],
-                responseNote: 'series 配列（日付・PV・CV・sessions 等）',
-            },
-            {
-                path: '/api/dashboard/page-cv-config',
-                method: 'GET',
-                name: 'ページCV設定',
-                description: 'ページごとのCVイベント・ディメンション設定を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                ],
-                responseNote: 'ページパス別の CV 設定一覧',
-            },
-        ],
-    },
-    {
-        category: 'ABテスト',
-        endpoints: [
-            {
-                path: '/api/ab-test',
-                method: 'GET',
-                name: 'ABテスト一覧',
-                description: 'ABテスト一覧を取得（ページネーション対応、デフォルト5件/ページ）。',
-                params: [
-                    { name: 'productId', type: 'number', required: false, description: 'プロダクトID' },
-                    { name: 'status', type: 'string', required: false, description: 'running / paused / completed' },
-                    { name: 'page', type: 'number', required: false, description: 'ページ番号' },
-                    { name: 'limit', type: 'number', required: false, description: '件数（最大50）' },
-                ],
-                responseNote: 'abTests 配列と total',
-            },
-            {
-                path: '/api/ab-test',
-                method: 'POST',
-                name: 'ABテスト作成',
-                description: '新規ABテストを作成します。',
-                params: [],
-                responseNote: '作成された AbTest',
-            },
-            {
-                path: '/api/ab-test/[id]',
-                method: 'GET',
-                name: 'ABテスト詳細',
-                description: '指定IDのABテスト詳細を取得します。',
-                params: [],
-                responseNote: 'AbTest（product, reportExecutions 等含む）',
-            },
-            {
-                path: '/api/ab-test/[id]',
-                method: 'PATCH',
-                name: 'ABテスト更新',
-                description: 'ABテストの設定・ステータスを更新します。',
-                params: [],
-                responseNote: '更新後の AbTest',
-            },
-            {
-                path: '/api/ab-test/[id]/status',
-                method: 'PATCH',
-                name: 'ABテストステータス変更',
-                description: 'running / paused / completed などのステータスを変更します。completed に変更すると、ステップファネル（クリック基準優先）を集計したうえで AI 最終レポートを自動生成し、DB と BigQuery（ab_test_final_report_log）に保存します。',
-                params: [],
-                responseNote: '更新後の AbTest（finalAiReport 含む）',
-            },
-            {
-                path: '/api/ab-test/[id]/execution-mode',
-                method: 'PATCH',
-                name: 'ABテスト実行モード',
-                description: '実行モード（手動/自動など）を変更します。',
-                params: [],
-                responseNote: '更新後の AbTest',
-            },
-            {
-                path: '/api/ab-test/[id]/next-execution',
-                method: 'POST',
-                name: '次回実行予約',
-                description: '次回実行日時を設定します。',
-                params: [],
-                responseNote: '更新後の AbTest',
-            },
-            {
-                path: '/api/ab-test/execute',
-                method: 'POST',
-                name: 'ABテスト実行',
-                description: 'ABテストを1回実行し、結果を保存します。テスト期間終了後の実行では AI 最終レポートを自動生成（未生成の場合のみ）し、BigQuery に蓄積します。',
-                params: [],
-                responseNote: '実行結果',
-            },
-            {
-                path: '/api/ab-test/test-execute',
-                method: 'POST',
-                name: 'ABテスト設定の検証実行',
-                description: 'ABテスト作成フォームの「テスト実行」ボタンが使用。入力中のGA4設定で実際にCVRを計算して設定ミスがないか確認します（DBには保存しません）。',
-                params: [
-                    { name: 'ga4Config', type: 'object', required: true, description: 'Body JSON。フォーム入力中のGA4設定' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                ],
-                responseNote: 'バリアント別CVR計算結果（保存なし）',
-            },
-            {
-                path: '/api/ab-test/evaluate',
-                method: 'POST',
-                name: 'ABテスト評価',
-                description: 'ABテストの勝者判定・評価を行います。',
-                params: [],
-                responseNote: '評価結果',
-            },
-            {
-                path: '/api/ab-test/check-webhook',
-                method: 'GET',
-                name: 'Webhook確認',
-                description: 'Webhook の疎通・設定確認用です。',
-                params: [],
-                responseNote: '確認結果',
-            },
-            {
-                path: '/api/ab-test/history',
-                method: 'GET',
-                name: 'ABテスト履歴',
-                description: '完了したABテストの履歴一覧を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: false, description: 'プロダクトID' },
-                ],
-                responseNote: '完了ABテスト一覧',
-            },
-            {
-                path: '/api/ab-test/[id]/funnel',
-                method: 'GET',
-                name: 'ABテスト途中経過ファネル',
-                description: 'バリアント別のステップファネルをGA4オンデマンド集計で返します。funnelSteps未設定でもCVRラベルのサフィックス（例: __B-1618）からテスト範囲を自動検出します。',
-                params: [
-                    { name: 'basis', type: 'string', required: false, description: 'view（デフォルト。view_label基準＝50%×1秒表示）または click（click_labelのStepN_プレフィックス単位で操作した人数。表示条件がなく取りこぼしが少ない）' },
-                ],
-                responseNote: '{ mode, basis, detectedSuffixes, variants, steps: [{ stepName, values: { A: { users, conversionRate, dropoffRate }, ... } }] }',
-            },
-            {
-                path: '/api/ab-test/advisor',
-                method: 'POST',
-                name: '施策提案AI壁打ち',
-                description: '施策・ABテスト案をBigQueryとDBに蓄積された過去ABテストの勝因・敗因・最終レポートと照合し、AIが成功確度・リスク・推奨テスト設計を回答します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'proposal', type: 'string', required: true, description: 'Body JSON。検討中の施策・テスト案のテキスト' },
-                    { name: 'productId', type: 'number', required: false, description: 'Body JSON。プロダクトID（AI利用ログ用）' },
-                ],
-                responseNote: '{ answer: string, referencedTests: [{ abTestId, name, winnerVariant, improvementVsAPct, startDate, endDate }] }',
-            },
-        ],
-    },
-    {
-        category: '分析・レポート',
-        endpoints: [
-            {
-                path: '/api/analytics/report',
-                method: 'GET',
-                name: '分析レポート',
-                description: 'GA4 分析レポートデータを取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                ],
-                responseNote: 'レポートデータ',
-            },
-            {
-                path: '/api/analytics/data',
-                method: 'POST',
-                name: '分析データ',
-                description: 'GA4 の生データを取得します。Body で propertyId, startDate, endDate, metrics, dimensions, filter, limit 等を指定します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4 プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日 YYYY-MM-DD' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'metrics', type: 'array', required: true, description: 'Body JSON。メトリクス' },
-                    { name: 'dimensions', type: 'array', required: true, description: 'Body JSON。ディメンション' },
-                    { name: 'limit', type: 'number', required: false, description: 'Body JSON。取得上限' },
-                ],
-                responseNote: 'data（GA4 レスポンス）',
-            },
-            {
-                path: '/api/reports',
-                method: 'GET',
-                name: 'レポート一覧',
-                description: '保存済みレポート一覧を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: false, description: 'プロダクトID' },
-                ],
-                responseNote: 'レポート一覧',
-            },
-            {
-                path: '/api/reports/history',
-                method: 'GET',
-                name: 'レポート履歴',
-                description: 'レポート実行履歴を取得します。',
-                params: [],
-                responseNote: '履歴一覧',
-            },
-            {
-                path: '/api/reports/history/[id]',
-                method: 'GET',
-                name: 'レポート履歴詳細',
-                description: '指定IDのレポート履歴詳細を取得します。',
-                params: [],
-                responseNote: '履歴詳細',
-            },
-            {
-                path: '/api/reports/[id]',
-                method: 'GET',
-                name: 'レポート詳細',
-                description: '指定IDのレポートを取得します。',
-                params: [],
-                responseNote: 'レポート詳細',
-            },
-        ],
-    },
-    {
-        category: 'トレンド',
-        endpoints: [
-            {
-                path: '/api/trend/summary',
-                method: 'GET',
-                name: 'トレンドサマリ',
-                description: '月次トレンドのサマリを取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                    { name: 'month', type: 'string', required: false, description: 'YYYY-MM' },
-                ],
-                responseNote: 'トレンドサマリ',
-            },
-            {
-                path: '/api/trend/monthly',
-                method: 'GET',
-                name: '月次トレンド',
-                description: '月別のPV/CV/CVR推移を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                    { name: 'months', type: 'number', required: false, description: '取得月数' },
-                ],
-                responseNote: '月次データ配列',
-            },
-        ],
-    },
-    {
-        category: 'ファネル',
-        endpoints: [
-            {
-                path: '/api/funnel/entry-form',
-                method: 'GET',
-                name: 'エントリーフォーム設定',
-                description: 'エントリーフォームファネルの設定を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                ],
-                responseNote: 'ファネル設定',
-            },
-            {
-                path: '/api/funnel/entry-form/compare',
-                method: 'GET',
-                name: 'エントリーフォーム期間比較',
-                description: '2期間のファネルステップ通過率を比較します。チャネル別内訳（チャネルごとのセッション・CV・CVR の期間差分）も返します。',
-                params: [],
-                responseNote: '{ success, comparison: { periods, periodA, periodB, geminiEvaluation }, executionId }。各 period に channelBreakdown を含む',
-            },
-            {
-                path: '/api/funnel/path',
-                method: 'POST',
-                name: '経路ファネル実行',
-                description: 'ページ閲覧・クリックタグを混在させたステップ定義から、GA4の順序付きクローズドファネル（Data API v1alpha runFunnelReport）を実行します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'steps', type: 'array', required: true, description: 'Body JSON。{ name, type: "page"|"click", matchType, value } の配列（2〜10個）' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ steps: [{ name, users, completionRate, abandonments }] }',
-            },
-            {
-                path: '/api/funnel/executions',
-                method: 'GET',
-                name: 'ファネル実行一覧',
-                description: 'ファネル実行履歴一覧を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: false, description: 'プロダクトID' },
-                ],
-                responseNote: '実行一覧',
-            },
-            {
-                path: '/api/funnel/executions/[id]',
-                method: 'GET',
-                name: 'ファネル実行詳細',
-                description: '指定IDのファネル実行詳細を取得します。',
-                params: [],
-                responseNote: '実行詳細',
-            },
-            {
-                path: '/api/funnel/engagement',
-                method: 'GET',
-                name: 'エンゲージメントファネル',
-                description: 'エンゲージメントファネルの集計を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                ],
-                responseNote: 'エンゲージメント集計',
-            },
-            {
-                path: '/api/funnel/engagement/summary',
-                method: 'GET',
-                name: 'エンゲージメントサマリ',
-                description: 'エンゲージメントのサマリを取得します。',
-                params: [],
-                responseNote: 'サマリ',
-            },
-            {
-                path: '/api/funnel/engagement/page-paths',
-                method: 'GET',
-                name: 'エンゲージメントページパス',
-                description: 'ページパス一覧を取得します。',
-                params: [],
-                responseNote: 'ページパス一覧',
-            },
-        ],
-    },
-    {
-        category: 'ヒートマップ・その他',
-        endpoints: [
-            {
-                path: '/api/heatmap/view-labels',
-                method: 'GET',
-                name: 'ヒートマップビューラベル',
-                description: 'ヒートマップ用のビューラベル一覧を取得します。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'プロダクトID' },
-                ],
-                responseNote: 'ラベル一覧',
-            },
-            {
-                path: '/api/ga4/metadata',
-                method: 'GET',
-                name: 'GA4メタデータ',
-                description: '利用可能なメトリクス・ディメンション一覧を取得します。',
-                params: [],
-                responseNote: 'メトリクス・ディメンション一覧',
-            },
-            {
-                path: '/api/products',
-                method: 'GET',
-                name: 'プロダクト一覧',
-                description: 'プロダクト一覧を取得します。',
-                params: [],
-                responseNote: 'Product 配列',
-            },
-        ],
-    },
-    {
-        category: 'ユーザー行動分析',
-        endpoints: [
-            {
-                path: '/api/user/timeline',
-                method: 'POST',
-                name: 'ユーザー行動タイムライン',
-                description: '指定した user_pseudo_id のイベント履歴を時系列で取得します。日付グループ・イベント種別・ページパスが含まれます。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'userId', type: 'string', required: true, description: 'Body JSON。user_pseudo_id' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日 YYYY-MM-DD' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日 YYYY-MM-DD' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン（省略時はサービスアカウント）' },
-                ],
-                responseNote: '{ dateGroups: [{ date, events: [{ time, eventName, pagePath, pageTitle, params }] }] }',
-            },
-            {
-                path: '/api/user/list',
-                method: 'POST',
-                name: 'ユーザーリスト取得',
-                description: '期間内のアクティブユーザー一覧をGA4から取得します。セッション数・デバイス・ブラウザ・OS・流入元などを含みます。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ users: [{ userId, sessions, pageViews, device, browser, os, source, lastSeen }] }',
-            },
-            {
-                path: '/api/user/segment-builder',
-                method: 'POST',
-                name: 'セグメントビルダー',
-                description: '複数の条件（デバイス・流入元・PV数など）を組み合わせてユーザーをフィルタリングし、該当ユーザー数と行動傾向を返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'filters', type: 'array', required: false, description: 'Body JSON。フィルタ条件の配列' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ userCount, avgSessions, avgPageViews, segments }',
-            },
-            {
-                path: '/api/user/cohort',
-                method: 'POST',
-                name: 'コホートリテンション',
-                description: '週別の初回訪問コホートごとに、その後の継続率をマトリクス形式で返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ cohorts: [{ week, users, retention: [{ weekOffset, rate }] }] }',
-            },
-            {
-                path: '/api/user/scoring',
-                method: 'POST',
-                name: '活動スコアリング',
-                description: 'セグメント軸（デバイス・流入元など）ごとにRFEDスコアを算出し、活性/休眠/離脱リスクに分類します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'segmentDimension', type: 'string', required: true, description: 'Body JSON。集計軸（deviceCategory / sessionSource / sessionMedium / operatingSystem / browser / country）' },
-                    { name: 'periodDays', type: 'number', required: true, description: 'Body JSON。集計期間（30/60/90）' },
-                ],
-                responseNote: '{ segments: [{ name, score, rank, activeUsers, sessionsPerUser, pvPerSession, engagementRate, recentUserRatio, scores }], summary: { active, dormant, churn } }',
-            },
-            {
-                path: '/api/user/scoring/gemini',
-                method: 'POST',
-                name: 'スコアリング AI診断',
-                description: 'スコアリング結果をAI分析し、活性/休眠/離脱リスクセグメントの行動パターン差異と改善施策を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'segments', type: 'array', required: true, description: 'Body JSON。スコアリング結果の配列' },
-                    { name: 'segmentDimension', type: 'string', required: true, description: 'Body JSON。集計軸' },
-                    { name: 'periodDays', type: 'number', required: true, description: 'Body JSON。集計期間' },
-                ],
-                responseNote: '{ analysis: string }（AIによる自然言語分析）',
-            },
-            {
-                path: '/api/user/stickiness',
-                method: 'POST',
-                name: 'スティッキネス分析',
-                description: '指定期間のDAU/WAU/MAU推移と期間サマリを返します。compareStartDate/compareEndDate を指定すると2期間比較が可能です。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'compareStartDate', type: 'string', required: false, description: 'Body JSON。比較期間の開始日（省略時は比較なし）' },
-                    { name: 'compareEndDate', type: 'string', required: false, description: 'Body JSON。比較期間の終了日' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ current: { dailySeries, avgDAU, totalMAU, stickinessDAUMAU, stickinessWAUMAU, avgSessionsPerUser }, compare: 同構造 | null }',
-            },
-            {
-                path: '/api/user/stickiness/gemini',
-                method: 'POST',
-                name: 'スティッキネス AI分析',
-                description: 'スティッキネスデータをAI分析します。期間比較データがある場合は比較インサイトを生成します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'current', type: 'object', required: true, description: 'Body JSON。現在期間のスティッキネスメトリクス' },
-                    { name: 'compare', type: 'object', required: false, description: 'Body JSON。比較期間のメトリクス（省略可）' },
-                ],
-                responseNote: '{ analysis: string }（AIによる自然言語分析）',
-            },
-        ],
-    },
-    {
-        category: 'ユーザー経路・離脱分析',
-        endpoints: [
-            {
-                path: '/api/journey',
-                method: 'POST',
-                name: 'ユーザー経路分析',
-                description: 'GA4の pageReferrer × sessionDefaultChannelGroup を使ってページ遷移フロー・離脱経路・フォーム到達率を集計します。Sankeyダイアグラム用ノード/フロー・上位パターン・チャネル別ランキングを返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'goalPath', type: 'string', required: true, description: 'Body JSON。ゴールページパス（例: /members/signup）' },
-                    { name: 'goalLabel', type: 'string', required: false, description: 'Body JSON。ゴールの表示名' },
-                    { name: 'deviceFilter', type: 'string', required: false, description: 'Body JSON。デバイス絞り込み（desktop / mobile / tablet）' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ nodes, flows, topPaths, rawTopPaths, dropoutPaths, rawDropoutPaths, totalUsers, goalUsers, formStats, channelRanking, referrerRanking, pageExitRates }',
-            },
-            {
-                path: '/api/journey/gemini',
-                method: 'POST',
-                name: '離脱経路 AI分析',
-                description: '離脱経路パターンデータをAI分析し、主要な離脱ポイント・行動心理・改善提案を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'paths', type: 'array', required: true, description: 'Body JSON。離脱経路パターン（channel, n2, n1, dropout, ratio）の配列' },
-                    { name: 'totalUsers', type: 'number', required: true, description: 'Body JSON。集計期間のアクティブユーザー数' },
-                    { name: 'goalUsers', type: 'number', required: true, description: 'Body JSON。フォーム到達ユーザー数' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。集計開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。集計終了日' },
-                ],
-                responseNote: '{ analysis: string }（AIによる自然言語分析）',
-            },
-            {
-                path: '/api/exit',
-                method: 'POST',
-                name: '離脱分析',
-                description: '各ページの離脱率・離脱数・ファネルステップ別の落ち込みを集計します。行動シグナル（平均滞在時間・スクロール到達率）も返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。終了日' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ pages: [{ path, exitCount, exitRate, sessions, avgEngagementSec, scrollRate }], funnel: [...] }',
-            },
-            {
-                path: '/api/pageflow',
-                method: 'POST',
-                name: 'ページフロー分析',
-                description: '指定ページの「直前に見ていたページ」（pageReferrer集計）と「直後に見たページ」（対象ページをリファラーとするpagePath集計）を両方向で返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'pagePath', type: 'string', required: true, description: 'Body JSON。対象ページパス（/始まり、前方一致）' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ pagePath, targetUsers, prevPages: [{ page, users, pv, sourcePv, transitionRate }], prevNoReferrer, nextPages: [{ page, users }] }',
-            },
-            {
-                path: '/api/exit/gemini',
-                method: 'POST',
-                name: '離脱分析 AI考察',
-                description: '離脱データと行動シグナルをAI分析し、離脱の質（即離脱 / 読了後離脱）の判定と改善提案を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'steps', type: 'array', required: true, description: 'Body JSON。ファネルステップ別の離脱データ' },
-                    { name: 'exitCategories', type: 'array', required: true, description: 'Body JSON。ページカテゴリ別の離脱指標（行動シグナル含む）' },
-                    { name: 'startDate', type: 'string', required: true, description: 'Body JSON。集計開始日' },
-                    { name: 'endDate', type: 'string', required: true, description: 'Body JSON。集計終了日' },
-                    { name: 'deviceFilter', type: 'string', required: false, description: 'Body JSON。デバイス絞り込み' },
-                ],
-                responseNote: '{ analysis: string }（AIによる自然言語分析）',
-            },
-        ],
-    },
-    {
-        category: 'ドキュメント',
-        endpoints: [
-            {
-                path: '/api/docs/ask',
-                method: 'POST',
-                name: 'ドキュメントQ&A',
-                description: '機能一覧・API一覧・ドメイン知識を知識ベースとして、質問にAIが回答します。ドキュメントに記載がない内容は推測せずその旨を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'question', type: 'string', required: true, description: 'Body JSON。質問文（1000文字以内）' },
-                ],
-                responseNote: '{ answer: string }（AIによる回答）',
-            },
-        ],
-    },
-    {
-        category: 'アラート・定期配信',
-        endpoints: [
-            {
-                path: '/api/reports/weekly-summary',
-                method: 'POST',
-                name: '週次AIサマリー配信',
-                description: '先週（月〜日）のKPI前週比・チャネル別セッション変動・実行中ABテストの途中経過を集計し、AIサマリーを添えてSlackに配信します。スケジューラが毎週月曜09:00 JSTに実行します（x-internal-secret ヘッダーで認証）。',
-                params: [],
-                responseNote: '{ success: true, results: [{ productId, productName, weekStart, weekEnd, kpis, channelMoves, runningAbTests, aiSummary }] }',
-            },
-            {
-                path: '/api/alerts/cv-drop',
-                method: 'POST',
-                name: 'CV急落チェック',
-                description: '全プロダクトの前日セッション数・応募CV・LP応募CV・会員登録CV・全体CVRを過去8週の同一曜日の中央値と比較し、しきい値（デフォルト30%）以上下落した指標があればSlackに通知します。発火時はチャネル別・デバイス別・ページ別の下落内訳を自動集計し、AIの原因仮説を添付します。スケジューラが毎日09:30 JSTに実行します（x-internal-secret ヘッダーで認証）。',
-                params: [],
-                responseNote: '{ success: true, results: [{ productId, productName, targetDate, dropThreshold, alerts: [{ metric, label, yesterday, baselineAvg, dropRate }], drilldowns, aiHypothesis }] }',
-            },
-            {
-                path: '/api/alerts/config',
-                method: 'GET',
-                name: 'アラート設定一覧',
-                description: '全プロダクトのCV急落アラート設定を返します。未設定のプロダクトはデフォルト値（しきい値30%・全指標監視）を返します。',
-                params: [],
-                responseNote: '{ configs: [{ productId, productName, enabled, dropThreshold, minSessions, minCv, metrics }] }。metrics は監視対象指標キーの配列（null = 全指標）',
-            },
-            {
-                path: '/api/alerts/config',
-                method: 'PUT',
-                name: 'アラート設定保存',
-                description: 'プロダクトのCV急落アラート設定を保存します（upsert）。',
-                params: [
-                    { name: 'productId', type: 'number', required: true, description: 'Body JSON。プロダクトID' },
-                    { name: 'enabled', type: 'boolean', required: false, description: 'Body JSON。アラート有効/無効（デフォルト true）' },
-                    { name: 'dropThreshold', type: 'number', required: true, description: 'Body JSON。下落率しきい値（0〜1。0.3 = 30%）' },
-                    { name: 'minSessions', type: 'number', required: false, description: 'Body JSON。判定に必要な最小ベースラインセッション数' },
-                    { name: 'minCv', type: 'number', required: false, description: 'Body JSON。判定に必要な最小ベースラインCV数' },
-                    { name: 'metrics', type: 'array', required: false, description: 'Body JSON。監視対象指標キーの配列（全指標選択時は null 保存）' },
-                ],
-                responseNote: '{ success: true, config }',
-            },
-        ],
-    },
-    {
-        category: '職種別CV分析',
-        endpoints: [
-            {
-                path: '/api/occupation',
-                method: 'POST',
-                name: '職種別CV集計',
-                description: '会員登録サンクスページの ?occ= パラメータ別CV、職種スラッグ配下のセッション、/lp-thanks/{slug} 別のLP応募CVを集計します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ occupations: [{ occ, label, slug, signupCv, sessions, signupRate }], noOccSignupCv, totalSignupCv, lpApplies: [{ slug, label, cv }], totalLpApplyCv }',
-            },
-            {
-                path: '/api/occupation/detail',
-                method: 'POST',
-                name: '職種内サブカテゴリ内訳',
-                description: '指定した職種スラッグ配下のセッションを、サブカテゴリ（例: /driver/chugata-truck）・一覧トップ・都道府県ページ・求人詳細その他に分解して返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'slug', type: 'string', required: true, description: 'Body JSON。職種スラッグ（例: driver）' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ slug, totalSessions, listTopSessions, prefectureSessions, jobDetailAndOtherSessions, subCategories: [{ segment, path, sessions }] }',
-            },
-            {
-                path: '/api/occupation/gemini',
-                method: 'POST',
-                name: '職種別CV AI考察',
-                description: '職種別CVデータをAI分析し、伸びしろ職種・流入強化候補・推奨施策を返します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'occupations', type: 'array', required: true, description: 'Body JSON。職種別集計の配列' },
-                    { name: 'lpApplies', type: 'array', required: false, description: 'Body JSON。事業領域別LP応募CVの配列' },
-                    { name: 'noOccSignupCv', type: 'number', required: false, description: 'Body JSON。職種指定なしの会員登録CV' },
-                ],
-                responseNote: '{ analysis: string }（AIによる自然言語分析）',
-            },
-        ],
-    },
-    {
-        category: '求人種別CV分析',
-        endpoints: [
-            {
-                path: '/api/scout/funnel',
-                method: 'POST',
-                name: 'スカウト効果ファネル集計',
-                description: 'スカウトファネルを横断集計します。送信リクエストは本体DynamoDB（ScoutHistories-prd）のattempts、閲覧はGA4の /scout/ ページ（pagePathからscoutIdを抽出して企業に紐付け）、応募はscoutId付きURL（pageLocation CONTAINS scoutId=）でのエントリーフォーム送信ボタンクリックです。送達（sent）はdrm-front側の書き戻し実装後に有効になります。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ summary: { requested, sent, failed, viewedUsers, viewedScoutIds, appliedUsers }, daily: [{date, requested, viewed, applied}], companies: [{companyId, companyName, requested, sent, viewed, applied}] }',
-            },
-            {
-                path: '/api/applications/actual',
-                method: 'POST',
-                name: '応募の全体像（DB実数）',
-                description: '本体DynamoDB（JobApplication-prd + GuestJobApplication-prd）から期間内の実応募を集計し、種別（人材紹介/求人広告/ハローワーク）×流入レイヤー（自然/featured=CRM配信/CA紹介/スカウト）×会員/ゲストで返します。あわせて会員登録の内訳（登録のみ=GA4 thanks到達、応募と同時=応募時刻とユーザー作成時刻が10分以内）を判定します。フルスキャンのため応答に十数秒かかります。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: false, description: 'Body JSON。指定時は「登録のみ」をGA4から取得' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ types: [{label, layers: {natural|featured|scout|caReferral|other: {member, guest}}, total}], grandTotal, memberTotal, guestTotal, signup: {standalone, withApplication, withApplicationByType} }',
-            },
-            {
-                path: '/api/cv-types',
-                method: 'POST',
-                name: '求人種別CV集計',
-                description: '応募CVをGTMラベルで人材紹介・求人広告・ハローワークに分解します。詳細・フォームはビューラベル（DL__Media / EF__Job*__Area__Header）、完了は送信ボタンのクリックラベル（EF__Job*__Btn__応募する/話を聞いてみる。DB実応募数と一致確認済み）。求人種別ファネル・日別推移・会員登録（ページベース）を返します。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'startDate', type: 'string', required: false, description: 'Body JSON。開始日（デフォルト 30daysAgo）' },
-                    { name: 'endDate', type: 'string', required: false, description: 'Body JSON。終了日（デフォルト yesterday）' },
-                ],
-                responseNote: '{ jobTypes: [{ key, label, detailViews, formViews, completed, detailToForm, formToComplete, overallRate }], signup: { formViews, completed, formToComplete }, daily }',
-            },
-        ],
-    },
-    {
-        category: '月次インサイト',
-        endpoints: [
-            {
-                path: '/api/insights',
-                method: 'POST',
-                name: '月次KPIデータ取得',
-                description: '今月と先月のGA4 KPI（アクティブユーザー・新規ユーザー・セッション・エンゲージメント率・平均セッション時間・PV・上位ページ）を並行取得して返します。今月は月初〜当日、先月は月初〜末日。',
-                params: [
-                    { name: 'propertyId', type: 'string', required: true, description: 'Body JSON。GA4プロパティID' },
-                    { name: 'accessToken', type: 'string', required: false, description: 'Body JSON。GA4アクセストークン' },
-                ],
-                responseNote: '{ current: MonthMetrics, previous: MonthMetrics }。MonthMetrics = { startDate, endDate, activeUsers, newUsers, sessions, engagementRate, avgSessionDuration, screenPageViews, topPages }',
-            },
-            {
-                path: '/api/insights/gemini',
-                method: 'POST',
-                name: '月次インサイト AI生成',
-                description: '今月・先月のKPIデータをAIに渡し、サマリー・良い点・注意点・来月の推奨アクション3点を含む月次レポートを生成します。APIキーは環境変数 GEMINI_API_KEY を使用します。',
-                params: [
-                    { name: 'current', type: 'object', required: true, description: 'Body JSON。今月のMonthMetrics' },
-                    { name: 'previous', type: 'object', required: true, description: 'Body JSON。先月のMonthMetrics' },
-                ],
-                responseNote: '{ analysis: string }（AIによる月次レポートテキスト）',
-            },
-        ],
-    },
+/** 表示順。ここに無いカテゴリは末尾に名前順で付く */
+const CATEGORY_ORDER = [
+    '認証',
+    'ダッシュボード',
+    'ABテスト',
+    '分析・レポート',
+    'トレンド',
+    'ファネル',
+    '集客・チャネル',
+    'ユーザー行動分析',
+    'ユーザー経路・離脱分析',
+    '職種別CV分析',
+    '求人種別CV分析',
+    '月次インサイト',
+    'ヒートマップ・その他',
+    'アラート・定期配信',
+    'ドキュメント',
+    '設定・ツール',
 ]
+
+/** 注釈の無い route のカテゴリをパスの先頭セグメントから推定する */
+const CATEGORY_BY_SEGMENT: Record<string, string> = {
+    auth: '認証',
+    dashboard: 'ダッシュボード',
+    'ab-test': 'ABテスト',
+    analytics: '分析・レポート',
+    reports: '分析・レポート',
+    trend: 'トレンド',
+    funnel: 'ファネル',
+    'signup-funnel': 'ファネル',
+    scout: '集客・チャネル',
+    'line-report': '集客・チャネル',
+    'utm-report': '集客・チャネル',
+    'seo-report': '集客・チャネル',
+    'signup-step-mails': '集客・チャネル',
+    user: 'ユーザー行動分析',
+    'user-flow': 'ユーザー行動分析',
+    journey: 'ユーザー経路・離脱分析',
+    exit: 'ユーザー経路・離脱分析',
+    pageflow: 'ユーザー経路・離脱分析',
+    'list-performance': 'ユーザー経路・離脱分析',
+    occupation: '職種別CV分析',
+    'cv-types': '求人種別CV分析',
+    applications: '求人種別CV分析',
+    insights: '月次インサイト',
+    heatmap: 'ヒートマップ・その他',
+    ga4: 'ヒートマップ・その他',
+    alerts: 'アラート・定期配信',
+    docs: 'ドキュメント',
+    products: '設定・ツール',
+    'ai-usage': '設定・ツール',
+}
+
+function annotationFor(e: GeneratedEndpoint): ApiAnnotation | undefined {
+    const exact = API_ANNOTATIONS[`${e.method} ${e.path}`]
+    if (exact) return exact
+    // 手書き側の method が実体と食い違っている（GET と書いたが POST）ときは、その path に 1 メソッドしか無ければ採用する
+    const sameRoute = GENERATED_ENDPOINTS.filter((g) => g.path === e.path)
+    if (sameRoute.length !== 1) return undefined
+    const key = Object.keys(API_ANNOTATIONS).find((k) => k.endsWith(` ${e.path}`))
+    return key ? API_ANNOTATIONS[key] : undefined
+}
+
+function toEndpoint(e: GeneratedEndpoint): ApiEndpoint & { category: string } {
+    const a = annotationFor(e)
+    const segment = e.path.replace(/^\/api\//, '').split('/')[0]
+    return {
+        path: e.path,
+        method: e.method,
+        name: a?.name ?? (e.doc || e.path),
+        description: a?.description ?? e.doc,
+        params: a?.params,
+        responseNote: a?.responseNote,
+        category: a?.category ?? CATEGORY_BY_SEGMENT[segment] ?? 'その他',
+    }
+}
+
+const all = GENERATED_ENDPOINTS.map(toEndpoint)
+const categories = Array.from(new Set(all.map((e) => e.category))).sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a)
+    const ib = CATEGORY_ORDER.indexOf(b)
+    if (ia === -1 && ib === -1) return a.localeCompare(b, 'ja')
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+})
+
+export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = categories.map((category) => ({
+    category,
+    endpoints: all
+        .filter((e) => e.category === category)
+        .map(({ category: _c, ...rest }) => rest),
+}))
