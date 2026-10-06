@@ -203,5 +203,17 @@
       "startDate": "2026-09-01",
       "endDate": "2026-09-07"
     }
+  },
+  {
+    "name": "list-performance",
+    "path": "/api/list-performance",
+    "body": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    },
+    "volatile": [
+      "fetchedAt",
+      "scannedBytes"
+    ]
   }
 ]

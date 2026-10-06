@@ -1,5 +1,6 @@
 import { runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
 import { clampToExportWindow, eventsFromWhere, toDisplay } from '@/lib/bq/ga4EventsSql'
+import { INDUSTRY_ALT as INDUSTRIES } from '@/lib/services/journey/pathCategories'
 
 /**
  * CVセッション解剖レポート（BigQuery events_* ベース）。
@@ -13,8 +14,6 @@ import { clampToExportWindow, eventsFromWhere, toDisplay } from '@/lib/bq/ga4Eve
  *  - 求人詳細 = /{industry}/media_{id}、検索ページ = /search（次アクション最多の実URL）
  *  - 応募フォーム = /entry/media_{id}
  */
-
-const INDUSTRIES = 'driver|sekokan|sekkei|soko|shokunin|seibi|hoshu|setsubi-sagyo|keibi|unkan|kojo-sagyo|food|unyu-sagyo|others'
 
 import type { DailyDetailFlow, DeviceFlowGroup, FlowGroup, NextAction, UserFlowReport } from './userFlowTypes'
 
