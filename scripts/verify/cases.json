@@ -1,0 +1,65 @@
+[
+  {
+    "name": "occupation",
+    "path": "/api/occupation",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "cv-types",
+    "path": "/api/cv-types",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "line-report",
+    "path": "/api/line-report",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "line-report-associations",
+    "path": "/api/line-report/associations",
+    "body": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt",
+      "scannedBytes"
+    ],
+    "sorted": [
+      "channels.*.pages"
+    ]
+  },
+  {
+    "name": "user-flow",
+    "path": "/api/user-flow",
+    "body": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    },
+    "volatile": [
+      "fetchedAt",
+      "scannedBytes",
+      "groups.*.medDetails",
+      "groups.*.medDurMin",
+      "groups.*.medCvMin",
+      "deviceGroups.*.medDetails",
+      "deviceGroups.*.medDurMin",
+      "deviceGroups.*.medCvMin"
+    ]
+  }
+]
