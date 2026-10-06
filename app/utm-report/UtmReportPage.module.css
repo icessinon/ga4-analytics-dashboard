@@ -87,12 +87,30 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.8125rem;
     color: var(--text-primary);
-    white-space: nowrap;
+}
+
+/* source / medium・campaign・content を 3 行に積む。スカウト配信の campaign は 60 文字超なので折り返し、
+   表が横に溢れて数値列が画面外に出ないようにする */
+.utmCell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 14rem;
+    max-width: 18rem;
+    white-space: normal;
+}
+
+.campaign {
+    color: var(--text-strong);
+    overflow-wrap: anywhere;
+    line-height: 1.4;
 }
 
 /* utm_content はcampaignの下にぶら下げるので、1段下げて色を落とす */
 .content {
     color: var(--accent-text);
+    font-size: 0.75rem;
+    overflow-wrap: anywhere;
 }
 
 /* 文字は本文色のまま、区分は左のドットで示す。
@@ -121,6 +139,7 @@
     font-size: 0.8125rem;
     line-height: 1.5;
     white-space: normal;
+    max-width: 20rem;
 }
 
 .timing {
@@ -128,7 +147,7 @@
     font-size: 0.75rem;
     line-height: 1.5;
     margin-top: 0.15rem;
-    max-width: 30rem;
+    max-width: 20rem;
     white-space: normal;
 }
 
@@ -137,5 +156,23 @@
     font-size: 0.72rem;
     margin-top: 0.15rem;
     white-space: normal;
-    max-width: 30rem;
+    max-width: 20rem;
+}
+
+/* CV セルは合計の下に内訳（応/LP/登）を小さく。1 行に伸ばすと列が 160px 近く取るので折り返す */
+.cvCell {
+    white-space: normal;
+    max-width: 7rem;
+}
+
+.cvBreakdown {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.meaningCell {
+    max-width: 16rem;
+    white-space: normal;
 }

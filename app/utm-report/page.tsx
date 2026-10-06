@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useProduct } from '@/contexts/ProductContext'
 import PageShell from '@/components/PageShell'
@@ -62,6 +62,9 @@ export default function UtmReportPage() {
     const [mediumFilter, setMediumFilter] = useState<string>('all')
     const [query, setQuery] = useState('')
     const [splitByContent, setSplitByContent] = useState(true)
+    // 500 行を一度に描くと重く、下まで読めない。上位から段階的に出す
+    const PAGE = 100
+    const [visible, setVisible] = useState(PAGE)
     const [sortKey, setSortKey] = useState<SortKey>('sessions')
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -100,6 +103,8 @@ export default function UtmReportPage() {
         kinds: rows.length,
     }), [rows])
 
+    useEffect(() => { setVisible(PAGE) }, [mediumFilter, query, splitByContent, sortKey, sortDir]) // eslint-disable-line react-hooks/exhaustive-deps
+
     const toggleSort = (k: SortKey) => {
         if (k === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
         else { setSortKey(k); setSortDir(k === 'utm' || k === 'category' ? 'asc' : 'desc') }
@@ -130,6 +135,7 @@ export default function UtmReportPage() {
     return (
         <PageShell
             pageId="utmReport"
+            width="wide"
             requireProduct
             status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
             controls={
@@ -211,7 +217,7 @@ export default function UtmReportPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedRows.map((r, i) => {
+                                    {sortedRows.slice(0, visible).map((r, i) => {
                                         const d = describeUtm(r.source, r.medium, r.campaign)
                                         const hasContent = splitByContent && !isEmptyUtmValue(r.content)
                                         const contentNote = hasContent ? describeUtmContent(r.source, r.medium, r.campaign, r.content) : null
@@ -219,11 +225,12 @@ export default function UtmReportPage() {
                                         return (
                                             <tr key={`${r.source}|${r.medium}|${r.campaign}|${r.content}|${i}`}>
                                                 <td><Badge category={d.category} /></td>
-                                                <td className={styles.mono}>
-                                                    {r.source} / {r.medium}<br />{r.campaign}
-                                                    {hasContent && <><br /><span className={styles.content}>content: {r.content}</span></>}
+                                                <td className={styles.utmCell}>
+                                                    <span className={styles.mono}>{r.source} / {r.medium}</span>
+                                                    <span className={cx(styles.mono, styles.campaign)} title={r.campaign}>{r.campaign}</span>
+                                                    {hasContent && <span className={cx(styles.mono, styles.content)} title={r.content}>content: {r.content}</span>}
                                                 </td>
-                                                <td>
+                                                <td className={styles.meaningCell}>
                                                     <div className={styles.meaning}>{d.label}</div>
                                                     <div className={styles.timing}>{d.timing}</div>
                                                     {contentNote && <div className={styles.timing}>content: {contentNote}</div>}
@@ -231,7 +238,7 @@ export default function UtmReportPage() {
                                                 </td>
                                                 <td className={cx(ui.num, ui.strong)}>{r.sessions.toLocaleString()}</td>
                                                 <td className={ui.num}>{r.users.toLocaleString()}</td>
-                                                <td className={ui.num}>{cv > 0 ? cv.toLocaleString() : '－'}<br /><span className={ui.summaryHint}>{cv > 0 ? `応${r.applyCv}/LP${r.lpApplyCv}/登${r.signupCv}` : ''}</span></td>
+                                                <td className={cx(ui.num, styles.cvCell)}>{cv > 0 ? cv.toLocaleString() : '－'}{cv > 0 && <span className={styles.cvBreakdown}>応{r.applyCv}/LP{r.lpApplyCv}/登{r.signupCv}</span>}</td>
                                                 <td className={ui.num}>{r.sessions > 0 && cv > 0 ? `${((cv / r.sessions) * 100).toFixed(1)}%` : '－'}</td>
                                             </tr>
                                         )
@@ -240,6 +247,13 @@ export default function UtmReportPage() {
                                 </tbody>
                             </table>
                         </div>
+                        {sortedRows.length > visible && (
+                            <div className={ui.controls}>
+                                <button type="button" className={ui.btnGhost} onClick={() => setVisible((v) => v + PAGE)}>
+                                    さらに表示（残り {(sortedRows.length - visible).toLocaleString()} 件）
+                                </button>
+                            </div>
+                        )}
                         <p className={ui.tableNote}>
                             ※ CV = 応募(/entry/thanks) + LP応募(/lp-thanks) + 会員登録(/members/signup/thanks) 到達ユーザー。スカウトSMS等は送客が目的のため会員登録CVはほぼ0（scoutId経由の応募に効く）。<br />
                             ※ 2026-08-11〜のUnassignedインシデント中はsource欠落セッションが増えており、チャネル別の絶対数は割り引いて見てください。全GA4集計はデフォルトで国=日本フィルタ適用。

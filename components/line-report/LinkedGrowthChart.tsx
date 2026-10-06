@@ -121,6 +121,9 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
     const hasData = isTotal ? totals.length > 0 : isDelivery ? perDelivery.length > 0 : perMonth.length > 0
 
     const tooltipStyle = { backgroundColor: C.surface, border: `1px solid ${C.grid}`, color: 'var(--text-primary)' }
+    // recharts は項目行の色を系列色（Cell 指定の Bar では未定義＝黒）にするので、本文色を明示する
+    const tooltipItemStyle = { color: 'var(--text-strong)', fontWeight: 600 }
+    const tooltipLabelStyle = { color: 'var(--text-muted)', marginBottom: 4 }
     const axis = { stroke: C.text, tick: { fill: C.text, fontSize: 12 } }
 
     const TABS: { key: Granularity; label: string }[] = [
@@ -164,6 +167,8 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             />
                             <Tooltip
                                 contentStyle={tooltipStyle}
+                                itemStyle={tooltipItemStyle}
+                                labelStyle={tooltipLabelStyle}
                                 formatter={(value: number) => [`${value.toLocaleString()} 人`, 'LINE連携者（累計）']}
                             />
                             <Line
@@ -183,6 +188,8 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             <YAxis {...axis} width={44} />
                             <Tooltip
                                 contentStyle={tooltipStyle}
+                                itemStyle={tooltipItemStyle}
+                                labelStyle={tooltipLabelStyle}
                                 formatter={(value: number, _n, item) => [
                                     `${value} 人/日（${item.payload.days}日で +${item.payload.delta}）`,
                                     '増加ペース',
@@ -206,6 +213,8 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             <Tooltip
                                 cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                                 contentStyle={tooltipStyle}
+                                itemStyle={tooltipItemStyle}
+                                labelStyle={tooltipLabelStyle}
                                 formatter={(value: number, _n, item) => [
                                     `+${value.toLocaleString()} 人${item.payload.inProgress ? '（集計途中）' : ''}`,
                                     '月間純増',
