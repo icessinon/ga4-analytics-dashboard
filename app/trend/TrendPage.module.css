@@ -1,342 +1,10 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-.header {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.backLink {
-    color: var(--blue-500);
-    text-decoration: none;
-    font-size: 0.875rem;
-}
-
-.backLink:hover {
-    text-decoration: underline;
-}
-
-.title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin: 0;
-}
-
-.formContainer {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background-color: var(--gray-800);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.formGroup {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-300);
-}
-
-.input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 4px;
-    font-size: 1rem;
-    background-color: var(--gray-800);
-    color: #ffffff;
-}
-
-.input[type="month"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.9;
-}
-
-.input:focus {
-    outline: none;
-    border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.helpText {
-    font-size: 0.75rem;
-    color: var(--gray-400);
-}
-
-.submitButton {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--blue-500);
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.submitButton:hover:not(:disabled) {
-    background-color: var(--blue-600);
-}
-
-.submitButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 60vh;
-    padding: 3rem 0;
-}
-
-.loaderText {
-    margin-top: 1rem;
-    color: var(--gray-400);
-}
-
-.errorContainer {
-    padding: 1rem;
-    background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid var(--red-700);
-    border-radius: 4px;
-    margin-bottom: 2rem;
-}
-
-.errorText {
-    color: var(--red-300);
-    margin: 0;
-}
-
-.resultsContainer {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.resultsHeader {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
-    border: 1px solid var(--gray-700);
-    border-radius: 10px;
-    border-left: 4px solid var(--blue-500);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.resultsTitle {
-    font-size: 1.375rem;
-    font-weight: 700;
-    margin: 0;
-    color: var(--gray-50);
-    letter-spacing: 0.02em;
-}
-
-.monthSwitcher {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.monthSwitcherLabel {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--gray-400);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.monthSwitcherSelect {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 8px;
-    font-size: 0.9375rem;
-    background-color: var(--gray-900);
-    color: var(--gray-100);
-    min-width: 140px;
-}
-
-.monthSwitcherSelect:hover {
-    border-color: var(--gray-500);
-}
-
-.geminiApiKeyInput {
-    max-width: 400px;
-    margin-top: 0.5rem;
-}
-
-.checkboxLabel {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.9375rem;
-    color: var(--gray-300);
-}
-
-.aiSummarySection {
-    margin-top: 2.5rem;
-    padding: 1.5rem 1.75rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%);
-    border: 1px solid var(--gray-700);
-    border-left: 4px solid var(--blue-500);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.aiSummaryTitle {
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
-    color: var(--blue-300);
-    letter-spacing: 0.02em;
-}
-
-.aiSummaryLoading {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: var(--text-on-tint-blue);
-    font-size: 0.9375rem;
-}
-
-.aiSummaryBox {
-    font-size: 0.9375rem;
-    line-height: 1.75;
-    color: var(--gray-200);
-    white-space: pre-wrap;
-}
-
-.reportGroup {
-    margin-bottom: 0;
-    padding: 0;
-    background: #0f172a;
-    border-radius: 12px;
-    border: 1px solid #334155;
-    box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.25),
-        0 0 0 1px var(--bg-hover) inset;
-    overflow: hidden;
-}
-
-.reportGroup:last-child {
-    margin-bottom: 0;
-}
-
-.reportGroupTitle {
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0;
-    padding: 0.875rem 1.25rem;
-    color: #f1f5f9;
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.12) 0%, transparent 100%);
-    border-bottom: 1px solid #334155;
-    letter-spacing: 0.04em;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.reportGroupTitle::before {
-    content: '';
-    width: 3px;
-    height: 1rem;
-    background: linear-gradient(180deg, var(--blue-500), var(--blue-400));
-    border-radius: 2px;
-}
-
-.monthSection {
-    margin-bottom: 2rem;
-}
-
-.monthSection:last-child {
-    margin-bottom: 0;
-}
-
-.monthTitle {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--gray-300);
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--gray-700);
-}
-
-.emptyContainer {
-    padding: 2.5rem 2rem;
-    text-align: center;
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 12px;
-    margin-top: 2rem;
-}
-
-.emptyText {
-    color: var(--gray-400);
-    line-height: 1.7;
-    margin: 0;
-}
-
-.section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background-color: var(--gray-800);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.sectionTitle {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: #ffffff;
-}
-
-.searchContainer {
-    margin-bottom: 1rem;
-}
-
 .searchInput {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 4px;
+    max-width: 32rem;
     font-size: 0.875rem;
-    background-color: var(--gray-800);
-    color: #ffffff;
 }
 
-.searchInput:focus {
-    outline: none;
-    border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
+/* ── レポート一覧 ── */
 .reportList {
     display: flex;
     flex-direction: column;
@@ -349,13 +17,14 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-sunken);
+    transition: border-color 0.2s;
 }
 
 .reportItem:hover {
-    background-color: var(--gray-700);
+    border-color: var(--border);
 }
 
 .reportItemLabel {
@@ -365,22 +34,16 @@
     cursor: pointer;
 }
 
-.checkbox {
-    width: 1.25rem;
-    height: 1.25rem;
-    cursor: pointer;
-}
-
 .reportName {
     flex: 1;
     font-size: 0.875rem;
-    color: #ffffff;
+    color: var(--text-strong);
 }
 
 .trendBadge {
     padding: 0.25rem 0.5rem;
     background-color: rgba(59, 130, 246, 0.2);
-    color: var(--blue-300);
+    color: var(--text-on-tint-blue);
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -392,7 +55,7 @@
     gap: 0.25rem;
     margin-left: 2rem;
     padding-top: 0.5rem;
-    border-top: 1px solid var(--gray-600);
+    border-top: 1px solid var(--border-subtle);
 }
 
 .cvrLabel {
@@ -403,21 +66,19 @@
 
 .cvrLabelTitle {
     font-weight: 500;
-    color: var(--gray-300);
+    color: var(--text-muted);
     min-width: 70px;
 }
 
 .cvrLabelValue {
-    color: #ffffff;
+    color: var(--text-primary);
     flex: 1;
 }
 
 .noCvrConfig {
     font-size: 0.75rem;
-    color: var(--gray-400);
+    color: var(--text-muted);
     font-style: italic;
-    margin-left: 2rem;
-    padding-top: 0.5rem;
 }
 
 .pagination {
@@ -427,32 +88,107 @@
     gap: 1rem;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--gray-600);
+    border-top: 1px solid var(--border-subtle);
 }
 
-.paginationButton {
-    padding: 0.5rem 1rem;
-    background-color: var(--gray-800);
-    color: var(--gray-200);
-    border: 1px solid var(--gray-600);
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
+/* ── 期間フォーム ── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.paginationButton:hover:not(:disabled) {
-    background-color: var(--gray-700);
+.formRow {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
-.paginationButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-.paginationInfo {
-    font-size: 0.875rem;
-    color: var(--gray-400);
+.monthInput {
+    width: 11rem;
+    color-scheme: dark;
 }
 
+/* ── 結果 ── */
+.results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.resultsHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-surface);
+    background-image: var(--surface-gradient);
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+.monthSwitcher {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reportGroup {
+    background: var(--bg-surface);
+    background-image: var(--surface-gradient);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
+    overflow: hidden;
+}
+
+.reportGroupTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    padding: 0.875rem 1.25rem;
+    color: var(--text-strong);
+    border-bottom: 1px solid var(--border-subtle);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.reportGroupTitle::before {
+    content: '';
+    width: 3px;
+    height: 1rem;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+/* ── AI 分析 ── */
+.aiSummarySection {
+    border-left: 4px solid var(--accent);
+}
+
+.aiSummaryTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--accent-text);
+    letter-spacing: 0.02em;
+}
+
+.aiSummaryBox {
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+}
