@@ -4,7 +4,7 @@
 
 > **drm-front側の作業はこのMDを参照して別セッションで実施する。**
 > `~/dev/drm-front` で Claude Code を起動し、このファイル
-> （`~/dev/ga4-analytics-dashboard/docs/scout-product-dashboard-plan.md`）の
+> （`~/dev/ga4-analytics-dashboard/docs/archive/scout-product-dashboard-plan.md`）の
 > 「Part C: drm-front側タスク」を渡せば単独で作業できるように書いてある。
 
 ---

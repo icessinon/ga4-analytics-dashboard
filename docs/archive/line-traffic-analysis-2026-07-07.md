@@ -8,7 +8,7 @@
 
 ## 調査の背景
 
-会員登録の流入経路分析（docs/signup-source-analysis-2026-07-06.md）で `(direct)/(none)` が721人と最多だったため、「LINE内ブラウザのリファラー欠落を含む」仮説を検証した。
+会員登録の流入経路分析（docs/archive/signup-source-analysis-2026-07-06.md）で `(direct)/(none)` が721人と最多だったため、「LINE内ブラウザのリファラー欠落を含む」仮説を検証した。
 
 ## 結論（サマリー）
 
