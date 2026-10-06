@@ -1,59 +1,68 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { DateRange, PeriodOption, daysAgoStr, resolveRange } from '@/lib/utils/period'
+import DateInput from '@/components/DateInput'
+import { usePeriodRange, type PeriodRangeState } from '@/hooks/usePeriodRange'
+import { DEFAULT_PERIOD_OPTIONS, type DateRange, type PeriodOption, daysAgoStr, withCustomOption } from '@/lib/utils/period'
+import styles from './PeriodSelect.module.css'
 
-// 期間プリセット＋カスタム日付レンジの状態をまとめて扱うフック。
-// range はカスタム未確定（開始>終了など）のとき null になるので、API呼び出し側でガードする。
-export function usePeriodRange(defaultPeriod = '30daysAgo') {
-    const [period, setPeriod] = useState(defaultPeriod)
-    const [customStart, setCustomStart] = useState(daysAgoStr(30))
-    const [customEnd, setCustomEnd] = useState(daysAgoStr(1))
-    const range = useMemo(
-        () => resolveRange(period, customStart, customEnd),
-        [period, customStart, customEnd]
-    )
-    return { period, setPeriod, customStart, setCustomStart, customEnd, setCustomEnd, range }
-}
+// 旧 import 先との互換。新規コードは @/hooks/usePeriodRange から取る
+export { usePeriodRange, type PeriodRangeState }
 
-export type PeriodRangeState = ReturnType<typeof usePeriodRange>
-
-interface Props {
+export interface PeriodSelectProps {
     state: PeriodRangeState
-    options: PeriodOption[]
-    /** ページ既存の .select スタイルをそのまま流用する */
-    selectClassName: string
-    /** 「〜」区切りのスタイル（省略時は selectClassName に依存しない素のspan） */
-    noteClassName?: string
-    /** 集計期間の実表示（データ取得後のstartDate〜endDate）。指定時のみ表示 */
+    /** 省略時は DEFAULT_PERIOD_OPTIONS。allowCustom が true なら 今月 / 前月 / カスタム を末尾に補う */
+    options?: PeriodOption[]
+    /** 既定 true。全ページでカスタム期間を使えるようにする */
+    allowCustom?: boolean
+    /** セレクトの前に出すラベル（FilterBar の中で使うとき） */
+    label?: string
+    /** 集計期間の実表示（データ取得後の startDate〜endDate）。指定時のみ表示 */
     resolved?: DateRange | null
+    /** @deprecated 自前スタイルを持つようになったので不要。移行期間のみ */
+    selectClassName?: string
+    /** @deprecated 同上 */
+    noteClassName?: string
 }
 
-export default function PeriodSelect({ state, options, selectClassName, noteClassName, resolved }: Props) {
+export default function PeriodSelect({
+    state,
+    options,
+    allowCustom = true,
+    label,
+    resolved,
+    selectClassName,
+    noteClassName,
+}: PeriodSelectProps) {
+    const base = options ?? DEFAULT_PERIOD_OPTIONS
+    const list = allowCustom ? withCustomOption(base) : base.filter((o) => o.value !== 'custom')
+    const selectCls = selectClassName ?? styles.select
+    const dateCls = selectClassName ?? styles.dateInput
+    const noteCls = noteClassName ?? styles.note
+
     return (
         <>
+            {label && <span className={styles.label}>{label}</span>}
             <select
-                className={selectClassName}
+                className={selectCls}
                 value={state.period}
                 onChange={(e) => state.setPeriod(e.target.value)}
+                aria-label={label ?? '期間'}
             >
-                {options.map((o) => (
+                {list.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
             </select>
             {state.period === 'custom' && (
                 <>
-                    <input
-                        type="date"
-                        className={selectClassName}
+                    <DateInput
+                        className={dateCls}
                         value={state.customStart}
                         max={state.customEnd}
                         onChange={(e) => state.setCustomStart(e.target.value)}
                     />
-                    <span className={noteClassName}>〜</span>
-                    <input
-                        type="date"
-                        className={selectClassName}
+                    <span className={noteCls}>〜</span>
+                    <DateInput
+                        className={dateCls}
                         value={state.customEnd}
                         min={state.customStart}
                         max={daysAgoStr(0)}
@@ -62,7 +71,7 @@ export default function PeriodSelect({ state, options, selectClassName, noteClas
                 </>
             )}
             {resolved && (
-                <span className={noteClassName}>集計期間: {resolved.startDate} 〜 {resolved.endDate}</span>
+                <span className={noteCls}>集計期間: {resolved.startDate} 〜 {resolved.endDate}</span>
             )}
         </>
     )

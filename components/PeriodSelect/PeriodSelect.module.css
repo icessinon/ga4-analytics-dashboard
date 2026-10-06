@@ -1,0 +1,27 @@
+/* PeriodSelect 自前のスタイル。以前は使う側が selectClassName を渡す必要があり、
+   13 ページそれぞれが同じ .select を module に持っていた */
+.select {
+    background-color: var(--bg-surface);
+    background-image: var(--control-gradient);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-strong);
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+.dateInput {
+    composes: select;
+    width: 10.5rem;
+}
+
+.label {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.note {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
