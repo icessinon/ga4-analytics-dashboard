@@ -223,18 +223,6 @@
     background: var(--gray-700);
 }
 
-.statusFixed {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--gray-600);
-    border-radius: 6px;
-    font-size: 14px;
-    background: var(--gray-800);
-    color: var(--green-300);
-    margin: 0;
-    box-sizing: border-box;
-}
-
 .formActions {
     display: flex;
     justify-content: flex-end;
@@ -405,16 +393,16 @@
     align-items: start;
 }
 
-@media (max-width: 640px) {
-    .cvrGrid {
-        grid-template-columns: 1fr;
-    }
-}
-
 .generateBtnGroup {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-left: auto;
     margin-right: 12px;
+}
+
+@media (max-width: 640px) {
+    .cvrGrid {
+        grid-template-columns: 1fr;
+    }
 }

@@ -12,13 +12,6 @@
     margin-bottom: 0.75rem;
 }
 
-.checkbox {
-    margin-top: 0.25rem;
-    margin-right: 0.5rem;
-    width: 1rem;
-    height: 1rem;
-}
-
 .checkboxContent {
     flex: 1;
 }
@@ -31,40 +24,6 @@
 }
 
 .checkboxHelp {
-    font-size: 0.75rem;
-    color: var(--amber-400);
-    margin-top: 0.25rem;
-}
-
-.apiKeySection {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #92400e;
-}
-
-.apiKeyLabel {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    color: var(--amber-300);
-}
-
-.apiKeyInput {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #92400e;
-    border-radius: 0.375rem;
-    background-color: var(--gray-800);
-}
-
-.apiKeyInput:focus {
-    outline: none;
-    border-color: var(--amber-500);
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-}
-
-.apiKeyHelp {
     font-size: 0.75rem;
     color: var(--amber-400);
     margin-top: 0.25rem;

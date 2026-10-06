@@ -30,23 +30,8 @@
     color: var(--gray-100);
 }
 
-@media (min-width: 768px) {
-    .productSelect {
-        width: auto;
-    }
-}
-
 /* 画面が狭いとき: ボタンの過大な左右パディングを詰め、はみ出しを防ぐ */
-@media (max-width: 640px) {
-    .headerActions {
-        width: 100%;
-    }
 
-    .button {
-        padding: 0 1rem;
-        flex: 1 1 auto;
-    }
-}
 
 .calendarContainer {
     margin-bottom: 1.5rem;
@@ -275,7 +260,6 @@
     cursor: not-allowed;
 }
 
-
 .issueLink {
     display: inline-flex;
     align-items: center;
@@ -289,4 +273,10 @@
 
 .issueLink:hover {
     text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .productSelect {
+        width: auto;
+    }
 }

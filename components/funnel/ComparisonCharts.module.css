@@ -15,10 +15,6 @@
     margin-bottom: 1.5rem;
 }
 
-.chartWrapper {
-    width: 100%;
-}
-
 .emptyState {
     display: flex;
     align-items: center;
@@ -26,4 +22,3 @@
     height: 16rem;
     color: rgb(107, 114, 128);
 }
-

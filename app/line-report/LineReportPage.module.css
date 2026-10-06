@@ -1,11 +1,3 @@
-/* LINE レポート固有のスタイル。ページ枠・カード・テーブル・折りたたみは components/ui を使う */
-
-.summaryYen {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--green-400);
-}
-
 .bar {
     display: inline-block;
     height: 0.625rem;

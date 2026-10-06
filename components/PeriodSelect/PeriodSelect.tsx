@@ -1,12 +1,9 @@
 'use client'
 
 import DateInput from '@/components/DateInput'
-import { usePeriodRange, type PeriodRangeState } from '@/hooks/usePeriodRange'
+import type { PeriodRangeState } from '@/hooks/usePeriodRange'
 import { DEFAULT_PERIOD_OPTIONS, type DateRange, type PeriodOption, daysAgoStr, withCustomOption } from '@/lib/utils/period'
 import styles from './PeriodSelect.module.css'
-
-// 旧 import 先との互換。新規コードは @/hooks/usePeriodRange から取る
-export { usePeriodRange, type PeriodRangeState }
 
 export interface PeriodSelectProps {
     state: PeriodRangeState
@@ -18,10 +15,6 @@ export interface PeriodSelectProps {
     label?: string
     /** 集計期間の実表示（データ取得後の startDate〜endDate）。指定時のみ表示 */
     resolved?: DateRange | null
-    /** @deprecated 自前スタイルを持つようになったので不要。移行期間のみ */
-    selectClassName?: string
-    /** @deprecated 同上 */
-    noteClassName?: string
 }
 
 export default function PeriodSelect({
@@ -30,14 +23,12 @@ export default function PeriodSelect({
     allowCustom = true,
     label,
     resolved,
-    selectClassName,
-    noteClassName,
 }: PeriodSelectProps) {
     const base = options ?? DEFAULT_PERIOD_OPTIONS
     const list = allowCustom ? withCustomOption(base) : base.filter((o) => o.value !== 'custom')
-    const selectCls = selectClassName ?? styles.select
-    const dateCls = selectClassName ?? styles.dateInput
-    const noteCls = noteClassName ?? styles.note
+    const selectCls = styles.select
+    const dateCls = styles.dateInput
+    const noteCls = styles.note
 
     return (
         <>

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import styles from '@/app/scout/ScoutPage.module.css'
+import { ui } from '@/components/ui'
+import styles from './ScoutAttributeSections.module.css'
 import { SCOUT_RECIPIENT_SNAPSHOT as S } from '@/lib/constants/scoutRecipientSnapshot'
 
 type Pair = readonly [string, number]
@@ -51,17 +52,17 @@ function FunnelTable({ title, rows }: { title: string; rows: readonly { key: str
     return (
         <div className={styles.funnelBlock}>
             <div className={styles.distTitle}>{title}</div>
-            <div className={styles.tableWrapper}>
-                <table className={styles.table}>
+            <div className={ui.tableWrap}>
+                <table className={ui.dataTable}>
                     <thead>
-                        <tr><th>{title}</th><th className={styles.num}>送信</th><th className={styles.num}>閲覧率</th></tr>
+                        <tr><th>{title}</th><th className={ui.num}>送信</th><th className={ui.num}>閲覧率</th></tr>
                     </thead>
                     <tbody>
                         {rows.map((r) => (
                             <tr key={r.key}>
                                 <td>{r.key}</td>
-                                <td className={styles.num}>{r.sends.toLocaleString()}</td>
-                                <td className={styles.num}>{r.viewRate}%</td>
+                                <td className={ui.num}>{r.sends.toLocaleString()}</td>
+                                <td className={ui.num}>{r.viewRate}%</td>
                             </tr>
                         ))}
                     </tbody>
@@ -73,10 +74,10 @@ function FunnelTable({ title, rows }: { title: string; rows: readonly { key: str
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
     return (
-        <div className={styles.summaryCard}>
-            <span className={styles.summaryLabel}>{label}</span>
-            <span className={styles.summaryValue}>{value}</span>
-            {hint && <span className={styles.summaryHint}>{hint}</span>}
+        <div className={ui.summaryCard}>
+            <span className={ui.summaryLabel}>{label}</span>
+            <span className={ui.summaryValue}>{value}</span>
+            {hint && <span className={ui.summaryHint}>{hint}</span>}
         </div>
     )
 }
@@ -97,12 +98,12 @@ export default function ScoutAttributeSections() {
     const selectedCo = openCompany ? COMPANIES.find((c) => c.companyId === openCompany) : null
     return (
         <>
-            <div className={styles.card}>
+            <div className={ui.card}>
                 <div className={styles.tableHeader}>
-                    <h2 className={styles.sectionTitle}>スカウト利用サマリ（全体）</h2>
+                    <h2 className={ui.sectionTitle}>スカウト利用サマリ（全体）</h2>
                     <span className={styles.asof}>as of {S.asof}｜{U.firstAt}〜{U.lastAt}</span>
                 </div>
-                <div className={styles.summaryRow}>
+                <div className={ui.summaryRow}>
                     <Stat label="送信総数" value={U.sends.toLocaleString()} hint={`稼働 ${U.activeDays}日`} />
                     <Stat label="稼働企業数" value={`${U.companies}社`} hint={`上位2社で${U.top2Share}%`} />
                     <Stat label="対象求職者" value={U.candidates.toLocaleString()} hint={`1人あたり${U.sendsPerCandidate}送信（再スカウトほぼ無）`} />
@@ -111,12 +112,12 @@ export default function ScoutAttributeSections() {
                 </div>
             </div>
 
-            <div className={styles.card}>
+            <div className={ui.card}>
                 <div className={styles.tableHeader}>
-                    <h2 className={styles.sectionTitle}>送信先の求職者属性（スナップショット）</h2>
+                    <h2 className={ui.sectionTitle}>送信先の求職者属性（スナップショット）</h2>
                     <span className={styles.asof}>as of {S.asof}｜{S.windowStart}〜{S.windowEnd}</span>
                 </div>
-                <p className={styles.tableNote}>
+                <p className={ui.tableNote}>
                     どんな属性の求職者にスカウトが送られているか。送信{t.sends.toLocaleString()}件のうち属性を結合できた{t.matchedAttrs.toLocaleString()}件（{pctOf(t.matchedAttrs, t.sends)}）で集計。
                     {S.overall.ageStats && `平均年齢 ${S.overall.ageStats.mean}歳（中央${S.overall.ageStats.median}歳）。`}
                 </p>
@@ -129,13 +130,13 @@ export default function ScoutAttributeSections() {
                 </div>
             </div>
 
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>企業別の送信先属性（上位{COMPANIES.length}社）</h2>
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>企業別の送信先属性（上位{COMPANIES.length}社）</h2>
+                <div className={ui.tableWrap}>
+                    <table className={ui.dataTable}>
                         <thead>
                             <tr>
-                                <th>企業</th><th className={styles.num}>送信</th><th className={styles.num}>閲覧率</th>
+                                <th>企業</th><th className={ui.num}>送信</th><th className={ui.num}>閲覧率</th>
                                 <th>主な年代</th><th>主なエリア</th><th>主な免許・資格</th>
                             </tr>
                         </thead>
@@ -147,8 +148,8 @@ export default function ScoutAttributeSections() {
                                     onClick={() => setOpenCompany(c.companyId === openCompany ? null : c.companyId)}
                                 >
                                     <td>{c.companyName ?? c.companyId.slice(0, 8)}</td>
-                                    <td className={styles.num}>{c.sends.toLocaleString()}</td>
-                                    <td className={styles.num}>{pctOf(c.viewed, c.sends)}</td>
+                                    <td className={ui.num}>{c.sends.toLocaleString()}</td>
+                                    <td className={ui.num}>{pctOf(c.viewed, c.sends)}</td>
                                     <td>{summarize(c.ageBand)}</td>
                                     <td>{summarize(c.prefecture)}</td>
                                     <td>{summarize(c.licenses)}</td>
@@ -157,7 +158,7 @@ export default function ScoutAttributeSections() {
                         </tbody>
                     </table>
                 </div>
-                <p className={styles.tableNote}>※ 行をクリックすると、その企業の送信先属性の詳細を下に表示します。「主な〜」は上位。</p>
+                <p className={ui.tableNote}>※ 行をクリックすると、その企業の送信先属性の詳細を下に表示します。「主な〜」は上位。</p>
 
                 {selectedCo && (
                     <div className={styles.companyDetail}>
@@ -188,9 +189,9 @@ export default function ScoutAttributeSections() {
                 )}
             </div>
 
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>属性別の効果（送信 → スカウトページ閲覧率）</h2>
-                <p className={styles.tableNote}>どの層に刺さっているか。閲覧率＝そのセグメント送信のうちスカウトページ閲覧に至った割合。※応募はscoutIdがフォーム送信前にURLから脱落するため直接計測不可（全応募クリック中scoutId付き0件）。成果指標は閲覧率まで。</p>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>属性別の効果（送信 → スカウトページ閲覧率）</h2>
+                <p className={ui.tableNote}>どの層に刺さっているか。閲覧率＝そのセグメント送信のうちスカウトページ閲覧に至った割合。※応募はscoutIdがフォーム送信前にURLから脱落するため直接計測不可（全応募クリック中scoutId付き0件）。成果指標は閲覧率まで。</p>
                 <div className={styles.attrGrid}>
                     <FunnelTable title="年代" rows={S.funnelByAttr.ageBand} />
                     <FunnelTable title="大型免許" rows={S.funnelByAttr.license} />
@@ -200,23 +201,23 @@ export default function ScoutAttributeSections() {
                 </div>
             </div>
 
-            <div className={styles.card}>
+            <div className={ui.card}>
                 <div className={styles.tableHeader}>
-                    <h2 className={styles.sectionTitle}>求人別の送信先属性（上位{S.byJob.length}求人）</h2>
+                    <h2 className={ui.sectionTitle}>求人別の送信先属性（上位{S.byJob.length}求人）</h2>
                     <button className={styles.pageBtn} onClick={() => setShowJobs((v) => !v)}>{showJobs ? '閉じる' : '表示'}</button>
                 </div>
                 {showJobs && (
-                    <div className={styles.tableWrapper}>
-                        <table className={styles.table}>
+                    <div className={ui.tableWrap}>
+                        <table className={ui.dataTable}>
                             <thead>
-                                <tr><th>求人ID</th><th className={styles.num}>送信</th><th className={styles.num}>閲覧率</th><th>主な年代</th><th>主なエリア</th><th>主な免許</th></tr>
+                                <tr><th>求人ID</th><th className={ui.num}>送信</th><th className={ui.num}>閲覧率</th><th>主な年代</th><th>主なエリア</th><th>主な免許</th></tr>
                             </thead>
                             <tbody>
                                 {S.byJob.map((j) => (
                                     <tr key={j.jobId}>
                                         <td>{j.jobId}</td>
-                                        <td className={styles.num}>{j.sends.toLocaleString()}</td>
-                                        <td className={styles.num}>{pctOf(j.viewed, j.sends)}</td>
+                                        <td className={ui.num}>{j.sends.toLocaleString()}</td>
+                                        <td className={ui.num}>{pctOf(j.viewed, j.sends)}</td>
                                         <td>{summarize(j.ageBand)}</td>
                                         <td>{summarize(j.prefecture)}</td>
                                         <td>{summarize(j.licenses)}</td>
@@ -228,7 +229,7 @@ export default function ScoutAttributeSections() {
                 )}
             </div>
 
-            <p className={styles.note}>{S.note}</p>
+            <p className={ui.note}>{S.note}</p>
         </>
     )
 }

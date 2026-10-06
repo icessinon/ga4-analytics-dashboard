@@ -1,1 +1,1 @@
-export { default, type RelatedPage } from './RelatedPages'
+export { default } from './RelatedPages'

@@ -1,0 +1,145 @@
+/* スカウト送信先属性セクション固有のスタイル。面・見出し・表・サマリーは components/ui を使う */
+
+.tableHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.tableHeader .sectionTitle {
+    margin-bottom: 0;
+}
+
+.clickableRow {
+    cursor: pointer;
+}
+
+.clickableRow:hover td {
+    background-color: rgba(96, 165, 250, 0.08);
+}
+
+.selectedRow td {
+    background-color: rgba(96, 165, 250, 0.15);
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: var(--blue-400);
+    color: var(--gray-50);
+}
+
+.pageBtn {
+    background-color: var(--bg-surface);
+    background-image: var(--control-gradient);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.875rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--text-strong);
+}
+
+.pageBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* --- 属性ブレイクダウン（スナップショット）。components/scout/ScoutAttributeSections が参照 --- */
+.asof {
+    font-size: 12px;
+    color: var(--text-secondary, #94a3b8);
+    white-space: nowrap;
+}
+
+.attrGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px 28px;
+    margin-top: 12px;
+}
+
+.distBlock, .funnelBlock { min-width: 0; }
+
+.distTitle {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary, #e2e8f0);
+}
+
+.distRow {
+    display: grid;
+    grid-template-columns: 92px 1fr 40px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.distLabel {
+    font-size: 12px;
+    color: var(--text-secondary, #cbd5e1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.distBarTrack {
+    position: relative;
+    height: 10px;
+    background: rgba(148, 163, 184, 0.15);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.distBarFill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: #3987e5;
+    border-radius: 5px;
+}
+
+.distVal {
+    font-size: 12px;
+    text-align: right;
+    color: var(--text-secondary, #cbd5e1);
+    font-variant-numeric: tabular-nums;
+}
+
+.companyDetail {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 8px;
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.usageGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px 20px;
+    margin: 10px 0 16px;
+    padding: 12px 14px;
+    background: rgba(148, 163, 184, 0.06);
+    border-radius: 8px;
+}
+
+.usageItem {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+    padding: 3px 0;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.12);
+}
+
+.usageLabel { color: var(--text-secondary, #94a3b8); white-space: nowrap; }
+
+.usageValue { color: var(--text-primary, #e2e8f0); font-variant-numeric: tabular-nums; text-align: right; }
