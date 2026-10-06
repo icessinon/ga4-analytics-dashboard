@@ -8,34 +8,8 @@ import AISpinner from '@/components/AISpinner'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import type { OccupationResponse, OccupationRow } from '@/lib/services/cv/occupationTypes'
 import styles from './OccupationPage.module.css'
-
-interface OccupationRow {
-    occ: string
-    label: string
-    slug: string | null
-    signupCv: number
-    sessions: number | null
-    signupRate: number | null
-}
-
-interface LpApplyRow {
-    slug: string
-    label: string
-    cv: number
-}
-
-interface OccupationResponse {
-    occupations: OccupationRow[]
-    noOccSignupCv: number
-    totalSignupCv: number
-    totalSessions: number
-    overallSignupRate: number | null
-    lpApplies: LpApplyRow[]
-    totalLpApplyCv: number
-    startDate: string
-    endDate: string
-}
 
 interface OccupationDetail {
     slug: string
