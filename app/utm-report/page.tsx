@@ -128,9 +128,19 @@ export default function UtmReportPage() {
         })
     }, [rows, sortKey, sortDir])
     const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
-    const sortTh = (k: SortKey, label: string, num = false) => (
-        <th className={cx(num && ui.num, styles.sortable, sortKey === k && styles.sortActive)} onClick={() => toggleSort(k)}>{label}{arrow(k)}</th>
+    const sortBtn = (k: SortKey, label: string, num = false) => (
+        <button
+            type="button"
+            role="columnheader"
+            aria-sort={sortKey === k ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+            className={cx(styles.sortBtn, num && styles.sortBtnNum, sortKey === k && styles.sortActive)}
+            onClick={() => toggleSort(k)}
+        >
+            {label}{arrow(k)}
+        </button>
     )
+    // セッションの棒は表示中の行の最大値を 100% にする（絞り込みに追従）
+    const maxSessions = sortedRows.length ? Math.max(...sortedRows.map((r) => r.sessions)) : 0
 
     return (
         <PageShell
@@ -203,47 +213,54 @@ export default function UtmReportPage() {
                             <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>UTM別 内訳</h2>
                             <span className={ui.note}>{rows.length.toLocaleString()}件表示{data.rows.length !== rows.length ? `（全${data.rows.length.toLocaleString()}件中）` : ''} ・ 見出しクリックで並べ替え</span>
                         </div>
-                        <div className={ui.tableWrap}>
-                            <table className={ui.dataTable}>
-                                <thead>
-                                    <tr>
-                                        {sortTh('category', '区分')}
-                                        {sortTh('utm', `UTM（source / medium / campaign${splitByContent ? ' / content' : ''}）と意味・発行タイミング`)}
-                                        {sortTh('sessions', 'セッション', true)}
-                                        {sortTh('users', 'ユーザー', true)}
-                                        {sortTh('cv', 'CV', true)}
-                                        {sortTh('cvr', 'CVR', true)}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sortedRows.slice(0, visible).map((r, i) => {
-                                        const d = describeUtm(r.source, r.medium, r.campaign)
-                                        const hasContent = splitByContent && !isEmptyUtmValue(r.content)
-                                        const contentNote = hasContent ? describeUtmContent(r.source, r.medium, r.campaign, r.content) : null
-                                        const cv = totalCvOf(r)
-                                        return (
-                                            <tr key={`${r.source}|${r.medium}|${r.campaign}|${r.content}|${i}`}>
-                                                <td><Badge category={d.category} /></td>
-                                                <td className={styles.utmCell}>
-                                                    {/* UTM の値（等幅）→ 意味 → 発行タイミングの順に縦に積む。横に並べると長い campaign が説明に食い込む */}
-                                                    <span className={styles.mono}>{r.source} / {r.medium}</span>
-                                                    <span className={cx(styles.mono, styles.campaign)} title={r.campaign}>{r.campaign}</span>
-                                                    {hasContent && <span className={cx(styles.mono, styles.content)} title={r.content}>content: {r.content}</span>}
-                                                    <span className={styles.meaning}>{d.label}</span>
-                                                    <span className={styles.timing}>{d.timing}</span>
-                                                    {contentNote && <span className={styles.timing}>content: {contentNote}</span>}
-                                                    {d.warning && <span className={styles.warn}>⚠️ {d.warning}</span>}
-                                                </td>
-                                                <td className={cx(ui.num, ui.strong)}>{r.sessions.toLocaleString()}</td>
-                                                <td className={ui.num}>{r.users.toLocaleString()}</td>
-                                                <td className={cx(ui.num, styles.cvCell)}>{cv > 0 ? cv.toLocaleString() : '－'}{cv > 0 && <span className={styles.cvBreakdown}>応{r.applyCv}/LP{r.lpApplyCv}/登{r.signupCv}</span>}</td>
-                                                <td className={ui.num}>{r.sessions > 0 && cv > 0 ? `${((cv / r.sessions) * 100).toFixed(1)}%` : '－'}</td>
-                                            </tr>
-                                        )
-                                    })}
-                                    {rows.length === 0 && <tr><td colSpan={6} className={ui.empty}>該当するUTMがありません</td></tr>}
-                                </tbody>
-                            </table>
+                        <div className={styles.list} role="table" aria-label="UTM別 内訳">
+                            <div className={cx(styles.row, styles.head)} role="row">
+                                {sortBtn('category', '区分')}
+                                {sortBtn('utm', `UTM（source / medium / campaign${splitByContent ? ' / content' : ''}）と意味・発行タイミング`)}
+                                {sortBtn('sessions', 'セッション', true)}
+                                {sortBtn('users', 'ユーザー', true)}
+                                {sortBtn('cv', 'CV', true)}
+                                {sortBtn('cvr', 'CVR', true)}
+                            </div>
+                            {sortedRows.slice(0, visible).map((r, i) => {
+                                const d = describeUtm(r.source, r.medium, r.campaign)
+                                const hasContent = splitByContent && !isEmptyUtmValue(r.content)
+                                const contentNote = hasContent ? describeUtmContent(r.source, r.medium, r.campaign, r.content) : null
+                                const cv = totalCvOf(r)
+                                const share = maxSessions > 0 ? (r.sessions / maxSessions) * 100 : 0
+                                return (
+                                    <div key={`${r.source}|${r.medium}|${r.campaign}|${r.content}|${i}`} className={styles.row} role="row">
+                                        <div className={styles.colCat} role="cell"><Badge category={d.category} /></div>
+                                        <div className={styles.colUtm} role="cell">
+                                            {/* 値（等幅）→ 意味 → 発行タイミングの順に縦に積む。横に並べると長い campaign が説明に食い込む */}
+                                            <div className={styles.utmLine}>
+                                                <span className={styles.utmChip}>{r.source}</span>
+                                                <span className={styles.utmSep}>/</span>
+                                                <span className={styles.utmChip}>{r.medium}</span>
+                                            </div>
+                                            <div className={styles.campaign} title={r.campaign}>{r.campaign}</div>
+                                            {hasContent && <div className={styles.content} title={r.content}>content: {r.content}</div>}
+                                            <div className={styles.meaning}>{d.label}</div>
+                                            <div className={styles.timing}>{d.timing}</div>
+                                            {contentNote && <div className={styles.timing}>content: {contentNote}</div>}
+                                            {d.warning && <div className={styles.warn}>⚠️ {d.warning}</div>}
+                                        </div>
+                                        <div className={cx(styles.colNum, styles.colSessions)} role="cell">
+                                            <span className={styles.numStrong}>{r.sessions.toLocaleString()}</span>
+                                            <span className={styles.bar} aria-hidden="true"><i style={{ width: `${Math.max(share, 1)}%` }} /></span>
+                                        </div>
+                                        <div className={styles.colNum} role="cell">{r.users.toLocaleString()}</div>
+                                        <div className={styles.colNum} role="cell">
+                                            {cv > 0 ? <span className={styles.numStrong}>{cv.toLocaleString()}</span> : <span className={styles.dim}>－</span>}
+                                            {cv > 0 && <span className={styles.sub}>応{r.applyCv} / LP{r.lpApplyCv} / 登{r.signupCv}</span>}
+                                        </div>
+                                        <div className={styles.colNum} role="cell">
+                                            {r.sessions > 0 && cv > 0 ? `${((cv / r.sessions) * 100).toFixed(1)}%` : <span className={styles.dim}>－</span>}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {rows.length === 0 && <p className={ui.empty}>該当するUTMがありません</p>}
                         </div>
                         {sortedRows.length > visible && (
                             <div className={ui.controls}>

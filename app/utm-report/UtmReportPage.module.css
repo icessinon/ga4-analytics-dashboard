@@ -70,50 +70,133 @@
     margin-bottom: 1rem;
 }
 
-.sortable {
+/* ── 内訳リスト（table ではなく grid の行）──
+   区分 | UTM と意味（縦積み） | セッション（棒つき） | ユーザー | CV | CVR */
+.list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) 9.5rem 6rem 7.5rem 5rem;
+    gap: 0 1rem;
+    align-items: center;
+    padding: 0.85rem 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.row:not(.head):nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.row:not(.head):hover {
+    background-color: var(--bg-hover);
+}
+
+.head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.4rem 0.5rem;
+    background-color: var(--bg-surface);
+    background-image: var(--surface-gradient);
+    border-bottom: 1px solid var(--border);
+}
+
+.sortBtn {
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
     cursor: pointer;
-    user-select: none;
+    white-space: nowrap;
 }
 
-.sortable:hover {
-    color: var(--accent-text);
-}
-
+.sortBtn:hover,
 .sortActive {
     color: var(--accent-text);
 }
 
-.mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.8125rem;
-    color: var(--text-primary);
+.sortBtnNum {
+    text-align: right;
 }
 
-/* UTM の値と意味を 1 セルに縦積み。長い campaign はどこでも折り返す（横に 2 列で並べると説明に食い込んでいた） */
-.utmCell {
+.colCat {
+    align-self: start;
+    padding-top: 0.15rem;
+}
+
+.colUtm {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
-    min-width: 22rem;
-    max-width: 36rem;
-    white-space: normal;
+    gap: 0.2rem;
+    min-width: 0;
 }
 
-.utmCell .mono {
+.utmLine {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.utmChip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.3rem;
+    padding: 0.05rem 0.45rem;
     overflow-wrap: anywhere;
 }
 
+.utmSep {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
 .campaign {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: var(--text-strong);
     overflow-wrap: anywhere;
     line-height: 1.4;
 }
 
-/* utm_content はcampaignの下にぶら下げるので、1段下げて色を落とす */
+/* utm_content は campaign の下にぶら下げる */
 .content {
-    color: var(--accent-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.75rem;
+    color: var(--accent-text);
     overflow-wrap: anywhere;
+}
+
+.meaning {
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--border-subtle);
+}
+
+.timing {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.warn {
+    color: var(--status-warn);
+    font-size: 0.72rem;
+    line-height: 1.5;
 }
 
 /* 文字は本文色のまま、区分は左のドットで示す。
@@ -137,41 +220,64 @@
     flex: none;
 }
 
-.meaning {
+.colNum {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.2rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875rem;
     color: var(--text-primary);
-    font-size: 0.8125rem;
-    line-height: 1.5;
-    white-space: normal;
-    margin-top: 0.35rem;
-    padding-top: 0.35rem;
-    border-top: 1px dashed var(--border-subtle);
 }
 
-.timing {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    line-height: 1.5;
-    margin-top: 0.15rem;
-    white-space: normal;
+.numStrong {
+    font-weight: 700;
+    color: var(--text-strong);
 }
 
-.warn {
-    color: var(--status-warn);
-    font-size: 0.72rem;
-    margin-top: 0.15rem;
-    white-space: normal;
-}
-
-/* CV セルは合計の下に内訳（応/LP/登）を小さく。1 行に伸ばすと列が 160px 近く取るので折り返す */
-.cvCell {
-    white-space: normal;
-    max-width: 7rem;
-}
-
-.cvBreakdown {
-    display: block;
+.sub {
     font-size: 0.7rem;
     color: var(--text-muted);
     white-space: nowrap;
 }
 
+.dim {
+    color: var(--text-muted);
+}
+
+/* セッション数の下に、表示中の最大値を 100% とした棒を敷く */
+.bar {
+    display: block;
+    width: 100%;
+    height: 0.3rem;
+    border-radius: 999px;
+    background-color: var(--bg-sunken);
+    overflow: hidden;
+}
+
+.bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background-color: var(--accent);
+    opacity: 0.8;
+}
+
+@media (max-width: 1100px) {
+    .row {
+        grid-template-columns: 7rem minmax(0, 1fr);
+        row-gap: 0.5rem;
+    }
+
+    .colNum {
+        grid-column: 2;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .head .sortBtnNum {
+        display: none;
+    }
+}
