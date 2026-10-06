@@ -61,5 +61,72 @@
       "deviceGroups.*.medDurMin",
       "deviceGroups.*.medCvMin"
     ]
+  },
+  {
+    "name": "user-stickiness",
+    "path": "/api/user/stickiness",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14",
+      "compareStartDate": "2026-08-18",
+      "compareEndDate": "2026-08-31"
+    }
+  },
+  {
+    "name": "user-cohort",
+    "path": "/api/user/cohort",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-07-20",
+      "endDate": "2026-09-14",
+      "periods": 6
+    }
+  },
+  {
+    "name": "user-list",
+    "path": "/api/user/list",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "limit": 100
+    }
+  },
+  {
+    "name": "user-scoring",
+    "path": "/api/user/scoring",
+    "body": {
+      "propertyId": "534098180",
+      "segmentDimension": "deviceCategory",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "user-segment-builder",
+    "path": "/api/user/segment-builder",
+    "body": {
+      "propertyId": "534098180",
+      "conditions": [
+        {
+          "dimension": "deviceCategory",
+          "operator": "EXACT",
+          "value": "mobile"
+        }
+      ],
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "user-timeline",
+    "path": "/api/user/timeline",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "deviceCategory": "mobile"
+    }
   }
 ]

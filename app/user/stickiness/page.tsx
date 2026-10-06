@@ -1,49 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import {
-    ResponsiveContainer,
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    Legend,
-} from 'recharts'
+import { useEffect, useState } from 'react'
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import DateInput from '@/components/DateInput'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
 import AISpinner from '@/components/AISpinner'
-import { useProduct } from '@/lib/contexts/ProductContext'
 import InfoTooltip from '@/components/InfoTooltip'
+import PageShell from '@/components/PageShell'
+import PeriodSelect from '@/components/PeriodSelect'
+import Alert from '@/components/Alert'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { fetchJson } from '@/lib/utils/fetch'
+import { CHART_COLORS } from '@/lib/constants/chartColors'
+import { useProduct } from '@/lib/contexts/ProductContext'
+import type { StickinessResponse } from '@/lib/services/user/stickinessTypes'
 import styles from './StickinessPage.module.css'
 
-interface DailyPoint { date: string; dau: number; wau: number; mau: number }
-interface StickinessResult {
-    dailySeries: DailyPoint[]
-    avgDAU: number
-    totalMAU: number
-    totalNewUsers: number
-    avgSessionsPerUser: number
-    stickinessDAUMAU: number
-    stickinessWAUMAU: number
-}
+/** 期間A（当期）と期間B（比較）の色。グラフ・バッジで共通 */
+const PERIOD_A = CHART_COLORS.violet
+const PERIOD_B = CHART_COLORS.orange
 
-interface ApiResponse {
-    current: StickinessResult
-    compare: StickinessResult | null
-}
-
-function getDefaultRange() {
-    const today = new Date()
-    const past = new Date(today)
-    past.setDate(today.getDate() - 29)
-    const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    return { startDate: fmt(past), endDate: fmt(today) }
-}
-
-function getCompareDefault(startDate: string, endDate: string) {
+/** 期間Aと同じ日数で、直前に接する期間を比較の既定にする */
+function previousPeriod(startDate: string, endDate: string) {
     const start = new Date(startDate)
     const end = new Date(endDate)
     const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
@@ -53,7 +32,7 @@ function getCompareDefault(startDate: string, endDate: string) {
     cStart.setDate(cStart.getDate() - (days - 1))
     const fmt = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    return { compareStartDate: fmt(cStart), compareEndDate: fmt(cEnd) }
+    return { start: fmt(cStart), end: fmt(cEnd) }
 }
 
 function toMMDD(dateStr: string): string {
@@ -64,9 +43,9 @@ function toMMDD(dateStr: string): string {
 
 function engagementLabel(ratio: number): { text: string; color: string } {
     const pct = ratio * 100
-    if (pct >= 20) return { text: '高エンゲージメント', color: '#16a34a' }
-    if (pct >= 10) return { text: '中程度のエンゲージメント', color: '#d97706' }
-    return { text: '低エンゲージメント', color: '#ef4444' }
+    if (pct >= 20) return { text: '高エンゲージメント', color: 'var(--status-good)' }
+    if (pct >= 10) return { text: '中程度のエンゲージメント', color: 'var(--status-warn)' }
+    return { text: '低エンゲージメント', color: 'var(--status-bad)' }
 }
 
 function delta(current: number, compare: number, fmt: (n: number) => string = String) {
@@ -79,39 +58,64 @@ function delta(current: number, compare: number, fmt: (n: number) => string = St
 
 function fmtPct(n: number) { return `${(n * 100).toFixed(1)}%` }
 
+const AXIS_TICK = { fill: 'var(--text-muted)', fontSize: 11 }
+const TOOLTIP_STYLE = { backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '0.375rem', color: 'var(--text-primary)' }
+
 export default function StickinessPage() {
     const { currentProduct } = useProduct()
-    const { startDate: defaultStart, endDate: defaultEnd } = getDefaultRange()
-    const { compareStartDate: defaultCompStart, compareEndDate: defaultCompEnd } = getCompareDefault(defaultStart, defaultEnd)
+    const periodState = usePeriodRange('30daysAgo')
+    const range = periodState.range
 
-    const [startDate, setStartDate] = useState(defaultStart)
-    const [endDate, setEndDate] = useState(defaultEnd)
     const [compareMode, setCompareMode] = useState(false)
-    const [compareStartDate, setCompareStartDate] = useState(defaultCompStart)
-    const [compareEndDate, setCompareEndDate] = useState(defaultCompEnd)
-    const [loading, setLoading] = useState(false)
-    const [result, setResult] = useState<ApiResponse | null>(null)
-    const [error, setError] = useState<string | null>(null)
+    const [compareStart, setCompareStart] = useState('')
+    const [compareEnd, setCompareEnd] = useState('')
+    const compareOk = !compareMode || (!!compareStart && !!compareEnd && compareStart <= compareEnd)
+
+    // 期間を変えると即再取得（旧実装は「分析を実行」ボタン）。比較期間が未確定の間は待つ
+    const report = useReport<StickinessResponse>('/api/user/stickiness', {
+        body: {
+            propertyId: currentProduct?.ga4PropertyId,
+            startDate: range?.startDate,
+            endDate: range?.endDate,
+            ...(compareMode ? { compareStartDate: compareStart, compareEndDate: compareEnd } : {}),
+        },
+        enabled: !!currentProduct && !!range && compareOk,
+    })
+    const current = report.data?.current ?? null
+    const compare = report.data?.compare ?? null
+
     const [geminiLoading, setGeminiLoading] = useState(false)
     const [geminiResult, setGeminiResult] = useState<string | null>(null)
     const [geminiError, setGeminiError] = useState<string | null>(null)
+    // 数字が変われば前の AI 分析は古くなる
+    useEffect(() => { setGeminiResult(null); setGeminiError(null) }, [report.data])
+
+    function toggleCompare() {
+        if (!compareMode && range) {
+            const prev = previousPeriod(range.startDate, range.endDate)
+            setCompareStart(prev.start)
+            setCompareEnd(prev.end)
+        }
+        setCompareMode((v) => !v)
+    }
 
     const handleGeminiAnalysis = async () => {
-        if (!current) return
+        if (!current || !range) return
         setGeminiLoading(true)
         setGeminiError(null)
         setGeminiResult(null)
         try {
-            const res = await fetch('/api/user/stickiness/gemini', {
+            const pick = (r: typeof current, startDate: string, endDate: string) => ({
+                avgDAU: r.avgDAU, totalMAU: r.totalMAU, stickinessDAUMAU: r.stickinessDAUMAU,
+                stickinessWAUMAU: r.stickinessWAUMAU, avgSessionsPerUser: r.avgSessionsPerUser, startDate, endDate,
+            })
+            const data = await fetchJson<{ analysis: string }>('/api/user/stickiness/gemini', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    current: { avgDAU: current.avgDAU, totalMAU: current.totalMAU, stickinessDAUMAU: current.stickinessDAUMAU, stickinessWAUMAU: current.stickinessWAUMAU, avgSessionsPerUser: current.avgSessionsPerUser, startDate, endDate },
-                    compare: compare ? { avgDAU: compare.avgDAU, totalMAU: compare.totalMAU, stickinessDAUMAU: compare.stickinessDAUMAU, stickinessWAUMAU: compare.stickinessWAUMAU, avgSessionsPerUser: compare.avgSessionsPerUser, startDate: compareStartDate, endDate: compareEndDate } : null,
+                    current: pick(current, range.startDate, range.endDate),
+                    compare: compare ? pick(compare, compareStart, compareEnd) : null,
                 }),
             })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || '分析に失敗しました')
             setGeminiResult(data.analysis)
         } catch (e) {
             setGeminiError(e instanceof Error ? e.message : 'エラーが発生しました')
@@ -120,57 +124,8 @@ export default function StickinessPage() {
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!currentProduct) return
-        setGeminiResult(null)
-        setGeminiError(null)
-        setLoading(true)
-        setError(null)
-        setResult(null)
-
-        try {
-            const res = await fetch('/api/user/stickiness', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    startDate,
-                    endDate,
-                    ...(compareMode ? { compareStartDate, compareEndDate } : {}),
-                }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
-            setResult(data)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>スティッキネス分析</h1>
-                    <BackLink href="/user">ユーザー行動分析に戻る</BackLink>
-                </div>
-                <div className={styles.notice}>
-                    プロダクトを選択してください。右上のドロップダウンから選択できます。
-                </div>
-            </div>
-        )
-    }
-
-    const current = result?.current ?? null
-    const compare = result?.compare ?? null
     const engagement = current ? engagementLabel(current.stickinessDAUMAU) : null
-
-    // 通常グラフ用データ
     const chartData = current?.dailySeries.map((d) => ({ ...d, date: toMMDD(d.date) })) ?? []
-
     // 比較グラフ用データ（日付インデックスで正規化）
     const compareChartData = (() => {
         if (!current || !compare) return []
@@ -185,102 +140,57 @@ export default function StickinessPage() {
     })()
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>スティッキネス分析</h1>
-                    <p className={styles.subtitle}>
-                        DAU/WAU/MAUの推移とユーザーエンゲージメントの深さを測定します
-                    </p>
-                </div>
-                <BackLink href="/user">ユーザー行動分析に戻る</BackLink>
-            </div>
-
-            {/* フォーム */}
-            <div className={styles.formSection}>
-                <form onSubmit={handleSubmit}>
-                    {/* 期間A */}
+        <PageShell
+            pageId="userStickiness"
+            requireProduct
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            controls={
+                <div className={ui.card}>
                     <div className={styles.periodRow}>
-                        {compareMode && <span className={styles.periodLabel} style={{ background: 'rgba(99,102,241,0.15)', color: '#8b5cf6', borderColor: '#8b5cf6' }}>期間A</span>}
-                        <div className={styles.formField}>
-                            <label className={styles.label}>開始日</label>
-                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.input} required />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>終了日</label>
-                            <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.input} required />
-                        </div>
+                        {compareMode && <span className={styles.periodLabel} style={{ color: PERIOD_A, borderColor: PERIOD_A }}>期間A</span>}
+                        <PeriodSelect state={periodState} />
                     </div>
-
-                    {/* 期間B */}
                     {compareMode && (
                         <div className={styles.periodRow}>
-                            <span className={styles.periodLabel} style={{ background: 'rgba(249,115,22,0.15)', color: '#ea580c', borderColor: '#ea580c' }}>期間B</span>
-                            <div className={styles.formField}>
-                                <label className={styles.label}>開始日</label>
-                                <DateInput value={compareStartDate} onChange={(e) => setCompareStartDate(e.target.value)} className={styles.input} required />
-                            </div>
-                            <div className={styles.formField}>
-                                <label className={styles.label}>終了日</label>
-                                <DateInput value={compareEndDate} onChange={(e) => setCompareEndDate(e.target.value)} className={styles.input} required />
-                            </div>
+                            <span className={styles.periodLabel} style={{ color: PERIOD_B, borderColor: PERIOD_B }}>期間B</span>
+                            <DateInput className={styles.compareDate} value={compareStart} max={compareEnd || undefined} onChange={(e) => setCompareStart(e.target.value)} required />
+                            <span className={ui.note}>〜</span>
+                            <DateInput className={styles.compareDate} value={compareEnd} min={compareStart || undefined} onChange={(e) => setCompareEnd(e.target.value)} required />
+                            {!compareOk && <span className={ui.note}>開始日 ≦ 終了日 になるように指定してください</span>}
                         </div>
                     )}
-
-
-                    <div className={styles.formActions}>
-                        <button type="submit" disabled={loading} className={styles.button}>
-                            {loading ? '分析中...' : '分析を実行'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setCompareMode((v) => !v)}
-                            className={compareMode ? `${styles.compareToggle} ${styles.compareToggleActive}` : styles.compareToggle}
-                        >
-                            {compareMode ? '期間比較をオフ' : '期間比較'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {error && (
-                <div className={styles.error}>
-                    <strong>エラー</strong>
-                    <p>{error}</p>
+                    <button
+                        type="button"
+                        onClick={toggleCompare}
+                        className={compareMode ? cx(styles.compareToggle, styles.compareToggleActive) : styles.compareToggle}
+                    >
+                        {compareMode ? '期間比較をオフ' : '期間比較'}
+                    </button>
                 </div>
-            )}
-
-            {loading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <span className={styles.loaderText}>スティッキネスデータを取得中...</span>
-                </div>
-            )}
-
-            {current && !loading && (
+            }
+        >
+            {current && (
                 <>
-                    {/* サマリーカード */}
                     {!compare ? (
-                        <div className={styles.summaryRow}>
-                            <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>平均DAU<InfoTooltip text="Daily Active Users（日次アクティブユーザー）の期間平均。毎日何人が利用しているかを示す。" direction="bottom" /></p>
-                                <p className={styles.summaryValue}>{current.avgDAU.toLocaleString()}</p>
+                        <div className={ui.summaryRow}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>平均DAU<InfoTooltip text="Daily Active Users（日次アクティブユーザー）の期間平均。毎日何人が利用しているかを示す。" direction="bottom" /></p>
+                                <p className={ui.summaryValue}>{current.avgDAU.toLocaleString()}</p>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>MAU（期間ユニーク）<InfoTooltip text="Monthly Active Users。対象期間内にサイトを訪れたユニークユーザーの総数。" direction="bottom" /></p>
-                                <p className={styles.summaryValue}>{current.totalMAU.toLocaleString()}</p>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>MAU（期間ユニーク）<InfoTooltip text="Monthly Active Users。対象期間内にサイトを訪れたユニークユーザーの総数。" direction="bottom" /></p>
+                                <p className={ui.summaryValue}>{current.totalMAU.toLocaleString()}</p>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>DAU/MAU スティッキネス<InfoTooltip text="平均DAU ÷ MAU。ユーザーが月の何割の日数でサービスを使うかを示す。20%以上が高エンゲージメントの目安。" direction="bottom" /></p>
-                                <p className={styles.summaryHighlight}>{fmtPct(current.stickinessDAUMAU)}</p>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>DAU/MAU スティッキネス<InfoTooltip text="平均DAU ÷ MAU。ユーザーが月の何割の日数でサービスを使うかを示す。20%以上が高エンゲージメントの目安。" direction="bottom" /></p>
+                                <p className={cx(ui.summaryValue, styles.highlight)}>{fmtPct(current.stickinessDAUMAU)}</p>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <p className={styles.summaryLabel}>平均セッション/ユーザー<InfoTooltip text="1ユーザーあたりの平均セッション数（sessions ÷ activeUsers）。訪問頻度の高さを示す。" direction="bottom" /></p>
-                                <p className={styles.summaryValue}>{current.avgSessionsPerUser}</p>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>平均セッション/ユーザー<InfoTooltip text="1ユーザーあたりの平均セッション数（sessions ÷ activeUsers）。訪問頻度の高さを示す。" direction="bottom" /></p>
+                                <p className={ui.summaryValue}>{current.avgSessionsPerUser}</p>
                             </div>
                         </div>
                     ) : (
-                        /* 比較サマリーカード */
                         <div className={styles.compareSummaryGrid}>
                             {[
                                 { label: '平均DAU', tooltip: 'Daily Active Users（日次アクティブユーザー）の期間平均。', a: current.avgDAU, b: compare.avgDAU, fmt: (n: number) => n.toLocaleString(), isHighlight: false },
@@ -290,20 +200,16 @@ export default function StickinessPage() {
                             ].map(({ label, tooltip, a, b, fmt, isHighlight }) => {
                                 const d = delta(a, b, fmt)
                                 return (
-                                    <div key={label} className={styles.compareCard}>
-                                        <p className={styles.summaryLabel}>{label}{tooltip && <InfoTooltip text={tooltip} direction="bottom" />}</p>
+                                    <div key={label} className={ui.cardTight}>
+                                        <p className={ui.summaryLabel}>{label}{tooltip && <InfoTooltip text={tooltip} direction="bottom" />}</p>
                                         <div className={styles.compareCardRow}>
                                             <div>
-                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(99,102,241,0.15)', color: '#8b5cf6' }}>期間A</span>
-                                                <p className={isHighlight ? styles.summaryHighlight : styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem' }}>
-                                                    {fmt(a)}
-                                                </p>
+                                                <span className={styles.comparePeriodBadge} style={{ color: PERIOD_A, borderColor: PERIOD_A }}>期間A</span>
+                                                <p className={cx(styles.compareValue, isHighlight && styles.highlight)}>{fmt(a)}</p>
                                             </div>
                                             <div>
-                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(249,115,22,0.15)', color: '#ea580c' }}>期間B</span>
-                                                <p className={styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem', color: 'var(--gray-400)' }}>
-                                                    {fmt(b)}
-                                                </p>
+                                                <span className={styles.comparePeriodBadge} style={{ color: PERIOD_B, borderColor: PERIOD_B }}>期間B</span>
+                                                <p className={cx(styles.compareValue, styles.compareValueB)}>{fmt(b)}</p>
                                             </div>
                                             {d && (
                                                 <div className={styles.deltaCol}>
@@ -317,73 +223,56 @@ export default function StickinessPage() {
                         </div>
                     )}
 
-                    {/* グラフ */}
-                    <div className={styles.chartSection}>
-                        <h2 className={styles.chartTitle}>
-                            {compare ? 'DAU 期間比較（相対日数）' : 'DAU / WAU / MAU 推移'}
-                        </h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>{compare ? 'DAU 期間比較（相対日数）' : 'DAU / WAU / MAU 推移'}</h2>
                         <div className={styles.chartWrap}>
                             <ResponsiveContainer width="100%" height="100%">
                                 {!compare ? (
                                     <LineChart data={chartData} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
-                                        <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} interval="preserveStartEnd" />
-                                        <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '0.375rem', color: '#f3f4f6' }}
-                                            labelStyle={{ color: '#e5e7eb', fontWeight: 600 }}
-                                            formatter={(value: number, name: string) => [value.toLocaleString(), name.toUpperCase()]}
-                                        />
-                                        <Legend formatter={(value: string) => value.toUpperCase()} wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line type="monotone" dataKey="dau" stroke="#3b82f6" strokeWidth={2} dot={false} name="dau" />
-                                        <Line type="monotone" dataKey="wau" stroke="#16a34a" strokeWidth={2} dot={false} name="wau" />
-                                        <Line type="monotone" dataKey="mau" stroke="#ea580c" strokeWidth={2} dot={false} name="mau" />
+                                        <XAxis dataKey="date" tick={AXIS_TICK} tickLine={false} interval="preserveStartEnd" />
+                                        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
+                                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: number, name: string) => [value.toLocaleString(), name.toUpperCase()]} />
+                                        <Legend formatter={(value: string) => value.toUpperCase()} wrapperStyle={{ color: 'var(--text-muted)', fontSize: 12 }} />
+                                        <Line type="monotone" dataKey="dau" stroke={CHART_COLORS.blue} strokeWidth={2} dot={false} name="dau" />
+                                        <Line type="monotone" dataKey="wau" stroke={CHART_COLORS.green} strokeWidth={2} dot={false} name="wau" />
+                                        <Line type="monotone" dataKey="mau" stroke={CHART_COLORS.orange} strokeWidth={2} dot={false} name="mau" />
                                     </LineChart>
                                 ) : (
                                     <LineChart data={compareChartData} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
-                                        <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} interval="preserveStartEnd" />
-                                        <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '0.375rem', color: '#f3f4f6' }}
-                                            labelStyle={{ color: '#e5e7eb', fontWeight: 600 }}
-                                            formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]}
-                                        />
-                                        <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line connectNulls type="monotone" dataKey="dau_a" stroke="#8b5cf6" strokeWidth={2} dot={false} name={`DAU（期間A: ${startDate}〜${endDate}）`} />
-                                        <Line connectNulls type="monotone" dataKey="dau_b" stroke="#ea580c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`DAU（期間B: ${compareStartDate}〜${compareEndDate}）`} />
+                                        <XAxis dataKey="day" tick={AXIS_TICK} tickLine={false} interval="preserveStartEnd" />
+                                        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
+                                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]} />
+                                        <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 12 }} />
+                                        <Line connectNulls type="monotone" dataKey="dau_a" stroke={PERIOD_A} strokeWidth={2} dot={false} name={`DAU（期間A: ${range?.startDate}〜${range?.endDate}）`} />
+                                        <Line connectNulls type="monotone" dataKey="dau_b" stroke={PERIOD_B} strokeWidth={2} strokeDasharray="5 4" dot={false} name={`DAU（期間B: ${compareStart}〜${compareEnd}）`} />
                                     </LineChart>
                                 )}
                             </ResponsiveContainer>
                         </div>
                     </div>
 
-                    {/* 比較テーブル */}
                     {compare && (
-                        <div className={styles.chartSection}>
-                            <h2 className={styles.chartTitle}>MAU 推移比較（相対日数）</h2>
+                        <div className={ui.card}>
+                            <h2 className={ui.sectionTitle}>MAU 推移比較（相対日数）</h2>
                             <div className={styles.chartWrap}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={compareChartData} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
-                                        <XAxis dataKey="day" tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} interval="preserveStartEnd" />
-                                        <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '0.375rem', color: '#f3f4f6' }}
-                                            labelStyle={{ color: '#e5e7eb', fontWeight: 600 }}
-                                            formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]}
-                                        />
-                                        <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line connectNulls type="monotone" dataKey="mau_a" stroke="#8b5cf6" strokeWidth={2} dot={false} name={`MAU（期間A）`} />
-                                        <Line connectNulls type="monotone" dataKey="mau_b" stroke="#ea580c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`MAU（期間B）`} />
+                                        <XAxis dataKey="day" tick={AXIS_TICK} tickLine={false} interval="preserveStartEnd" />
+                                        <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} tickFormatter={(v: number) => v.toLocaleString()} />
+                                        <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]} />
+                                        <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 12 }} />
+                                        <Line connectNulls type="monotone" dataKey="mau_a" stroke={PERIOD_A} strokeWidth={2} dot={false} name="MAU（期間A）" />
+                                        <Line connectNulls type="monotone" dataKey="mau_b" stroke={PERIOD_B} strokeWidth={2} strokeDasharray="5 4" dot={false} name="MAU（期間B）" />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
                     )}
 
-                    {/* スティッキネス解説 */}
-                    <div className={styles.infoBox}>
+                    <div className={cx(ui.card, styles.infoBox)}>
                         <h3>スティッキネス（DAU/MAU）とは</h3>
                         {engagement && !compare && (
-                            <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: engagement.color, marginBottom: '0.75rem' }}>
+                            <p className={styles.engagement} style={{ color: engagement.color }}>
                                 現在の評価: {engagement.text}（{fmtPct(current.stickinessDAUMAU)}）
                             </p>
                         )}
@@ -394,35 +283,25 @@ export default function StickinessPage() {
                         </ul>
                     </div>
 
-                    {/* Gemini AI分析 */}
-                    <div className={styles.chartSection}>
-                        <h2 className={styles.chartTitle}>AI分析</h2>
-                        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                            <button
-                                onClick={handleGeminiAnalysis}
-                                disabled={geminiLoading}
-                                className={styles.button}
-                                style={{ whiteSpace: 'nowrap' }}
-                            >
-                                {geminiLoading ? (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                        <AISpinner /> 分析中...
-                                    </span>
-                                ) : 'AIで分析'}
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>AI分析</h2>
+                        <div className={ui.controls}>
+                            <button type="button" onClick={handleGeminiAnalysis} disabled={geminiLoading} className={ui.btnPrimary}>
+                                {geminiLoading ? <span className={ui.inlineLoading}><AISpinner /> 分析中...</span> : 'AIで分析'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <Alert tone="error">{geminiError}</Alert>}
                         {geminiResult && (
-                            <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
+                            <div className={styles.aiResult}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}
                     </div>
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }

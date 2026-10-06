@@ -1,60 +1,10 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin-bottom: 0.25rem;
-}
-
-.subtitle {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
-
-/* ── フォーム ── */
-.formSection {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.formRow {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-@media (max-width: 640px) {
-    .formRow { grid-template-columns: 1fr; }
-}
-
 /* ── 期間行（比較モード） ── */
 .periodRow {
     display: flex;
-    gap: 1rem;
-    align-items: flex-end;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
     flex-wrap: wrap;
-}
-
-.periodRow .formField {
-    flex: 1;
-    min-width: 140px;
 }
 
 .periodLabel {
@@ -62,138 +12,48 @@
     align-items: center;
     justify-content: center;
     padding: 0.25rem 0.625rem;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     border: 1px solid;
     font-size: 0.8125rem;
     font-weight: 700;
     white-space: nowrap;
-    align-self: flex-end;
-    margin-bottom: 0.375rem;
-}
-
-.formActions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
 }
 
 .compareToggle {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background: transparent;
-    color: var(--gray-400);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-surface);
+    background-image: var(--control-gradient);
+    color: var(--text-secondary);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: 0.2s;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .compareToggle:hover {
-    border-color: var(--indigo-500);
-    color: var(--indigo-300);
+    border-color: var(--accent);
+    color: var(--accent-text);
 }
 
+/* 選択中は押し込んだ見た目にする */
 .compareToggleActive {
-    border-color: var(--indigo-500) !important;
-    background: rgba(99,102,241,0.1) !important;
-    color: var(--indigo-400) !important;
+    border-color: var(--accent);
+    background-image: none;
+    background-color: var(--accent-soft);
+    color: var(--accent-text);
+    box-shadow: var(--shadow-sunken);
 }
 
-.formField {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+/* 期間Bの日付入力。globals の input は幅 100% なので PeriodSelect と同じ幅に */
+.compareDate {
+    width: 10.5rem;
 }
 
-.label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background-color: var(--gray-900);
-    color: var(--gray-100);
-    font-size: 0.875rem;
-}
-
-.input:focus {
-    outline: none;
-    border-color: var(--indigo-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
-.button {
-    padding: 0.625rem 1.5rem;
-    background-color: #4f46e5;
-    color: #fff;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-.button:hover:not(:disabled) {
-    background-color: #4338ca;
-}
-
-.button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* ── サマリーカード ── */
-.summaryRow {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-@media (max-width: 900px) {
-    .summaryRow { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 480px) {
-    .summaryRow { grid-template-columns: 1fr; }
-}
-
-.summaryCard {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 0.5rem;
-    padding: 1.25rem 1.5rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.summaryLabel {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--gray-400);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-}
-
-.summaryValue {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    line-height: 1;
-}
-
-.summaryHighlight {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--indigo-400);
-    line-height: 1;
+/* 強調値（スティッキネス） */
+.highlight {
+    color: var(--accent-text);
 }
 
 /* ── 比較サマリー ── */
@@ -212,18 +72,11 @@
     .compareSummaryGrid { grid-template-columns: 1fr; }
 }
 
-.compareCard {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 0.5rem;
-    padding: 1rem 1.25rem;
-}
-
 .compareCardRow {
     display: flex;
     gap: 1rem;
     align-items: flex-end;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     margin-top: 0.25rem;
 }
 
@@ -233,6 +86,20 @@
     font-weight: 700;
     padding: 0.125rem 0.4rem;
     border-radius: 0.25rem;
+    border: 1px solid;
+}
+
+.compareValue {
+    font-size: 1.375rem;
+    white-space: nowrap;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 0.25rem;
+    color: var(--text-strong);
+}
+
+.compareValueB {
+    color: var(--text-muted);
 }
 
 .deltaCol {
@@ -243,49 +110,32 @@
 .deltaUp {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: var(--teal-400);
+    color: var(--status-good);
 }
 
 .deltaDown {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: var(--red-400);
+    color: var(--status-bad);
 }
 
 /* ── グラフ ── */
-.chartSection {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.chartTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--gray-100);
-    margin-bottom: 1rem;
-}
-
 .chartWrap {
     width: 100%;
     height: 360px;
 }
 
 /* ── 解説 ── */
-.infoBox {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 0.5rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
 .infoBox h3 {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--gray-100);
+    color: var(--text-strong);
+    margin-bottom: 0.75rem;
+}
+
+.engagement {
+    font-size: 0.9375rem;
+    font-weight: 600;
     margin-bottom: 0.75rem;
 }
 
@@ -300,42 +150,24 @@
 
 .infoBox li {
     font-size: 0.875rem;
-    color: var(--gray-400);
+    color: var(--text-muted);
 }
 
 .infoBox li strong {
-    color: var(--gray-200);
+    color: var(--text-primary);
 }
 
-/* ── ユーティリティ ── */
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 0;
-    gap: 1rem;
-    color: var(--gray-400);
+/* ── AI 分析結果 ── */
+.aiResult {
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
 }
 
-.loaderText {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
-
-.error {
-    background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--red-300);
-    margin-bottom: 1.5rem;
-}
-
-.notice {
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid var(--amber-600);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--amber-300);
+.aiResult p {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
 }

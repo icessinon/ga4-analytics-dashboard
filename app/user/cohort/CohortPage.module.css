@@ -1,125 +1,8 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
+.periodsInput {
+    width: 6rem;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin-bottom: 0.25rem;
-}
-
-.subtitle {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
-
-.section {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.sectionTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--gray-100);
-    margin-bottom: 1rem;
-}
-
-.formGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
-}
-
-@media (max-width: 768px) {
-    .formGrid { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 480px) {
-    .formGrid { grid-template-columns: 1fr; }
-}
-
-.formField {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.formFieldFull {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.formLabel {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.formInput {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background-color: var(--gray-900);
-    color: var(--gray-100);
-    font-size: 0.875rem;
-}
-
-.formInput:focus {
-    outline: none;
-    border-color: var(--indigo-500);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
-.formActions { margin-top: 1rem; }
-
-.errorBox {
-    background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--red-300);
-    margin-bottom: 1.5rem;
-}
-
-.errorTitle { font-weight: 600; margin-bottom: 0.25rem; }
-
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 0;
-    gap: 1rem;
-    color: var(--gray-400);
-}
-
-.warningBox {
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid var(--amber-600);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--amber-300);
-}
-
-/* ── コホートテーブル ── */
+/* ── 見出し・凡例 ── */
 .resultHeader {
     display: flex;
     justify-content: space-between;
@@ -129,24 +12,14 @@
     gap: 0.5rem;
 }
 
-.resultTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--gray-100);
-}
-
-.resultMeta {
-    font-size: 0.8125rem;
-    color: var(--gray-400);
-}
-
 .legend {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.75rem;
-    color: var(--gray-500);
+    color: var(--text-muted);
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .legendBar {
@@ -155,16 +28,75 @@
     gap: 0.25rem;
 }
 
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
 .legendSwatch {
     width: 14px;
     height: 14px;
     border-radius: 2px;
 }
 
-.tableWrapper {
-    overflow-x: auto;
+.legendWeek0 {
+    margin-left: 0.5rem;
 }
 
+.legendWeek0Swatch {
+    color: var(--violet-400);
+}
+
+/* ── 期間中の AB テスト ── */
+.abBox {
+    margin: 0.5rem 0 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.abBoxTitle {
+    font-weight: 600;
+    margin-right: 0.75rem;
+}
+
+.abItem {
+    margin-right: 1rem;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.abDot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.abDotInline {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.abMeta {
+    color: var(--text-muted);
+}
+
+p.abMeta {
+    margin: 0.35rem 0 0;
+}
+
+/* ── コホートテーブル ── */
 .cohortTable {
     width: 100%;
     border-collapse: collapse;
@@ -175,9 +107,9 @@
     padding: 0.625rem 0.75rem;
     text-align: center;
     font-weight: 600;
-    color: var(--gray-400);
-    background-color: var(--gray-900);
-    border-bottom: 1px solid var(--gray-700);
+    color: var(--text-muted);
+    background-color: var(--bg-sunken);
+    border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
 }
 
@@ -188,10 +120,10 @@
 
 .rowLabel {
     padding: 0.5rem 0.75rem;
-    color: var(--gray-200);
+    color: var(--text-primary);
     font-weight: 500;
     white-space: nowrap;
-    border-right: 1px solid var(--gray-700);
+    border-right: 1px solid var(--border-subtle);
     vertical-align: middle;
 }
 
@@ -204,12 +136,12 @@
 .rowWeekLabel {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--gray-200);
+    color: var(--text-primary);
 }
 
 .rowTotalLabel {
     font-size: 0.6875rem;
-    color: var(--gray-500);
+    color: var(--text-muted);
 }
 
 .cell {
@@ -236,7 +168,7 @@
 .cellRate {
     font-size: 0.875rem;
     font-weight: 700;
-    color: var(--gray-100);
+    color: var(--text-strong);
 }
 
 .cellUsers {
@@ -245,11 +177,10 @@
 }
 
 .cellEmpty {
-    color: var(--gray-700);
+    color: var(--border-subtle);
     font-size: 0.75rem;
 }
 
-/* 空行（まだデータがない週） */
 .cohortTable tr:hover td {
     filter: brightness(1.1);
 }

@@ -1,25 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import DateInput from '@/components/DateInput'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
-import { useProduct } from '@/lib/contexts/ProductContext'
+import { useMemo, useState } from 'react'
 import InfoTooltip from '@/components/InfoTooltip'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import PeriodSelect from '@/components/PeriodSelect'
+import { ui } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { CHART_SERIES } from '@/lib/constants/chartColors'
+import { useProduct } from '@/lib/contexts/ProductContext'
+import type { CohortResponse } from '@/lib/services/user/cohortTypes'
 import styles from './CohortPage.module.css'
-
-interface WeekData {
-    activeUsers: number
-    totalUsers: number
-    rate: number
-}
-
-interface CohortRow {
-    cohortName: string
-    label: string
-    weekStart: string
-    weeks: Record<number, WeekData>
-}
 
 interface AbTestMarker {
     id: number
@@ -30,8 +22,7 @@ interface AbTestMarker {
     winnerVariant: string | null
 }
 
-const MARKER_COLORS = ['#d97706', '#ec4899', '#0891b2', '#a3e635', '#ef4444', '#c084fc']
-function markerColor(i: number) { return MARKER_COLORS[i % MARKER_COLORS.length] }
+function markerColor(i: number) { return CHART_SERIES[i % CHART_SERIES.length] }
 
 // テスト期間がコホート週 [weekStart, weekStart+6日] と重なるか
 function overlapsWeek(test: AbTestMarker, weekStart: string): boolean {
@@ -51,22 +42,13 @@ function weekRangeLabel(weekStart: string): string {
     return `${fmt(start)}〜${fmt(end)}`
 }
 
-function getDefaultRange() {
-    const today = new Date()
-    const past = new Date(today)
-    past.setDate(today.getDate() - 77) // 約11週前
-    const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    return { startDate: fmt(past), endDate: fmt(today) }
-}
-
 // 継続率に応じた背景色（緑系グラデーション）
 function cellBg(rate: number, isWeek0: boolean): string {
     if (isWeek0) return 'rgba(99,102,241,0.5)'
     if (rate <= 0) return 'rgba(255,255,255,0.03)'
     const intensity = Math.min(rate, 1)
     // 0% → 暗め青, 50% → 緑, 100% → 明るい緑
-    const r = Math.round(16  + (34  - 16)  * intensity)
+    const r = Math.round(16 + (34 - 16) * intensity)
     const g = Math.round(185 * intensity)
     const b = Math.round(129 * intensity * 0.5)
     return `rgba(${r},${g},${b},${0.15 + intensity * 0.55})`
@@ -74,207 +56,105 @@ function cellBg(rate: number, isWeek0: boolean): string {
 
 export default function CohortPage() {
     const { currentProduct } = useProduct()
-    const { startDate: defaultStart, endDate: defaultEnd } = getDefaultRange()
-
-    const [startDate, setStartDate] = useState(defaultStart)
-    const [endDate, setEndDate] = useState(defaultEnd)
+    // 旧実装の既定は今日までの 77 日（約 11 週）。プリセットでは 90 日が最も近い
+    const periodState = usePeriodRange('90daysAgo')
+    const range = periodState.range
     const [periods, setPeriods] = useState(6)
-    const [loading, setLoading] = useState(false)
-    const [cohorts, setCohorts] = useState<CohortRow[] | null>(null)
-    const [maxPeriods, setMaxPeriods] = useState(6)
-    const [error, setError] = useState<string | null>(null)
-    const [abTests, setAbTests] = useState<AbTestMarker[]>([])
+    const periodsOk = Number.isInteger(periods) && periods >= 1 && periods <= 12
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!currentProduct) return
-        setLoading(true)
-        setError(null)
-        setCohorts(null)
+    const report = useReport<CohortResponse>('/api/user/cohort', {
+        body: { propertyId: currentProduct?.ga4PropertyId, startDate: range?.startDate, endDate: range?.endDate, periods },
+        enabled: !!currentProduct && !!range && periodsOk,
+    })
+    const cohorts = report.data?.cohorts ?? null
+    const maxPeriods = report.data?.maxPeriods ?? periods
 
-        try {
-            const [res, abRes] = await Promise.all([
-                fetch('/api/user/cohort', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        propertyId: currentProduct.ga4PropertyId,
-                        startDate,
-                        endDate,
-                        periods,
-                    }),
-                }),
-                fetch(`/api/ab-test?productId=${currentProduct.id}&limit=50`).catch(() => null),
-            ])
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
-            setCohorts(data.cohorts)
-            setMaxPeriods(data.maxPeriods)
-
-            if (abRes?.ok) {
-                const abData = await abRes.json()
-                const rangeStart = new Date(startDate).getTime()
-                const rangeEnd = new Date(endDate).getTime()
-                const tests: AbTestMarker[] = (abData.abTests ?? [])
-                    .map((t: any) => ({
-                        id: t.id,
-                        name: t.name,
-                        startDate: t.startDate,
-                        endDate: t.endDate,
-                        status: t.status,
-                        winnerVariant: t.winnerVariant ?? null,
-                    }))
-                    .filter((t: AbTestMarker) => {
-                        const ts = new Date(t.startDate).getTime()
-                        const te = t.endDate ? new Date(t.endDate).getTime() : Infinity
-                        return ts <= rangeEnd && te >= rangeStart
-                    })
-                setAbTests(tests)
-            } else {
-                setAbTests([])
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>コホートリテンション分析</h1>
-                    <BackLink href="/user">ユーザー分析に戻る</BackLink>
-                </div>
-                <div className={styles.warningBox}>
-                    プロダクトを選択してください。右上のドロップダウンから選択できます。
-                </div>
-            </div>
-        )
-    }
+    // 期間中に走っていた AB テストをコホート週に印として出す（取れなくても本体には影響させない）
+    const abList = useReport<{ abTests?: Array<{ id: number; name: string; startDate: string; endDate: string | null; status: string; winnerVariant?: string | null }> }>(
+        `/api/ab-test?productId=${currentProduct?.id ?? ''}&limit=50`,
+        { enabled: !!currentProduct },
+    )
+    const abTests = useMemo<AbTestMarker[]>(() => {
+        if (!range || !abList.data?.abTests) return []
+        const rangeStart = new Date(range.startDate).getTime()
+        const rangeEnd = new Date(range.endDate).getTime()
+        return abList.data.abTests
+            .map((t) => ({ id: t.id, name: t.name, startDate: t.startDate, endDate: t.endDate, status: t.status, winnerVariant: t.winnerVariant ?? null }))
+            .filter((t) => {
+                const ts = new Date(t.startDate).getTime()
+                const te = t.endDate ? new Date(t.endDate).getTime() : Infinity
+                return ts <= rangeEnd && te >= rangeStart
+            })
+    }, [abList.data, range])
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>コホートリテンション分析</h1>
-                    <p className={styles.subtitle}>
-                        初回訪問週ごとに「その後も戻ってきたユーザーの割合」を週次で追跡します
-                    </p>
-                </div>
-                <BackLink href="/user">ユーザー分析に戻る</BackLink>
-            </div>
-
-            {/* フォーム */}
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>条件</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className={styles.formGrid}>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>開始日</label>
-                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.formInput} required />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>終了日</label>
-                            <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.formInput} required />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>追跡週数（Week 0〜{periods}）</label>
+        <PageShell
+            pageId="userCohort"
+            requireProduct
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            controls={
+                <div className={ui.card}>
+                    <FilterBar>
+                        <FilterField label="期間（初回訪問）">
+                            <PeriodSelect state={periodState} />
+                        </FilterField>
+                        <FilterField label={`追跡週数（Week 0〜${periodsOk ? periods : '?'}）`} hint={periodsOk ? undefined : '1〜12 で指定'}>
                             <input
                                 type="number"
                                 min={1}
                                 max={12}
-                                value={periods}
-                                onChange={(e) => setPeriods(Number(e.target.value))}
-                                className={styles.formInput}
+                                value={Number.isNaN(periods) ? '' : periods}
+                                onChange={(e) => setPeriods(e.target.valueAsNumber)}
+                                className={styles.periodsInput}
                             />
-                        </div>
-                    </div>
-                    <div className={styles.formActions}>
-                        <button type="submit" disabled={loading} className="executionButton">
-                            {loading ? '取得中...' : 'コホートを取得'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {error && (
-                <div className={styles.errorBox}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
+                        </FilterField>
+                    </FilterBar>
                 </div>
-            )}
-
-            {loading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <span>コホートデータを取得中...</span>
-                </div>
-            )}
-
-            {/* マトリクス */}
-            {cohorts && !loading && (
-                <div className={styles.section}>
+            }
+        >
+            {cohorts && (
+                <div className={ui.card}>
                     <div className={styles.resultHeader}>
-                        <p className={styles.resultTitle}>リテンションマトリクス（週次）<InfoTooltip text="初回訪問週（コホート）ごとに、その後の週にどれだけのユーザーが戻ってきたかを示す。Week 0 = 初回訪問週（100%固定）。" direction="bottom" /></p>
-                        <p className={styles.resultMeta}>{cohorts.length} コホート</p>
+                        <p className={ui.sectionTitle} style={{ marginBottom: 0 }}>リテンションマトリクス（週次）<InfoTooltip text="初回訪問週（コホート）ごとに、その後の週にどれだけのユーザーが戻ってきたかを示す。Week 0 = 初回訪問週（100%固定）。" direction="bottom" /></p>
+                        <p className={ui.note}>{cohorts.length} コホート</p>
                     </div>
 
                     <div className={styles.legend}>
                         <span>リテンション率：</span>
                         <div className={styles.legendBar}>
                             {[0, 10, 25, 50, 75, 100].map((pct) => (
-                                <div key={pct} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                    <div
-                                        className={styles.legendSwatch}
-                                        style={{ backgroundColor: cellBg(pct / 100, false) }}
-                                    />
+                                <div key={pct} className={styles.legendItem}>
+                                    <div className={styles.legendSwatch} style={{ backgroundColor: cellBg(pct / 100, false) }} />
                                     <span>{pct}%</span>
                                 </div>
                             ))}
                         </div>
-                        <span style={{ marginLeft: '0.5rem' }}>
-                            ／ <span style={{ color: '#8b5cf6' }}>■</span> Week 0（初回訪問週）
-                        </span>
+                        <span className={styles.legendWeek0}>／ <span className={styles.legendWeek0Swatch}>■</span> Week 0（初回訪問週）</span>
                     </div>
 
                     {abTests.length > 0 && (
-                        <div style={{
-                            margin: '0.5rem 0 0.75rem',
-                            padding: '0.6rem 0.85rem',
-                            background: 'rgba(99,102,241,0.06)',
-                            border: '1px solid rgba(99,102,241,0.2)',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.8rem',
-                            color: '#d1d5db',
-                        }}>
-                            <span style={{ fontWeight: 600, marginRight: '0.75rem' }}>期間中の施策（ABテスト）：</span>
+                        <div className={styles.abBox}>
+                            <span className={styles.abBoxTitle}>期間中の施策（ABテスト）：</span>
                             {abTests.map((t, ti) => (
-                                <span key={t.id} style={{ marginRight: '1rem', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                    <span style={{
-                                        display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-                                        background: markerColor(ti), marginRight: 4, verticalAlign: 'middle',
-                                    }} />
+                                <span key={t.id} className={styles.abItem}>
+                                    <span className={styles.abDot} style={{ background: markerColor(ti) }} />
                                     {t.name}
-                                    <span style={{ color: 'var(--gray-400)' }}>
+                                    <span className={styles.abMeta}>
                                         （{new Date(t.startDate).toLocaleDateString('ja-JP')}〜{t.endDate ? new Date(t.endDate).toLocaleDateString('ja-JP') : '継続中'}
                                         {t.winnerVariant ? `・勝者${t.winnerVariant}` : ''}）
                                     </span>
                                 </span>
                             ))}
-                            <p style={{ margin: '0.35rem 0 0', color: 'var(--gray-400)' }}>
+                            <p className={styles.abMeta}>
                                 ●が付いた初回訪問週のコホートは施策実施中に流入したユーザーです。施策前後のコホートでリテンション率を比較できます。
                             </p>
                         </div>
                     )}
 
                     {cohorts.length === 0 ? (
-                        <p style={{ color: 'var(--gray-500)', textAlign: 'center', padding: '2rem' }}>
-                            データがありません。期間を広げて再試行してください。
-                        </p>
+                        <p className={ui.empty}>データがありません。期間を広げて再試行してください。</p>
                     ) : (
-                        <div className={styles.tableWrapper}>
+                        <div className={ui.tableWrap}>
                             <table className={styles.cohortTable}>
                                 <thead>
                                     <tr>
@@ -292,22 +172,11 @@ export default function CohortPage() {
                                                     <span className={styles.rowWeekLabel}>
                                                         {weekRangeLabel(row.weekStart)}
                                                         {abTests.map((t, ti) => overlapsWeek(t, row.weekStart) && (
-                                                            <span
-                                                                key={t.id}
-                                                                title={`施策実施中: ${t.name}`}
-                                                                style={{
-                                                                    display: 'inline-block',
-                                                                    width: 8, height: 8, borderRadius: '50%',
-                                                                    background: markerColor(ti),
-                                                                    marginLeft: 5, verticalAlign: 'middle',
-                                                                }}
-                                                            />
+                                                            <span key={t.id} title={`施策実施中: ${t.name}`} className={styles.abDotInline} style={{ background: markerColor(ti) }} />
                                                         ))}
                                                     </span>
                                                     {row.weeks[0] && (
-                                                        <span className={styles.rowTotalLabel}>
-                                                            {row.weeks[0].totalUsers.toLocaleString()} ユーザー
-                                                        </span>
+                                                        <span className={styles.rowTotalLabel}>{row.weeks[0].totalUsers.toLocaleString()} ユーザー</span>
                                                     )}
                                                 </div>
                                             </td>
@@ -329,12 +198,8 @@ export default function CohortPage() {
                                                         title={`${row.label} / Week ${week}: ${d.activeUsers.toLocaleString()} ユーザー (${(d.rate * 100).toFixed(1)}%)`}
                                                     >
                                                         <div className={styles.cellInner}>
-                                                            <span className={styles.cellRate}>
-                                                                {isWeek0 ? '100%' : `${(d.rate * 100).toFixed(1)}%`}
-                                                            </span>
-                                                            <span className={styles.cellUsers}>
-                                                                {d.activeUsers.toLocaleString()}人
-                                                            </span>
+                                                            <span className={styles.cellRate}>{isWeek0 ? '100%' : `${(d.rate * 100).toFixed(1)}%`}</span>
+                                                            <span className={styles.cellUsers}>{d.activeUsers.toLocaleString()}人</span>
                                                         </div>
                                                     </td>
                                                 )
@@ -347,6 +212,6 @@ export default function CohortPage() {
                     )}
                 </div>
             )}
-        </div>
+        </PageShell>
     )
 }
