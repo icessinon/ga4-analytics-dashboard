@@ -1,6 +1,6 @@
-import { anyOf } from '@/lib/api/ga4/filters'
 import type { Ga4Reporter } from '@/lib/api/ga4/report'
 import { dim, metricFloat, metricInt, rowsOf } from '@/lib/api/ga4/rows'
+import { type CvPageKey, cvKeyForPath, cvPagesFilter, emptyCvCounts } from '@/lib/services/cv/cvPages'
 import type { InsightsReport, MonthMetrics, MonthlyTrendPoint, WeekSummary } from './insightsTypes'
 
 /**
@@ -40,23 +40,10 @@ function shiftMonth(year: number, month: number, delta: number) {
     return { year: d.getFullYear(), month: d.getMonth() }
 }
 
-// x-work.jpのサンクスページ定義: 応募CV / LP応募CV / 会員登録CV
-const CV_PAGE_PREFIXES = {
-    applyCv: '/entry/thanks',
-    lpApplyCv: '/lp-thanks',
-    signupCv: '/members/signup/thanks',
-} as const
-type CvKey = keyof typeof CV_PAGE_PREFIXES
-
-const emptyCvCount = (): Record<CvKey, number> => ({ applyCv: 0, lpApplyCv: 0, signupCv: 0 })
-const cvDimensionFilter = () => anyOf('pagePath', Object.values(CV_PAGE_PREFIXES), 'BEGINS_WITH')
-
-function cvKeyForPath(path: string): CvKey | null {
-    for (const [key, prefix] of Object.entries(CV_PAGE_PREFIXES) as Array<[CvKey, string]>) {
-        if (path.startsWith(prefix)) return key
-    }
-    return null
-}
+// サンクスページの定義は lib/services/cv/cvPages.ts（utm-report / line-report と共通）
+type CvKey = CvPageKey
+const emptyCvCount = emptyCvCounts
+const cvDimensionFilter = cvPagesFilter
 
 const ymd = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
 

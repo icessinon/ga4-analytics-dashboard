@@ -14,42 +14,10 @@ import type { PeriodOption } from '@/lib/utils/period'
 import { CV_UNIT_VALUE_YEN, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './LineReportPage.module.css'
 
-interface SourceRow { source: string; sessions: number; users: number }
-interface DailyRow { date: string; users: number; sessions: number }
-interface DeliveryRow { unit: string; date: string; linked: number; success: number; optOut: number; noJobs: number; error: number }
+import type { LineReportResponse } from '@/lib/services/channel/lineReportTypes'
+import type { LineAssociationReport, LineChannelKey } from '@/lib/services/lineAssociation/lineAssociationService'
 
-type LineChannelKey = 'signup' | 'signin' | 'thanksModal' | 'thanksBanner' | 'thanksLegacy' | 'sidebar' | 'other'
-interface ChannelRow {
-    key: LineChannelKey
-    label: string
-    hint: string
-    users: number
-    viewUsers: number | null
-    declineUsers: number | null
-    pages: { path: string; users: number }[]
-}
-interface UntrackedRow { place: string; source: string; destination: string }
-interface AssociationResponse {
-    startDate: string
-    endDate: string
-    clamped: boolean
-    channels: ChannelRow[]
-    totalUsers: number
-    daily: { date: string; users: Partial<Record<LineChannelKey, number>>; total: number }[]
-    untracked: UntrackedRow[]
-    scannedMb: number
-}
-
-interface LineReportResponse {
-    startDate: string
-    endDate: string
-    sources: SourceRow[]
-    daily: DailyRow[]
-    cv: { applyCv: number; lpApplyCv: number; signupCv: number }
-    deliveries: DeliveryRow[] | null
-    deliverySource: 'live' | 'snapshot'
-    snapshotAsOf: string
-}
+type AssociationResponse = LineAssociationReport
 
 const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },

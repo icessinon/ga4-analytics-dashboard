@@ -370,5 +370,40 @@
       "productId": 7,
       "month": "2026-09"
     }
+  },
+  {
+    "name": "utm-report",
+    "path": "/api/utm-report",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "seo-report",
+    "path": "/api/seo-report",
+    "body": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "seo-report-filter",
+    "path": "/api/seo-report",
+    "body": {
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "pathFilter": "/driver"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
   }
 ]
