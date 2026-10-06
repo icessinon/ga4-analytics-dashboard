@@ -1,6 +1,6 @@
 import { FEATURE_LIST } from '@/lib/registry'
 import { BQ_TABLES } from '@/lib/bq/schemas'
-import { API_LIST } from '@/app/docs/api/apiList'
+import { API_LIST } from '@/lib/docs/apiList'
 
 /**
  * ドキュメントQ&A用の知識ベースを組み立てる。

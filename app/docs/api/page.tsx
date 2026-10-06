@@ -6,8 +6,8 @@ import PageShell from '@/components/PageShell'
 import Alert from '@/components/Alert'
 import DocsAsk from '@/components/docs/DocsAsk'
 import { ui } from '@/components/ui'
-import { API_LIST } from './apiList'
-import type { ApiEndpoint, ApiParam } from './types'
+import { API_LIST } from '@/lib/docs/apiList'
+import type { ApiEndpoint, ApiParam } from '@/lib/docs/apiTypes'
 import styles from './ApiDocs.module.css'
 
 function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {

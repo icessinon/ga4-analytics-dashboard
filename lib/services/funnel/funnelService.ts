@@ -13,7 +13,7 @@ import type {
     FunnelStepData,
     FunnelData,
     ChannelFunnelData,
-} from '@/app/funnel/types'
+} from '@/lib/services/funnel/funnelTypes'
 
 export type { FunnelStep, FunnelConfig, FunnelFilterConfig, FunnelStepData, FunnelData, ChannelFunnelData }
 

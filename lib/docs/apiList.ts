@@ -2,7 +2,7 @@
  * API エンドポイント一覧（docs/api 表示用）
  */
 
-import type { ApiEndpoint } from './types'
+import type { ApiEndpoint } from './apiTypes'
 
 export const API_LIST: { category: string; endpoints: ApiEndpoint[] }[] = [
     {
