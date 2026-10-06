@@ -528,5 +528,155 @@
     "name": "ga4-labels-missing",
     "path": "/api/ga4/labels",
     "method": "GET"
+  },
+  {
+    "name": "analytics-data",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "metrics": [
+        {
+          "name": "eventCount"
+        },
+        {
+          "name": "totalUsers"
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "customEvent:click_label"
+        },
+        {
+          "name": "customEvent:view_label"
+        }
+      ],
+      "limit": 50,
+      "filter": {
+        "dimension": "pagePath",
+        "operator": "CONTAINS",
+        "expression": "/members"
+      }
+    }
+  },
+  {
+    "name": "analytics-data-nofilter",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "metrics": [
+        "eventCount"
+      ],
+      "dimensions": [
+        "eventName"
+      ],
+      "limit": 20
+    }
+  },
+  {
+    "name": "analytics-data-multi",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "metrics": [
+        {
+          "name": "screenPageViews"
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "pagePath"
+        }
+      ],
+      "limit": 10,
+      "filter": {
+        "dimension": "pagePath",
+        "operator": "exact",
+        "expression": "/, /members/signup"
+      }
+    }
+  },
+  {
+    "name": "analytics-data-blankfilter",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "metrics": [
+        "eventCount"
+      ],
+      "dimensions": [
+        "eventName"
+      ],
+      "limit": 5,
+      "filter": {
+        "dimension": "pagePath",
+        "operator": "CONTAINS",
+        "expression": " , "
+      }
+    }
+  },
+  {
+    "name": "analytics-data-country",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-03",
+      "dimensions": [
+        {
+          "name": "country"
+        }
+      ],
+      "metrics": [
+        {
+          "name": "sessions"
+        }
+      ],
+      "limit": 5
+    }
+  },
+  {
+    "name": "analytics-data-defaults",
+    "path": "/api/analytics/data",
+    "body": {
+      "propertyId": "534098180",
+      "dimensions": [
+        "date"
+      ],
+      "metrics": [
+        "sessions"
+      ]
+    }
+  },
+  {
+    "name": "analytics-data-missing",
+    "path": "/api/analytics/data",
+    "body": {
+      "startDate": "2026-09-01"
+    }
+  },
+  {
+    "name": "ga4-metadata",
+    "path": "/api/ga4/metadata?propertyId=534098180",
+    "method": "GET"
+  },
+  {
+    "name": "ga4-metadata-missing",
+    "path": "/api/ga4/metadata",
+    "method": "GET"
+  },
+  {
+    "name": "analytics-report-missing",
+    "path": "/api/analytics/report",
+    "body": {
+      "propertyId": "534098180"
+    }
   }
 ]

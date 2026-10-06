@@ -1,397 +1,170 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import DateInput from '@/components/DateInput'
-import { useRouter } from 'next/navigation'
-import BackLink from '@/components/BackLink'
-import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import { useMemo, useState } from 'react'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import PeriodSelect from '@/components/PeriodSelect'
+import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
 import { GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
+import type { AdHocQueryResponse, AdHocRow } from '@/lib/services/analytics/adHocTypes'
 import styles from './DataPage.module.css'
 
+interface QueryDraft {
+    metrics: string
+    dimensions: string
+    filterDimension: string
+    filterOperator: string
+    filterExpression: string
+    limit: number
+}
+
+const DEFAULT_QUERY: QueryDraft = {
+    metrics: 'eventCount,totalUsers',
+    dimensions: 'customEvent:click_label,customEvent:view_label',
+    filterDimension: 'pagePath',
+    filterOperator: 'CONTAINS',
+    filterExpression: '',
+    limit: 10000,
+}
+
+const VIEW_LABEL = 'customEvent:view_label'
+const CLICK_LABEL = 'customEvent:click_label'
+type ViewMode = 'all' | 'view' | 'click'
+
+const splitNames = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean).map((name) => ({ name }))
+
+function hasLabel(value: string | undefined): boolean {
+    return !!value && value !== '(not set)' && value !== 'null' && value !== 'undefined'
+}
+
 export default function DataPage() {
-    const router = useRouter()
     const { currentProduct } = useProduct()
-    const [loading, setLoading] = useState(false)
-    const [data, setData] = useState<any>(null)
-    const [error, setError] = useState<string | null>(null)
-    const [viewMode, setViewMode] = useState<'all' | 'view' | 'click'>('all')
+    const propertyId = currentProduct?.ga4PropertyId ?? ''
+    // 旧実装の既定は今月（1日〜今日）
+    const periodState = usePeriodRange('thisMonth')
+    const { range } = periodState
+    // テキスト項目は 1 文字ごとに叩かないよう、「条件を適用」で applied に反映してから取得する。期間は即時
+    const [draft, setDraft] = useState<QueryDraft>(DEFAULT_QUERY)
+    const [applied, setApplied] = useState<QueryDraft>(DEFAULT_QUERY)
+    const [viewMode, setViewMode] = useState<ViewMode>('all')
     const [tableSearch, setTableSearch] = useState('')
-    const [config, setConfig] = useState({
-        propertyId: '',
-        startDate: '',
-        endDate: '',
-        metrics: 'eventCount,totalUsers',
-        dimensions: 'customEvent:click_label,customEvent:view_label',
-        filterDimension: 'pagePath',
-        filterOperator: 'CONTAINS',
-        filterExpression: '',
-        limit: 10000,
-    })
 
-    useEffect(() => {
-        if (currentProduct?.ga4PropertyId) {
-            setConfig((prev) => ({
-                ...prev,
-                propertyId: currentProduct.ga4PropertyId || prev.propertyId,
-            }))
-        }
-    }, [currentProduct])
-
-    useEffect(() => {
-        if (!config.startDate) {
-            const today = new Date()
-            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-            const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-            setConfig((prev) => ({
-                ...prev,
-                startDate: fmt(firstOfMonth),
-                endDate: fmt(today),
-            }))
-        }
-    }, [])
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-        setError(null)
-        setData(null)
-
-        try {
-            if (!currentProduct) {
-                setError('プロダクトを選択してください。')
-                setLoading(false)
-                return
-            }
-
-            const requestBody: any = {
-                propertyId: config.propertyId,
-                startDate: config.startDate,
-                endDate: config.endDate,
-                metrics: config.metrics.split(',').map((m) => ({ name: m.trim() })),
-                dimensions: config.dimensions.split(',').map((d) => ({ name: d.trim() })),
-                limit: config.limit,
-            }
-
-            if (config.filterExpression && config.filterExpression.trim()) {
-                requestBody.filter = {
-                    dimension: config.filterDimension,
-                    operator: config.filterOperator,
-                    expression: config.filterExpression.trim(),
-                }
-            }
-
-            const response = await fetch('/api/analytics/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            })
-
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.message || result.error || 'データの取得に失敗しました')
-            }
-
-            setData(result.data)
-            setTableSearch('')
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (loading && !data) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>GA4データ閲覧</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.loaderContainer}>
-                    <div style={{ textAlign: 'center' }}>
-                        <Loader />
-                        <p className={styles.loaderText}>データ取得中...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>GA4データ閲覧</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.warningBox}>
-                    <p>
-                        プロダクトを選択してください。ダッシュボードの右上のドロップダウンから選択できます。
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
-    const getFilteredData = () => {
-        if (!data || !data.rows) return { rows: [], dimensionHeaders: [], metricHeaders: [] }
-        
-        const viewLabelColumn = 'customEvent:view_label'
-        const clickLabelColumn = 'customEvent:click_label'
-        
-        let filteredRows = data.rows
-        
-        const hasLabel = (value: any) =>
-            value && value !== '' && value !== '(not set)' && value !== 'null' && value !== 'undefined'
-
-        if (viewMode === 'view') {
-            filteredRows = data.rows.filter((row: any) => hasLabel(row[viewLabelColumn]))
-        } else if (viewMode === 'click') {
-            filteredRows = data.rows.filter((row: any) => hasLabel(row[clickLabelColumn]))
-        }
-        
-        if (tableSearch) {
-            const q = tableSearch.toLowerCase()
-            filteredRows = filteredRows.filter((row: any) =>
-                Object.values(row).some((v) => String(v).toLowerCase().includes(q))
-            )
-        }
-
+    const body = useMemo(() => {
+        const expression = applied.filterExpression.trim()
         return {
-            ...data,
-            rows: filteredRows,
-            rowCount: filteredRows.length,
+            propertyId,
+            startDate: range?.startDate,
+            endDate: range?.endDate,
+            metrics: splitNames(applied.metrics),
+            dimensions: splitNames(applied.dimensions),
+            limit: applied.limit,
+            ...(expression && { filter: { dimension: applied.filterDimension, operator: applied.filterOperator, expression } }),
         }
-    }
+    }, [propertyId, range, applied])
 
-    const filteredData = getFilteredData()
-    
-    const getDisplayColumns = () => {
-        const viewLabelColumn = 'customEvent:view_label'
-        const clickLabelColumn = 'customEvent:click_label'
-        
-        const allColumns = [
-            ...(filteredData?.dimensionHeaders || []).map((h: any) => h.name),
-            ...(filteredData?.metricHeaders || []).map((h: any) => h.name),
-        ]
-        
-        if (viewMode === 'view') {
-            return allColumns.filter((col) => col !== clickLabelColumn)
-        } else if (viewMode === 'click') {
-            return allColumns.filter((col) => col !== viewLabelColumn)
-        }
-        
-        return allColumns
-    }
-    
-    const displayColumns = getDisplayColumns()
+    const report = useReport<AdHocQueryResponse>('/api/analytics/data', {
+        body,
+        enabled: !!propertyId && !!range,
+        keepPreviousData: true,
+    })
+    const data = report.data?.data ?? null
+
+    const allColumns = useMemo(
+        () => [...(data?.dimensionHeaders ?? []), ...(data?.metricHeaders ?? [])].map((h) => h.name),
+        [data],
+    )
+    const hasLabelColumns = allColumns.includes(VIEW_LABEL) || allColumns.includes(CLICK_LABEL)
+    // ラベル列の無いクエリでは View / Click 切替は意味を持たないので「すべて」として扱う
+    const mode: ViewMode = hasLabelColumns ? viewMode : 'all'
+    const displayColumns = mode === 'view' ? allColumns.filter((c) => c !== CLICK_LABEL)
+        : mode === 'click' ? allColumns.filter((c) => c !== VIEW_LABEL)
+        : allColumns
+
+    const filteredRows = useMemo(() => {
+        let rows: AdHocRow[] = data?.rows ?? []
+        if (mode === 'view') rows = rows.filter((r) => hasLabel(r[VIEW_LABEL]))
+        else if (mode === 'click') rows = rows.filter((r) => hasLabel(r[CLICK_LABEL]))
+        const q = tableSearch.trim().toLowerCase()
+        if (q) rows = rows.filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
+        return rows
+    }, [data, mode, tableSearch])
+
+    const update = <K extends keyof QueryDraft>(key: K, value: QueryDraft[K]) => setDraft((d) => ({ ...d, [key]: value }))
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>GA4データ閲覧</h1>
-                    {currentProduct && (
-                        <div className={styles.infoBox}>
-                            <p className={styles.infoText}>
-                                <strong>現在のプロダクト:</strong> {currentProduct.name}
-                                {currentProduct.domain && ` (${currentProduct.domain})`}
-                            </p>
-                        </div>
-                    )}
+        <PageShell
+            pageId="data"
+            requireProduct
+            width="wide"
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            keepChildrenWhileLoading
+            controls={
+                <div className={ui.card}>
+                    <FilterBar onSubmit={() => { setApplied(draft); setTableSearch('') }} submitLabel="条件を適用" submitting={report.loading} disabled={!range}>
+                        <FilterField label="期間" hint="期間の変更は即時に反映">
+                            <PeriodSelect state={periodState} />
+                        </FilterField>
+                        <FilterField label="メトリクス（カンマ区切り）">
+                            <input type="text" className={cx(ui.input, styles.wideInput)} value={draft.metrics} onChange={(e) => update('metrics', e.target.value)} placeholder="eventCount,totalUsers" required />
+                        </FilterField>
+                        <FilterField label="ディメンション（カンマ区切り）">
+                            <input type="text" className={cx(ui.input, styles.wideInput)} value={draft.dimensions} onChange={(e) => update('dimensions', e.target.value)} placeholder="customEvent:click_label,customEvent:view_label" required />
+                        </FilterField>
+                        <FilterField label="フィルタ" hint="式が空ならフィルタなし。カンマ区切りで OR">
+                            <input type="text" className={cx(ui.input, styles.dimInput)} value={draft.filterDimension} onChange={(e) => update('filterDimension', e.target.value)} placeholder="pagePath" aria-label="フィルタ ディメンション" />
+                            <select className={ui.select} value={draft.filterOperator} onChange={(e) => update('filterOperator', e.target.value)} aria-label="フィルタ 演算子">
+                                {GA4_FILTER_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+                            </select>
+                            <input type="text" className={cx(ui.input, styles.exprInput)} value={draft.filterExpression} onChange={(e) => update('filterExpression', e.target.value)} placeholder="/members/signup" aria-label="フィルタ 式" />
+                        </FilterField>
+                        <FilterField label="上限件数">
+                            <input type="number" className={cx(ui.input, styles.limitInput)} value={draft.limit} min={1} max={100000} onChange={(e) => update('limit', parseInt(e.target.value, 10) || 1)} />
+                        </FilterField>
+                    </FilterBar>
                 </div>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>検索条件</h2>
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.formGrid}>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>開始日</label>
-                                                            <DateInput
-                                                            value={config.startDate}
-                                onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
-                                className={styles.formInput}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>終了日</label>
-                                                            <DateInput
-                                                            value={config.endDate}
-                                onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
-                                className={styles.formInput}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>メトリクス（カンマ区切り）</label>
-                            <input
-                                type="text"
-                                value={config.metrics}
-                                onChange={(e) => setConfig({ ...config, metrics: e.target.value })}
-                                placeholder="eventCount,totalUsers"
-                                className={styles.formInput}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>ディメンション（カンマ区切り）</label>
-                            <input
-                                type="text"
-                                value={config.dimensions}
-                                onChange={(e) => setConfig({ ...config, dimensions: e.target.value })}
-                                placeholder="customEvent:click_label,customEvent:view_label"
-                                className={styles.formInput}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>フィルタ ディメンション</label>
-                            <input
-                                type="text"
-                                value={config.filterDimension}
-                                onChange={(e) => setConfig({ ...config, filterDimension: e.target.value })}
-                                placeholder="pagePath"
-                                className={styles.formInput}
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>フィルタ 演算子</label>
-                            <CustomSelect
-                                value={config.filterOperator}
-                                onChange={(v) => setConfig({ ...config, filterOperator: v })}
-                                options={GA4_FILTER_OPERATORS.map((op) => ({ value: op.value, label: op.label }))}
-                                triggerClassName={styles.formSelect}
-                                aria-label="フィルタ 演算子"
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>フィルタ 式</label>
-                            <input
-                                type="text"
-                                value={config.filterExpression}
-                                onChange={(e) => setConfig({ ...config, filterExpression: e.target.value })}
-                                placeholder="/members/signup"
-                                className={styles.formInput}
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>上限件数</label>
-                            <input
-                                type="number"
-                                value={config.limit}
-                                onChange={(e) => setConfig({ ...config, limit: parseInt(e.target.value, 10) })}
-                                className={styles.formInput}
-                                min="1"
-                                max="100000"
-                            />
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`executionButton ${loading ? styles.submitButtonDisabled : ''}`}
-                        aria-label={loading ? 'データ取得中' : 'データを取得'}
-                    >
-                        <span>{loading ? 'データ取得中...' : 'データを取得'}</span>
-                    </button>
-                </form>
-            </div>
-
-            {error && (
-                <div className={styles.errorBox}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
-                </div>
-            )}
-
+            }
+        >
             {data && (
-                <div className={styles.dataSection}>
+                <div className={ui.card}>
                     <div className={styles.dataHeader}>
-                        <h2 className={styles.dataTitle}>データ一覧</h2>
+                        <h2 className={ui.sectionTitle}>データ一覧</h2>
                         <div className={styles.dataHeaderRight}>
-                            <div className={styles.viewModeTabs}>
-                                <button
-                                    onClick={() => setViewMode('all')}
-                                    className={`${styles.viewModeButton} ${viewMode === 'all' ? styles.viewModeButtonActive : ''}`}
-                                >
-                                    すべて
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('view')}
-                                    className={`${styles.viewModeButton} ${viewMode === 'view' ? styles.viewModeButtonActive : ''}`}
-                                >
-                                    Viewのみ
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('click')}
-                                    className={`${styles.viewModeButton} ${viewMode === 'click' ? styles.viewModeButtonActive : ''}`}
-                                >
-                                    Clickのみ
-                                </button>
-                            </div>
-                            <input
-                                type="text"
-                                value={tableSearch}
-                                onChange={(e) => setTableSearch(e.target.value)}
-                                placeholder="値で絞り込み"
-                                className={styles.searchInput}
-                            />
-                            <p className={styles.dataCount}>
-                                表示: {filteredData.rowCount || 0} / 全 {data.rowCount || 0} 件
-                            </p>
+                            {hasLabelColumns && (
+                                <div className={styles.viewModeTabs} role="tablist">
+                                    {([['all', 'すべて'], ['view', 'Viewのみ'], ['click', 'Clickのみ']] as const).map(([mode, label]) => (
+                                        <button key={mode} type="button" role="tab" aria-selected={viewMode === mode}
+                                            className={cx(styles.viewModeButton, viewMode === mode && styles.viewModeButtonActive)}
+                                            onClick={() => setViewMode(mode)}>
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <input type="search" className={cx(ui.input, styles.searchInput)} value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="値で絞り込み" aria-label="値で絞り込み" />
+                            <span className={ui.note}>表示: {filteredRows.length.toLocaleString()} / 全 {(data.rowCount || 0).toLocaleString()} 件</span>
                         </div>
                     </div>
-                    <div className={styles.tableWrapper}>
-                        <table className={styles.table}>
-                            <thead className={styles.tableHead}>
-                                <tr>
-                                    {displayColumns.map((column) => (
-                                        <th
-                                            key={column}
-                                            className={styles.tableHeaderCell}
-                                        >
-                                            {column}
-                                        </th>
-                                    ))}
-                                </tr>
+                    <div className={ui.tableWrap}>
+                        <table className={ui.dataTable}>
+                            <thead>
+                                <tr>{displayColumns.map((c) => <th key={c}>{c}</th>)}</tr>
                             </thead>
-                            <tbody className={styles.tableBody}>
-                                {filteredData.rows && filteredData.rows.length > 0 ? (
-                                    filteredData.rows.map((row: any, index: number) => (
-                                        <tr key={index} className={styles.tableRow}>
-                                            {displayColumns.map((column) => (
-                                                <td
-                                                    key={column}
-                                                    className={styles.tableCell}
-                                                >
-                                                    {row[column] || '-'}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={displayColumns.length}
-                                            className={`${styles.tableCell} ${styles.tableCellCenter}`}
-                                        >
-                                            データがありません
-                                        </td>
+                            <tbody>
+                                {filteredRows.length > 0 ? filteredRows.map((row, i) => (
+                                    <tr key={i}>
+                                        {displayColumns.map((c) => <td key={c} className={cx(styles.cell, data.metricHeaders.some((h) => h.name === c) && ui.num)}>{row[c] || '-'}</td>)}
                                     </tr>
+                                )) : (
+                                    <tr><td colSpan={displayColumns.length || 1} className={ui.empty}>データがありません</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
                 </div>
             )}
-        </div>
+        </PageShell>
     )
 }

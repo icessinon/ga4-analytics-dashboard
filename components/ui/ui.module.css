@@ -78,6 +78,7 @@
     color: var(--text-muted);
 }
 
+.input,
 .select {
     background-color: var(--bg-surface);
     background-image: var(--control-gradient);
@@ -87,6 +88,20 @@
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
     box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+.input {
+    min-width: 12rem;
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+}
+
+.input:focus,
+.select:focus {
+    outline: none;
+    border-color: var(--border-strong);
 }
 
 /* ── 面 ── */

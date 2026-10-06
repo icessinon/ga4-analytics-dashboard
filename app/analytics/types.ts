@@ -1,3 +1,13 @@
+/** GA4 分析（レポートビルダー）のフォーム状態。API に送るときは labels をカンマ区切り → 配列に変換する */
+
+export interface CvrFormConfig {
+    denominatorDimension: string
+    denominatorLabels: string
+    numeratorDimension: string
+    numeratorLabels: string
+    metric: string
+}
+
 export interface ReportConfig {
     reportName: string
     propertyId: string
@@ -10,34 +20,10 @@ export interface ReportConfig {
     filterExpression: string
     orderBy: string
     limit: number
-    cvrA: {
-        denominatorDimension: string
-        denominatorLabels: string
-        numeratorDimension: string
-        numeratorLabels: string
-        metric: string
-    }
-    cvrB: {
-        denominatorDimension: string
-        denominatorLabels: string
-        numeratorDimension: string
-        numeratorLabels: string
-        metric: string
-    }
-    cvrC: {
-        denominatorDimension: string
-        denominatorLabels: string
-        numeratorDimension: string
-        numeratorLabels: string
-        metric: string
-    }
-    cvrD: {
-        denominatorDimension: string
-        denominatorLabels: string
-        numeratorDimension: string
-        numeratorLabels: string
-        metric: string
-    }
+    cvrA: CvrFormConfig
+    cvrB: CvrFormConfig
+    cvrC: CvrFormConfig
+    cvrD: CvrFormConfig
     showCvrC: boolean
     showCvrD: boolean
     abTestStartDate: string
@@ -52,4 +38,21 @@ export interface ReportConfig {
     geminiConfig: {
         enabled: boolean
     }
+}
+
+/** POST /api/analytics/report の結果のうち画面が使う部分 */
+export interface ReportResult {
+    executionId?: number
+    reportId?: number
+    cvrResults?: Partial<Record<'dataA' | 'dataB' | 'dataC' | 'dataD', { pv: number; cv: number; cvr: number }>>
+    abTestEvaluation?: {
+        recommendation: string
+        aiEvaluation?: string
+        checks: {
+            significance: { value: number; passed: boolean }
+            sampleSize: { passed: boolean }
+            period: { days: number; passed: boolean }
+            improvement: { passed: boolean }
+        }
+    } | null
 }

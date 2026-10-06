@@ -1,53 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getGA4AccessToken } from '@/lib/api/ga4/client'
+import { HttpError, errorResponse } from '@/lib/http/errorResponse'
+import { fetchGa4Metadata } from '@/lib/services/ga4Catalog/metadataService'
 
-/**
- * GA4メタデータAPIエンドポイント
- * プロダクトのGA4プロパティから利用可能なメトリクスとディメンションを取得
- */
+/** プロパティで使えるメトリクス・ディメンション一覧（GA4 メタデータページ） */
 export async function GET(request: Request) {
     try {
-        const { searchParams } = new URL(request.url)
-        const propertyId = searchParams.get('propertyId')
-
-        if (!propertyId) {
-            return NextResponse.json(
-                { error: 'propertyId is required' },
-                { status: 400 }
-            )
-        }
-
-        const accessToken = await getGA4AccessToken()
-
-        const metadataResponse = await fetch(
-            `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}/metadata`,
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            }
-        )
-
-        if (!metadataResponse.ok) {
-            const error = await metadataResponse.json()
-            throw new Error(`GA4 Metadata API Error: ${error.error?.message || metadataResponse.statusText}`)
-        }
-
-        const metadata = await metadataResponse.json()
-
-        return NextResponse.json({
-            metrics: metadata.metrics || [],
-            dimensions: metadata.dimensions || [],
-        })
+        const propertyId = new URL(request.url).searchParams.get('propertyId')
+        if (!propertyId) throw new HttpError(400, 'propertyId is required')
+        const metadata = await fetchGa4Metadata(propertyId, await getGA4AccessToken())
+        return NextResponse.json(metadata)
     } catch (error) {
-        console.error('GA4 Metadata API Error:', error)
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        return NextResponse.json(
-            {
-                error: 'Failed to fetch GA4 metadata',
-                message: errorMessage,
-            },
-            { status: 500 }
-        )
+        return errorResponse(error, 'Failed to fetch GA4 metadata', 'GA4 Metadata API Error', { withMessage: true })
     }
 }

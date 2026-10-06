@@ -775,13 +775,14 @@ export const PAGES: Record<PageId, PageDef> = {
         productScoped: true,
         tags: ['rawdata'],
         doc: {
-            description: 'GA4 のデータをレポートテンプレートに基づいて集計します。セッション・PV・CVR・エンゲージメント率・直帰率などを表示します。',
+            description: 'GA4 Data API に投げる metrics / dimensions / filter を自由に指定してレポートを生成するビルダー。view ラベル（分母）と click ラベル（分子）から CVR を最大 4 パターン計算し、2 パターン以上あれば AB テストの勝敗判定（任意で Gemini の講評）も行う。実行結果はレポート名ごとに保存され、実行履歴から「同じ条件で再実行」できる。',
             capabilities: [
-                'テンプレート別のGA4レポート集計',
-                'A/B テストとのデータ連動',
-                'エクスポート対応',
+                'metrics / dimensions / filter の自由指定（ラベルは * ワイルドカード可）',
+                'CVR A〜D の計算（分母・分子ディメンションとラベルを指定）',
+                'AB テスト勝敗判定（有意差・最低 PV・期間・改善率・差分）と Gemini 講評',
+                'レポート名ごとの条件保存と実行履歴への記録',
             ],
-            apiRoute: 'GET /api/analytics/report',
+            apiRoute: 'POST /api/analytics/report',
         },
     },
     data: {
@@ -794,10 +795,11 @@ export const PAGES: Record<PageId, PageDef> = {
         doc: {
             description: 'GA4 Data API の生データを、ディメンション・メトリクス・期間を指定してテーブルで閲覧する。レポートビルダーより手軽に「この軸でこの数字はいくつか」を確認する用途。',
             capabilities: [
-                'ディメンション・メトリクス・期間の指定',
-                '結果テーブルの表示',
+                'ディメンション・メトリクス・期間・フィルタ・上限件数の指定（期間変更は即時反映）',
+                '結果テーブルの表示（view / click ラベル列だけの表示切替、値での絞り込み）',
             ],
             metrics: ['任意（GA4メタデータ参照）'],
+            apiRoute: 'POST /api/analytics/data',
         },
     },
     ga4Metadata: {
@@ -810,10 +812,11 @@ export const PAGES: Record<PageId, PageDef> = {
         doc: {
             description: '接続中の GA4 プロパティで利用できるメトリクスとディメンションの一覧。カスタムディメンション（click_label 等）が登録されているかの確認にも使う。',
             capabilities: [
-                'メトリクス一覧（検索つき）',
-                'ディメンション一覧（検索つき・カスタム含む）',
+                'メトリクス一覧（カテゴリ・キーワードで絞り込み）',
+                'ディメンション一覧（カスタムディメンション含む）',
                 '日本語訳の注記',
             ],
+            apiRoute: 'GET /api/ga4/metadata',
         },
     },
     history: {
