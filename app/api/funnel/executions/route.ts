@@ -14,7 +14,7 @@ export async function GET(request: Request) {
         const limit = parseInt(searchParams.get('limit') || '10', 10)
         const skip = (page - 1) * limit
 
-        let whereClause: any = {}
+        const whereClause: any = {}
         if (productId) {
             whereClause.productId = parseInt(productId, 10)
         }

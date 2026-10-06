@@ -13,7 +13,7 @@ import { GA4_CVR_DIMENSIONS, GA4_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS,
 import styles from './AbTestFormModal.module.css'
 import type { AbTestFormModalProps } from './types'
 
-interface Props extends AbTestFormModalProps {}
+type Props = AbTestFormModalProps
 
 interface FunnelStepForm {
     stepName: string
