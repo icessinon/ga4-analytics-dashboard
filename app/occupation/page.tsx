@@ -1,24 +1,18 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages'
 import AISpinner from '@/components/AISpinner'
-import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
-import { withCustomOption, PeriodOption } from '@/lib/utils/period'
-import { parseJsonResponse } from '@/lib/utils/fetch'
-import type { OccupationResponse, OccupationRow } from '@/lib/services/cv/occupationTypes'
+import PageShell from '@/components/PageShell'
+import PeriodSelect from '@/components/PeriodSelect'
+import Alert from '@/components/Alert'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { fetchJson } from '@/lib/utils/fetch'
+import { type PeriodOption } from '@/lib/utils/period'
+import type { OccupationDetailResponse, OccupationResponse, OccupationRow } from '@/lib/services/cv/occupationTypes'
 import styles from './OccupationPage.module.css'
-
-interface OccupationDetail {
-    slug: string
-    totalSessions: number
-    listTopSessions: number
-    prefectureSessions: number
-    jobDetailAndOtherSessions: number
-    subCategories: Array<{ segment: string; path: string; sessions: number }>
-}
 
 const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
@@ -33,58 +27,40 @@ function renderAiLine(line: string, i: number) {
     return <p key={i} className={styles.aiLine} dangerouslySetInnerHTML={{ __html: bold }} />
 }
 
+type DetailState = OccupationDetailResponse | 'loading' | 'error'
+
 export default function OccupationPage() {
     const { currentProduct } = useProduct()
     const periodState = usePeriodRange('30daysAgo')
     const { range } = periodState
-    const [data, setData] = useState<OccupationResponse | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+
+    const report = useReport<OccupationResponse>('/api/occupation', {
+        body: { propertyId: currentProduct?.ga4PropertyId, startDate: range?.startDate, endDate: range?.endDate },
+        enabled: !!currentProduct?.ga4PropertyId && !!range,
+    })
+    const data = report.data
+
     const [analysis, setAnalysis] = useState<string | null>(null)
     const [aiLoading, setAiLoading] = useState(false)
     const [aiError, setAiError] = useState<string | null>(null)
     const [expandedOcc, setExpandedOcc] = useState<string | null>(null)
-    const [details, setDetails] = useState<Record<string, OccupationDetail | 'loading' | 'error'>>({})
+    const [details, setDetails] = useState<Record<string, DetailState>>({})
 
-    const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId || !range) return
-        setLoading(true)
-        setError(null)
+    // 期間が変わったら AI 考察と展開中の内訳は捨てる
+    useEffect(() => {
         setAnalysis(null)
         setAiError(null)
         setExpandedOcc(null)
         setDetails({})
-        try {
-            const res = await fetch('/api/occupation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    startDate: range.startDate,
-                    endDate: range.endDate,
-                }),
-            })
-            const json = await parseJsonResponse<OccupationResponse & { error?: string }>(res)
-            if (!res.ok) throw new Error(json.error || '取得に失敗しました')
-            setData(json)
-        } catch (e) {
-            setError(e instanceof Error ? e.message : '取得に失敗しました')
-            setData(null)
-        } finally {
-            setLoading(false)
-        }
-    }, [currentProduct?.ga4PropertyId, range])
-
-    useEffect(() => { load() }, [load])
+    }, [report.data])
 
     async function handleAnalyze() {
         if (!data || aiLoading) return
         setAiLoading(true)
         setAiError(null)
         try {
-            const res = await fetch('/api/occupation/gemini', {
+            const json = await fetchJson<{ analysis?: string }>('/api/occupation/gemini', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     occupations: data.occupations,
                     lpApplies: data.lpApplies,
@@ -96,8 +72,7 @@ export default function OccupationPage() {
                     productId: currentProduct?.id,
                 }),
             })
-            const json = await parseJsonResponse<{ analysis?: string; error?: string }>(res)
-            if (!res.ok || !json.analysis) throw new Error(json.error || 'AI分析に失敗しました')
+            if (!json.analysis) throw new Error('AI分析に失敗しました')
             setAnalysis(json.analysis)
         } catch (e) {
             setAiError(e instanceof Error ? e.message : 'AI分析に失敗しました')
@@ -116,18 +91,10 @@ export default function OccupationPage() {
         if (details[o.occ]) return
         setDetails((prev) => ({ ...prev, [o.occ]: 'loading' }))
         try {
-            const res = await fetch('/api/occupation/detail', {
+            const json = await fetchJson<OccupationDetailResponse>('/api/occupation/detail', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    slug: o.slug,
-                    startDate: range.startDate,
-                    endDate: range.endDate,
-                }),
+                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, slug: o.slug, startDate: range.startDate, endDate: range.endDate }),
             })
-            const json = await parseJsonResponse<OccupationDetail & { error?: string }>(res)
-            if (!res.ok) throw new Error(json.error || '取得に失敗しました')
             setDetails((prev) => ({ ...prev, [o.occ]: json }))
         } catch {
             setDetails((prev) => ({ ...prev, [o.occ]: 'error' }))
@@ -137,77 +104,54 @@ export default function OccupationPage() {
     const maxSignupCv = Math.max(1, ...(data?.occupations.map((o) => o.signupCv) ?? [1]))
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>職種別CV分析</h1>
-                    <p className={styles.subtitle}>
-                        会員登録フォームの職種パラメータ（occ）別の登録CVと、職種ページ配下のセッションから、職種ごとの獲得状況を比較します。
-                    </p>
-                </div>
-                <BackLink href="/">ダッシュボード</BackLink>
-            </div>
-
-            {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
+        <PageShell
+            pageId="occupation"
+            requireProduct
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            controls={<PeriodSelect state={periodState} options={PERIOD_OPTIONS} resolved={data} />}
+        >
             {currentProduct && !currentProduct.ga4PropertyId && (
-                <div className={styles.notice}>このプロダクトには GA4 プロパティが設定されていません</div>
+                <Alert tone="warn">このプロダクトには GA4 プロパティが設定されていません</Alert>
             )}
 
-            <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析' }, { href: '/insights', label: '月次インサイト' }, { href: '/funnel/path', label: '経路ファネルビルダー' }]} />
-
-            <div className={styles.controls}>
-                <PeriodSelect
-                    state={periodState}
-                    options={withCustomOption(PERIOD_OPTIONS)}
-                    selectClassName={styles.select}
-                    noteClassName={styles.periodNote}
-                    resolved={data}
-                />
-            </div>
-
-            {loading && <p className={styles.loading}>読み込み中...</p>}
-            {error && <div className={styles.error}>{error}</div>}
-
-            {data && !loading && (
+            {data && (
                 <>
-                    <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>全体（サイト全体）</h2>
-                        <div className={styles.summaryRow}>
-                            <div className={styles.summaryCard}>
-                                <span className={styles.summaryLabel}>サイト全体セッション</span>
-                                <span className={styles.summaryValue}>{data.totalSessions.toLocaleString()}</span>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>全体（サイト全体）</h2>
+                        <div className={ui.summaryRow}>
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>サイト全体セッション</span>
+                                <span className={ui.summaryValue}>{data.totalSessions.toLocaleString()}</span>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <span className={styles.summaryLabel}>会員登録CV合計</span>
-                                <span className={styles.summaryValue}>{data.totalSignupCv.toLocaleString()}</span>
-                                <span className={styles.summaryHint}>うち職種指定なし {data.noOccSignupCv.toLocaleString()}</span>
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>会員登録CV合計</span>
+                                <span className={ui.summaryValue}>{data.totalSignupCv.toLocaleString()}</span>
+                                <span className={ui.summaryHint}>うち職種指定なし {data.noOccSignupCv.toLocaleString()}</span>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <span className={styles.summaryLabel}>全体登録率</span>
-                                <span className={styles.summaryValue}>
-                                    {data.overallSignupRate != null ? `${(data.overallSignupRate * 100).toFixed(2)}%` : '－'}
-                                </span>
-                                <span className={styles.summaryHint}>会員登録CV合計 ÷ サイト全体セッション</span>
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>全体登録率</span>
+                                <span className={ui.summaryValue}>{data.overallSignupRate != null ? `${(data.overallSignupRate * 100).toFixed(2)}%` : '－'}</span>
+                                <span className={ui.summaryHint}>会員登録CV合計 ÷ サイト全体セッション</span>
                             </div>
-                            <div className={styles.summaryCard}>
-                                <span className={styles.summaryLabel}>LP応募CV合計</span>
-                                <span className={styles.summaryValue}>{data.totalLpApplyCv.toLocaleString()}</span>
-                                <span className={styles.summaryHint}>事業領域別LP経由</span>
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>LP応募CV合計</span>
+                                <span className={ui.summaryValue}>{data.totalLpApplyCv.toLocaleString()}</span>
+                                <span className={ui.summaryHint}>事業領域別LP経由</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>職種別内訳</h2>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>職種別内訳</h2>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>職種</th>
-                                        <th className={styles.num}>会員登録CV</th>
+                                        <th className={ui.num}>会員登録CV</th>
                                         <th className={styles.barCol}></th>
-                                        <th className={styles.num}>職種配下セッション</th>
-                                        <th className={styles.num}>登録率</th>
+                                        <th className={ui.num}>職種配下セッション</th>
+                                        <th className={ui.num}>登録率</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -216,27 +160,22 @@ export default function OccupationPage() {
                                         const expanded = expandedOcc === o.occ
                                         return (
                                             <Fragment key={o.occ}>
-                                                <tr
-                                                    className={o.slug ? styles.expandableRow : undefined}
-                                                    onClick={() => toggleDetail(o)}
-                                                >
+                                                <tr className={o.slug ? styles.expandableRow : undefined} onClick={() => toggleDetail(o)}>
                                                     <td>
                                                         {o.slug && <span className={styles.expandIcon}>{expanded ? '▾' : '▸'}</span>}
                                                         {o.label}<span className={styles.occKey}>{o.occ}</span>
                                                         {o.slug && <span className={styles.slugKey}>/{o.slug} 配下</span>}
                                                     </td>
-                                                    <td className={styles.num}>{o.signupCv.toLocaleString()}</td>
-                                                    <td className={styles.barCol}>
-                                                        <div className={styles.bar} style={{ width: `${(o.signupCv / maxSignupCv) * 100}%` }} />
-                                                    </td>
-                                                    <td className={styles.num}>{o.sessions != null ? o.sessions.toLocaleString() : '－'}</td>
-                                                    <td className={styles.num}>{o.signupRate != null ? `${(o.signupRate * 100).toFixed(2)}%` : '－'}</td>
+                                                    <td className={ui.num}>{o.signupCv.toLocaleString()}</td>
+                                                    <td className={styles.barCol}><div className={styles.bar} style={{ width: `${(o.signupCv / maxSignupCv) * 100}%` }} /></td>
+                                                    <td className={ui.num}>{o.sessions != null ? o.sessions.toLocaleString() : '－'}</td>
+                                                    <td className={ui.num}>{o.signupRate != null ? `${(o.signupRate * 100).toFixed(2)}%` : '－'}</td>
                                                 </tr>
                                                 {expanded && (
                                                     <tr className={styles.detailRow}>
                                                         <td colSpan={5}>
-                                                            {detail === 'loading' && <p className={styles.detailLoading}>内訳を読み込み中...</p>}
-                                                            {detail === 'error' && <p className={styles.detailError}>内訳の取得に失敗しました</p>}
+                                                            {detail === 'loading' && <p className={ui.note}>内訳を読み込み中...</p>}
+                                                            {detail === 'error' && <Alert tone="error">内訳の取得に失敗しました</Alert>}
                                                             {detail && detail !== 'loading' && detail !== 'error' && (
                                                                 <div className={styles.detailBox}>
                                                                     <div className={styles.detailSummary}>
@@ -245,30 +184,28 @@ export default function OccupationPage() {
                                                                         <span>求人詳細・その他計: {detail.jobDetailAndOtherSessions.toLocaleString()}</span>
                                                                     </div>
                                                                     {detail.subCategories.length > 0 ? (
-                                                                        <table className={styles.detailTable}>
+                                                                        <table className={cx(ui.dataTable, styles.detailTable)}>
                                                                             <thead>
                                                                                 <tr>
                                                                                     <th>サブカテゴリ</th>
-                                                                                    <th className={styles.num}>セッション</th>
-                                                                                    <th className={styles.num}>職種内構成比</th>
+                                                                                    <th className={ui.num}>セッション</th>
+                                                                                    <th className={ui.num}>職種内構成比</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
                                                                                 {detail.subCategories.map((s) => (
                                                                                     <tr key={s.segment}>
-                                                                                        <td><span className={styles.slugKey}>{s.path}</span></td>
-                                                                                        <td className={styles.num}>{s.sessions.toLocaleString()}</td>
-                                                                                        <td className={styles.num}>
-                                                                                            {detail.totalSessions > 0 ? `${((s.sessions / detail.totalSessions) * 100).toFixed(1)}%` : '－'}
-                                                                                        </td>
+                                                                                        <td><code className={styles.pathCode}>{s.path}</code></td>
+                                                                                        <td className={ui.num}>{s.sessions.toLocaleString()}</td>
+                                                                                        <td className={ui.num}>{detail.totalSessions > 0 ? `${((s.sessions / detail.totalSessions) * 100).toFixed(1)}%` : '－'}</td>
                                                                                     </tr>
                                                                                 ))}
                                                                             </tbody>
                                                                         </table>
                                                                     ) : (
-                                                                        <p className={styles.detailLoading}>サブカテゴリページがありません</p>
+                                                                        <p className={ui.note}>サブカテゴリページがありません</p>
                                                                     )}
-                                                                    <p className={styles.detailNote}>
+                                                                    <p className={ui.tableNote}>
                                                                         ※ サブカテゴリのセッションは一覧・検索ページのみで、求人詳細（media_）ページは「求人詳細・その他計」にまとめています。<br />
                                                                         ※ セッションのみの内訳です。会員登録CV（occ）は職種単位でしか計測されないため、サブカテゴリ別CVは表示できません。
                                                                     </p>
@@ -283,7 +220,7 @@ export default function OccupationPage() {
                                 </tbody>
                             </table>
                         </div>
-                        <p className={styles.tableNote}>
+                        <p className={ui.tableNote}>
                             登録率 = 会員登録CV ÷ 職種配下セッション。各行の対象URL範囲は職種名の下に表示しています（例: ドライバー = /driver 配下すべて）。<br />
                             ※ タクシー・バスは /driver 配下のサブカテゴリのため、セッションはドライバーと重複計上されます。<br />
                             ※ CVは登録フォームで選択された職種（occ）、セッションは対象URL配下ページの閲覧で、母集団は完全には一致しません（例:
@@ -291,25 +228,23 @@ export default function OccupationPage() {
                         </p>
                     </div>
 
-                    <div className={styles.card}>
-                        <h2 className={styles.sectionTitle}>事業領域別 LP応募CV</h2>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>事業領域別 LP応募CV</h2>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>事業領域</th>
-                                        <th className={styles.num}>LP応募CV</th>
-                                        <th className={styles.num}>構成比</th>
+                                        <th className={ui.num}>LP応募CV</th>
+                                        <th className={ui.num}>構成比</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data.lpApplies.map((l) => (
                                         <tr key={l.slug}>
                                             <td>{l.label}</td>
-                                            <td className={styles.num}>{l.cv.toLocaleString()}</td>
-                                            <td className={styles.num}>
-                                                {data.totalLpApplyCv > 0 ? `${((l.cv / data.totalLpApplyCv) * 100).toFixed(1)}%` : '－'}
-                                            </td>
+                                            <td className={ui.num}>{l.cv.toLocaleString()}</td>
+                                            <td className={ui.num}>{data.totalLpApplyCv > 0 ? `${((l.cv / data.totalLpApplyCv) * 100).toFixed(1)}%` : '－'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -317,23 +252,18 @@ export default function OccupationPage() {
                         </div>
                     </div>
 
-                    <div className={styles.card}>
+                    <div className={ui.card}>
                         <div className={styles.aiHeader}>
-                            <h2 className={styles.sectionTitle}>AI考察</h2>
-                            <button className={styles.aiButton} onClick={handleAnalyze} disabled={aiLoading}>
-                                {aiLoading ? '分析中...' : 'AIで分析する'}
+                            <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>AI考察</h2>
+                            <button type="button" className={ui.btnPrimary} onClick={handleAnalyze} disabled={aiLoading}>
+                                {aiLoading ? <span className={ui.inlineLoading}><AISpinner /> 分析中...</span> : 'AIで分析する'}
                             </button>
                         </div>
-                        {aiLoading && <p className={styles.aiLoadingText}><AISpinner /> 職種別の傾向を分析中...</p>}
-                        {aiError && <div className={styles.error}>{aiError}</div>}
-                        {analysis && (
-                            <div className={styles.aiResult}>
-                                {analysis.split('\n').map(renderAiLine)}
-                            </div>
-                        )}
+                        {aiError && <Alert tone="error">{aiError}</Alert>}
+                        {analysis && <div className={ui.aiResult}>{analysis.split('\n').map(renderAiLine)}</div>}
                     </div>
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }

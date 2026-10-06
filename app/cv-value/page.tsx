@@ -1,28 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { type CSSProperties } from 'react'
+import Link from 'next/link'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages'
-import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
-import { withCustomOption, PeriodOption } from '@/lib/utils/period'
-import { parseJsonResponse } from '@/lib/utils/fetch'
+import PageShell from '@/components/PageShell'
+import PeriodSelect from '@/components/PeriodSelect'
+import LoadState from '@/components/LoadState'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { type PeriodOption } from '@/lib/utils/period'
+import { JOB_TYPE_COLORS } from '@/lib/services/cv/jobTypeLabels'
 import type { CvTypesResponse } from '@/lib/services/cv/cvTypesTypes'
-import {
-    CV_UNIT_VALUE_ASOF,
-    CV_UNIT_VALUE_YEN,
-    CV_UNIT_DERIVATIONS,
-    cvValueYen,
-    formatYenApprox,
-} from '@/lib/constants/cvUnitValue'
+import type { ApplicationsActualResponse } from '@/lib/services/cv/applicationsActualTypes'
+import { CV_UNIT_VALUE_ASOF, CV_UNIT_VALUE_YEN, CV_UNIT_DERIVATIONS, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './CvValuePage.module.css'
-
-interface ActualTypeRow { label: string; total: number }
-interface ActualResponse {
-    types: ActualTypeRow[]
-    grandTotal: number
-    signup: { standalone: number | null }
-}
 
 const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '7daysAgo', label: '過去7日' },
@@ -31,18 +23,9 @@ const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '90daysAgo', label: '過去90日' },
 ]
 
-const TYPE_COLORS: Record<string, string> = {
-    JobR: '#3b82f6',
-    JobH: '#d97706',
-    JobA: '#ef4444',
-    signup: '#16a34a',
-}
+const ACTUAL_LABEL_TO_KEY: Record<string, string> = { 人材紹介: 'JobR', 求人広告: 'JobA', ハローワーク: 'JobH' }
 
-const ACTUAL_LABEL_TO_KEY: Record<string, string> = {
-    '人材紹介': 'JobR',
-    '求人広告': 'JobA',
-    'ハローワーク': 'JobH',
-}
+const accent = (key: string) => ({ '--summary-accent': JOB_TYPE_COLORS[key] } as CSSProperties)
 
 function yen(v: number): string {
     return `¥${Math.round(v).toLocaleString()}`
@@ -52,48 +35,14 @@ export default function CvValuePage() {
     const { currentProduct } = useProduct()
     const periodState = usePeriodRange('30daysAgo')
     const { range } = periodState
-    const [data, setData] = useState<CvTypesResponse | null>(null)
-    const [actual, setActual] = useState<ActualResponse | null>(null)
-    const [actualLoading, setActualLoading] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const body = { propertyId: currentProduct?.ga4PropertyId, startDate: range?.startDate, endDate: range?.endDate }
+    const enabled = !!currentProduct?.ga4PropertyId && !!range
 
-    const load = useCallback(async () => {
-        if (!currentProduct?.ga4PropertyId || !range) return
-        setLoading(true)
-        setError(null)
-        try {
-            const res = await fetch('/api/cv-types', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    startDate: range.startDate,
-                    endDate: range.endDate,
-                }),
-            })
-            const json = await parseJsonResponse<CvTypesResponse & { error?: string }>(res)
-            if (!res.ok) throw new Error(json.error || '取得に失敗しました')
-            setData(json)
-            // DB実数（featured/CRM配信込み）は重いので別リクエスト
-            setActualLoading(true)
-            fetch('/api/applications/actual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: currentProduct.ga4PropertyId, startDate: range.startDate, endDate: range.endDate }),
-            })
-                .then((r) => parseJsonResponse<ActualResponse & { error?: string }>(r).then((j) => { if (r.ok) setActual(j); else setActual(null) }))
-                .catch(() => setActual(null))
-                .finally(() => setActualLoading(false))
-        } catch (e) {
-            setError(e instanceof Error ? e.message : '取得に失敗しました')
-            setData(null)
-        } finally {
-            setLoading(false)
-        }
-    }, [currentProduct?.ga4PropertyId, range])
-
-    useEffect(() => { load() }, [load])
+    const report = useReport<CvTypesResponse>('/api/cv-types', { body, enabled })
+    const data = report.data
+    // DB実数（featured/CRM配信込み）は重いので別リクエスト
+    const actualReport = useReport<ApplicationsActualResponse>('/api/applications/actual', { body, enabled: enabled && !!data })
+    const actual = actualReport.data
 
     // DB実数ベースの期間換算（featured込み・実態に近い）
     const actualRows = actual
@@ -113,30 +62,20 @@ export default function CvValuePage() {
     const signupUnit = CV_UNIT_VALUE_YEN.signup
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>CV単価・お金まわり</h1>
-                    <p className={styles.subtitle}>
-                        応募・会員登録1件の期待売上（Salesforceの入社済受注額から算出した係数）と、期間のCV数を金額換算した早見ページです。
-                        施策の価値比較・優先度判断の共通モノサシとして使います。
-                    </p>
-                </div>
-                <BackLink href="/">ダッシュボード</BackLink>
-            </div>
-
-            {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
-
-            <RelatedPages pages={[{ href: '/cv-types', label: '求人種別CV分析' }, { href: '/signup-funnel', label: '会員登録フォームファネル' }, { href: '/insights', label: '月次インサイトレポート' }]} />
-
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>CV1件あたりの期待売上（{CV_UNIT_VALUE_ASOF} 算出）</h2>
-                <div className={styles.summaryRow}>
+        <PageShell
+            pageId="cvValue"
+            requireProduct
+            status={{ loading: report.loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            keepChildrenWhileLoading
+        >
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>CV1件あたりの期待売上（{CV_UNIT_VALUE_ASOF} 算出）</h2>
+                <div className={ui.summaryRow}>
                     {CV_UNIT_DERIVATIONS.map((d) => (
-                        <div key={d.key} className={styles.summaryCard} style={{ borderTopColor: TYPE_COLORS[d.key] }}>
-                            <span className={styles.summaryLabel}>{d.key === 'signup' ? '会員登録（単独）' : d.label}</span>
-                            <span className={styles.summaryValue}>{yen(d.unitYen)}</span>
-                            <span className={styles.summaryHint}>
+                        <div key={d.key} className={ui.summaryCard} style={accent(d.key)}>
+                            <span className={ui.summaryLabel}>{d.key === 'signup' ? '会員登録（単独）' : d.label}</span>
+                            <span className={ui.summaryValue}>{yen(d.unitYen)}</span>
+                            <span className={ui.summaryHint}>
                                 {d.key === 'signup'
                                     ? `ハロワ応募の約${(d.unitYen / hwUnit).toFixed(1)}倍の価値`
                                     : `会員登録1件 ≒ ${d.label.replace(' 応募', '')}応募${(signupUnit / d.unitYen).toFixed(1)}件分`}
@@ -144,16 +83,16 @@ export default function CvValuePage() {
                         </div>
                     ))}
                 </div>
-                <p className={styles.tableNote}>
+                <p className={ui.tableNote}>
                     ※ 期待売上 = そのCVに紐づくCA活動履歴経由で生まれた入社済の受注額（−返金想定額）÷ CV件数。<strong>成約率 × 平均紹介手数料</strong>に分解できます
                     （例: 会員登録 = 成約率2.3% × 約89万円 ≒ 2.0万円）。<br />
                     ※ 期待値（平均）なので個々のCVに値札がつくわけではありません。「登録を月100件増やす施策 = 月約200万円の売上増と同等」のように<strong>件数×単価で施策同士を比較する</strong>のが正しい使い方です。
-                    受注額ベース（検収・入金ベースではありません）。詳しい読み方は<a href="/docs/glossary" style={{ color: '#3b82f6' }}>用語・ドメイン知識</a>参照。
+                    受注額ベース（検収・入金ベースではありません）。詳しい読み方は<Link href="/docs/glossary" className={styles.inlineLink}>用語・ドメイン知識</Link>参照。
                 </p>
             </div>
 
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>算出ロジックの定義（そのまま共有可）</h2>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>算出ロジックの定義（そのまま共有可）</h2>
                 <div className={styles.formula}>
                     <strong>期待売上</strong> ＝ CV件数 × CV単価（種別ごとの固定係数）<br />
                     <strong>CV単価</strong> ＝ 分子（Salesforce実測の売上）÷ 分母（同コホートのCV件数）
@@ -215,95 +154,86 @@ export default function CvValuePage() {
                 </div>
             </div>
 
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>期間のCVを金額換算</h2>
-                <div className={styles.controls}>
-                    <PeriodSelect
-                        state={periodState}
-                        options={withCustomOption(PERIOD_OPTIONS)}
-                        selectClassName={styles.select}
-                        noteClassName={styles.periodNote}
-                        resolved={data}
-                    />
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>期間のCVを金額換算</h2>
+                <div className={ui.controls}>
+                    <PeriodSelect state={periodState} options={PERIOD_OPTIONS} resolved={data} />
                 </div>
 
-                {loading && <p className={styles.loading}>読み込み中...</p>}
-                {error && <div className={styles.error}>{error}</div>}
-
-                {data && !loading && (
+                {data && (
                     <>
-                        <h3 className={styles.summaryLabel} style={{ marginBottom: '0.5rem' }}>① 応募の全体像ベース（DB実数・featured/CRM配信込み）</h3>
-                        {actualLoading && <p className={styles.loading}>本体DBから集計中...（十数秒かかります）</p>}
-                        {!actualLoading && !actual && <p className={styles.loading}>DB実数を取得できませんでした（下のGA4ベースを参照）</p>}
-                        {actual && !actualLoading && (
-                            <div className={styles.tableWrapper}>
-                                <table className={styles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>CV種別</th>
-                                            <th className={styles.num}>件数</th>
-                                            <th className={styles.num}>単価</th>
-                                            <th className={styles.num}>期待売上換算</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {actualRows.map((r) => (
-                                            <tr key={r.key}>
-                                                <td><span className={styles.typeDot} style={{ background: TYPE_COLORS[r.key] }} />{r.label}</td>
-                                                <td className={styles.num}>{r.count.toLocaleString()}</td>
-                                                <td className={styles.num}>{yen(CV_UNIT_VALUE_YEN[r.key])}</td>
-                                                <td className={`${styles.num} ${styles.yen}`}>{yen(r.value)}</td>
-                                            </tr>
-                                        ))}
-                                        {actualSignup && (
+                        <h3 className={ui.summaryLabel} style={{ marginBottom: '0.5rem' }}>① 応募の全体像ベース（DB実数・featured/CRM配信込み）</h3>
+                        <LoadState variant="inline" loading={actualReport.loading} error={actualReport.error} source="db" loadingText="本体DBから集計中...（十数秒かかります）" onRetry={actualReport.run}>
+                            {actual && (
+                                <div className={ui.tableWrap}>
+                                    <table className={ui.dataTable}>
+                                        <thead>
                                             <tr>
-                                                <td><span className={styles.typeDot} style={{ background: TYPE_COLORS.signup }} />{actualSignup.label}</td>
-                                                <td className={styles.num}>{actualSignup.count.toLocaleString()}</td>
-                                                <td className={styles.num}>{yen(signupUnit)}</td>
-                                                <td className={`${styles.num} ${styles.yen}`}>{yen(actualSignup.value)}</td>
+                                                <th>CV種別</th>
+                                                <th className={ui.num}>件数</th>
+                                                <th className={ui.num}>単価</th>
+                                                <th className={ui.num}>期待売上換算</th>
                                             </tr>
-                                        )}
-                                        <tr className={styles.totalRow}>
-                                            <td>合計</td>
-                                            <td className={styles.num}>－</td>
-                                            <td className={styles.num}>－</td>
-                                            <td className={`${styles.num} ${styles.yen}`}>{yen(actualTotal)}（{formatYenApprox(actualTotal)}）</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                                        </thead>
+                                        <tbody>
+                                            {actualRows.map((r) => (
+                                                <tr key={r.key}>
+                                                    <td><span className={styles.typeDot} style={{ background: JOB_TYPE_COLORS[r.key] }} />{r.label}</td>
+                                                    <td className={ui.num}>{r.count.toLocaleString()}</td>
+                                                    <td className={ui.num}>{yen(CV_UNIT_VALUE_YEN[r.key])}</td>
+                                                    <td className={cx(ui.num, styles.yen)}>{yen(r.value)}</td>
+                                                </tr>
+                                            ))}
+                                            {actualSignup && (
+                                                <tr>
+                                                    <td><span className={styles.typeDot} style={{ background: JOB_TYPE_COLORS.signup }} />{actualSignup.label}</td>
+                                                    <td className={ui.num}>{actualSignup.count.toLocaleString()}</td>
+                                                    <td className={ui.num}>{yen(signupUnit)}</td>
+                                                    <td className={cx(ui.num, styles.yen)}>{yen(actualSignup.value)}</td>
+                                                </tr>
+                                            )}
+                                            <tr className={styles.totalRow}>
+                                                <td>合計</td>
+                                                <td className={ui.num}>－</td>
+                                                <td className={ui.num}>－</td>
+                                                <td className={cx(ui.num, styles.yen)}>{yen(actualTotal)}（{formatYenApprox(actualTotal)}）</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </LoadState>
 
-                        <h3 className={styles.summaryLabel} style={{ margin: '1.25rem 0 0.5rem' }}>② サイト内フォームベース（GA4・自然応募のみ）</h3>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
+                        <h3 className={ui.summaryLabel} style={{ margin: '1.25rem 0 0.5rem' }}>② サイト内フォームベース（GA4・自然応募のみ）</h3>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
                                 <thead>
                                     <tr>
                                         <th>CV種別</th>
-                                        <th className={styles.num}>件数</th>
-                                        <th className={styles.num}>単価</th>
-                                        <th className={styles.num}>期待売上換算</th>
+                                        <th className={ui.num}>件数</th>
+                                        <th className={ui.num}>単価</th>
+                                        <th className={ui.num}>期待売上換算</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {data.jobTypes.map((t) => (
                                         <tr key={t.key}>
-                                            <td><span className={styles.typeDot} style={{ background: TYPE_COLORS[t.key] }} />{t.label}</td>
-                                            <td className={styles.num}>{t.completed.toLocaleString()}</td>
-                                            <td className={styles.num}>{yen(CV_UNIT_VALUE_YEN[t.key])}</td>
-                                            <td className={`${styles.num} ${styles.yen}`}>{yen(cvValueYen(t.key, t.completed) ?? 0)}</td>
+                                            <td><span className={styles.typeDot} style={{ background: JOB_TYPE_COLORS[t.key] }} />{t.label}</td>
+                                            <td className={ui.num}>{t.completed.toLocaleString()}</td>
+                                            <td className={ui.num}>{yen(CV_UNIT_VALUE_YEN[t.key])}</td>
+                                            <td className={cx(ui.num, styles.yen)}>{yen(cvValueYen(t.key, t.completed) ?? 0)}</td>
                                         </tr>
                                     ))}
                                     <tr>
-                                        <td><span className={styles.typeDot} style={{ background: TYPE_COLORS.signup }} />会員登録（完了）</td>
-                                        <td className={styles.num}>{data.signup.completed.toLocaleString()}</td>
-                                        <td className={styles.num}>{yen(signupUnit)}</td>
-                                        <td className={`${styles.num} ${styles.yen}`}>{yen(cvValueYen('signup', data.signup.completed) ?? 0)}</td>
+                                        <td><span className={styles.typeDot} style={{ background: JOB_TYPE_COLORS.signup }} />会員登録（完了）</td>
+                                        <td className={ui.num}>{data.signup.completed.toLocaleString()}</td>
+                                        <td className={ui.num}>{yen(signupUnit)}</td>
+                                        <td className={cx(ui.num, styles.yen)}>{yen(cvValueYen('signup', data.signup.completed) ?? 0)}</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p className={styles.tableNote}>
+                        <p className={ui.tableNote}>
                             ※ ①はDynamoDB実応募（自然 + featured/CRM配信 + CA紹介 + スカウト）で、単価係数の分母（Salesforceの応募イベント）と揃った実態ベース。
                             ②はGA4のサイト内フォーム完了のみで、サイト改善施策のインパクト試算に使いやすい数字です。<br />
                             ※ 会員登録の単価は「応募を伴わない単独登録」の係数。応募と同時の登録は応募側の単価に含まれるため二重計上しません。
@@ -312,45 +242,45 @@ export default function CvValuePage() {
                 )}
             </div>
 
-            <div className={styles.card}>
-                <h2 className={styles.sectionTitle}>単価の算出根拠（Salesforce実測）</h2>
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>単価の算出根拠（Salesforce実測）</h2>
+                <div className={ui.tableWrap}>
+                    <table className={ui.dataTable}>
                         <thead>
                             <tr>
                                 <th>CV種別</th>
                                 <th>コホート（登録日）</th>
-                                <th className={styles.num}>CV件数</th>
-                                <th className={styles.num}>人数</th>
-                                <th className={styles.num}>入社成約</th>
-                                <th className={styles.num}>受注額−返金</th>
-                                <th className={styles.num}>単価</th>
+                                <th className={ui.num}>CV件数</th>
+                                <th className={ui.num}>人数</th>
+                                <th className={ui.num}>入社成約</th>
+                                <th className={ui.num}>受注額−返金</th>
+                                <th className={ui.num}>単価</th>
                                 <th>備考</th>
                             </tr>
                         </thead>
                         <tbody>
                             {CV_UNIT_DERIVATIONS.map((d) => (
                                 <tr key={d.key}>
-                                    <td><span className={styles.typeDot} style={{ background: TYPE_COLORS[d.key] }} />{d.label}</td>
+                                    <td><span className={styles.typeDot} style={{ background: JOB_TYPE_COLORS[d.key] }} />{d.label}</td>
                                     <td>{d.cohort}</td>
-                                    <td className={styles.num}>{d.events.toLocaleString()}</td>
-                                    <td className={styles.num}>{d.uniq.toLocaleString()}</td>
-                                    <td className={styles.num}>{d.hires.toLocaleString()}件（{((d.hires / d.uniq) * 100).toFixed(2)}%/人）</td>
-                                    <td className={styles.num}>{formatYenApprox(d.grossFeeYen - d.refundYen)}</td>
-                                    <td className={`${styles.num} ${styles.yen}`}>{yen(d.unitYen)}</td>
+                                    <td className={ui.num}>{d.events.toLocaleString()}</td>
+                                    <td className={ui.num}>{d.uniq.toLocaleString()}</td>
+                                    <td className={ui.num}>{d.hires.toLocaleString()}件（{((d.hires / d.uniq) * 100).toFixed(2)}%/人）</td>
+                                    <td className={ui.num}>{formatYenApprox(d.grossFeeYen - d.refundYen)}</td>
+                                    <td className={cx(ui.num, styles.yen)}>{yen(d.unitYen)}</td>
                                     <td className={styles.noteCell}>{d.note}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-                <p className={styles.tableNote}>
+                <p className={ui.tableNote}>
                     ※ {CV_UNIT_VALUE_ASOF} にSalesforce（登録履歴 → CA活動履歴 → 紐づくマッチング「7.入社済」の受注額−返金想定額）から算出。
                     登録上限を2025-12に固定し成約リードタイムを確保したコホートです。<br />
                     ※ 参考: 事業全体の平均手数料は約100万円/件（直近12ヶ月・月400〜600件入社・緩やかな上昇傾向）。Web経由コホートの平均が2〜3割低いのは、DRスカウト・エージェント経由など高単価領域が全体に含まれるためで、係数にはWeb経由の実績値を使っています。<br />
                     ※ 市況・成約率・手数料相場が変わるため、<strong>四半期に1回程度の再算出を推奨</strong>します（手順は lib/constants/cvUnitValue.ts のコメント参照）。
                 </p>
             </div>
-        </div>
+        </PageShell>
     )
 }

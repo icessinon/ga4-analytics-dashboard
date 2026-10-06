@@ -30,3 +30,18 @@ export interface OccupationReport {
 }
 
 export type OccupationResponse = OccupationReport & { startDate: string; endDate: string }
+
+/** 職種配下のセッション内訳（/api/occupation/detail） */
+export interface OccupationDetailReport {
+    slug: string
+    totalSessions: number
+    /** /{slug} トップ */
+    listTopSessions: number
+    /** /{slug}/{都道府県} の合計 */
+    prefectureSessions: number
+    /** 求人詳細（media_）と集計上位から漏れたロングテール = 全体 − 分類済み */
+    jobDetailAndOtherSessions: number
+    subCategories: Array<{ segment: string; path: string; sessions: number }>
+}
+
+export type OccupationDetailResponse = OccupationDetailReport & { startDate: string; endDate: string }

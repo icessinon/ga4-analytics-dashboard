@@ -3,6 +3,8 @@
  * cv-types / apply-fields / cv-value / route-funnel が同じ文字列を組み立てるので 1 箇所に置く。
  */
 
+import { CHART_COLORS } from '@/lib/constants/chartColors'
+
 export const JOB_TYPES = [
     { key: 'JobR', label: '人材紹介' },
     { key: 'JobA', label: '求人広告' },
@@ -41,4 +43,12 @@ export function channelKey(group: string): ChannelKey {
     if (group === 'SMS' || group === 'Email' || group === 'Mobile Push Notifications') return 'crm'
     if (group.startsWith('Paid')) return 'paid'
     return 'other'
+}
+
+/** 種別の表示色（グラフ・バッジ・サマリーの上辺で共通）。signup は会員登録 */
+export const JOB_TYPE_COLORS: Record<string, string> = {
+    JobR: CHART_COLORS.blue,
+    JobH: CHART_COLORS.amber,
+    JobA: CHART_COLORS.red,
+    signup: CHART_COLORS.green,
 }

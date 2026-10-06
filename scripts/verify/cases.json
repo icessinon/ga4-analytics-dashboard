@@ -302,5 +302,73 @@
       "startDate": "2026-09-01",
       "endDate": "2026-09-14"
     }
+  },
+  {
+    "name": "occupation-detail",
+    "path": "/api/occupation/detail",
+    "body": {
+      "propertyId": "534098180",
+      "slug": "driver",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "occupation-detail-sub",
+    "path": "/api/occupation/detail",
+    "body": {
+      "propertyId": "534098180",
+      "slug": "driver/taxi",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    }
+  },
+  {
+    "name": "route-funnel",
+    "path": "/api/cv-types/route-funnel",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "applications-actual",
+    "path": "/api/applications/actual",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "insights",
+    "path": "/api/insights",
+    "body": {
+      "propertyId": "534098180",
+      "baseMonth": "2026-09"
+    }
+  },
+  {
+    "name": "insights-aug",
+    "path": "/api/insights",
+    "body": {
+      "propertyId": "534098180",
+      "baseMonth": "2026-08"
+    }
+  },
+  {
+    "name": "trend-monthly",
+    "path": "/api/trend/monthly",
+    "body": {
+      "productId": 7,
+      "month": "2026-09"
+    }
   }
 ]
