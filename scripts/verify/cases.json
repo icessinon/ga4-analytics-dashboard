@@ -678,5 +678,25 @@
     "body": {
       "propertyId": "534098180"
     }
+  },
+  {
+    "name": "signup-step-mails",
+    "path": "/api/signup-step-mails",
+    "body": {
+      "days": 30
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "signup-step-mails-clamp",
+    "path": "/api/signup-step-mails",
+    "body": {
+      "days": 1
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
   }
 ]
