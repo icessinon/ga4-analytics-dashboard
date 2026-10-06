@@ -8,13 +8,14 @@ import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSe
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { CV_UNIT_VALUE_YEN, formatYenApprox } from '@/lib/constants/cvUnitValue'
-import { describeUtm, UTM_CATEGORY_META, UtmCategory } from '@/lib/constants/utmCatalog'
+import { describeUtm, describeUtmContent, isEmptyUtmValue, UTM_CATEGORY_META, UtmCategory } from '@/lib/constants/utmCatalog'
 import styles from './UtmReportPage.module.css'
 
 interface UtmRow {
     source: string
     medium: string
     campaign: string
+    content: string
     sessions: number
     users: number
     applyCv: number
@@ -38,13 +39,31 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 type SortKey = 'category' | 'utm' | 'sessions' | 'users' | 'cv' | 'cvr'
 
 const totalCvOf = (r: UtmRow) => r.applyCv + r.lpApplyCv + r.signupCv
+
 const cvYenOf = (r: UtmRow) =>
     (r.applyCv + r.lpApplyCv) * CV_UNIT_VALUE_YEN.JobR + r.signupCv * CV_UNIT_VALUE_YEN.signup
+
+/** utm_content を畳むとき: source/medium/campaign が同じ行を足し合わせる */
+function mergeByCampaign(rows: UtmRow[]): UtmRow[] {
+    const agg = new Map<string, UtmRow>()
+    for (const r of rows) {
+        const k = [r.source, r.medium, r.campaign].join('\u0001')
+        const cur = agg.get(k)
+        if (!cur) { agg.set(k, { ...r, content: '(not set)' }); continue }
+        cur.sessions += r.sessions
+        cur.users += r.users
+        cur.applyCv += r.applyCv
+        cur.lpApplyCv += r.lpApplyCv
+        cur.signupCv += r.signupCv
+    }
+    return [...agg.values()]
+}
 
 function Badge({ category }: { category: UtmCategory }) {
     const meta = UTM_CATEGORY_META[category]
     return (
-        <span className={styles.badge} style={{ backgroundColor: `${meta.color}22`, color: meta.color }}>
+        <span className={styles.badge} style={{ backgroundColor: `${meta.color}1f` }}>
+            <span className={styles.badgeDot} style={{ backgroundColor: meta.color }} aria-hidden="true" />
             {meta.label}
         </span>
     )
@@ -59,6 +78,7 @@ export default function UtmReportPage() {
     const [error, setError] = useState<string | null>(null)
     const [mediumFilter, setMediumFilter] = useState<string>('all')
     const [query, setQuery] = useState('')
+    const [splitByContent, setSplitByContent] = useState(true)
 
     const load = useCallback(async () => {
         if (!currentProduct?.ga4PropertyId || !range) return
@@ -93,15 +113,18 @@ export default function UtmReportPage() {
 
     const rows = useMemo(() => {
         if (!data) return []
+        const base = splitByContent ? data.rows : mergeByCampaign(data.rows)
         const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
-        return data.rows.filter((r) => {
+        return base.filter((r) => {
             if (mediumFilter !== 'all' && r.medium !== mediumFilter) return false
             if (!terms.length) return true
             const d = describeUtm(r.source, r.medium, r.campaign)
-            const hay = [r.source, r.medium, r.campaign, d.label, d.timing, UTM_CATEGORY_META[d.category].label].join(' ').toLowerCase()
+            const contentNote = describeUtmContent(r.source, r.medium, r.campaign, r.content) ?? ''
+            const hay = [r.source, r.medium, r.campaign, r.content, d.label, d.timing, contentNote, UTM_CATEGORY_META[d.category].label]
+                .join(' ').toLowerCase()
             return terms.every((t) => hay.includes(t))
         })
-    }, [data, mediumFilter, query])
+    }, [data, mediumFilter, query, splitByContent])
 
     const totals = useMemo(() => {
         const sessions = rows.reduce((s, r) => s + r.sessions, 0)
@@ -124,7 +147,7 @@ export default function UtmReportPage() {
                 case 'cv': return totalCvOf(r)
                 case 'cvr': return r.sessions > 0 ? totalCvOf(r) / r.sessions : 0
                 case 'category': return UTM_CATEGORY_META[describeUtm(r.source, r.medium, r.campaign).category].label
-                case 'utm': return `${r.source}/${r.medium}/${r.campaign}`
+                case 'utm': return `${r.source}/${r.medium}/${r.campaign}/${r.content}`
             }
         }
         const dir = sortDir === 'asc' ? 1 : -1
@@ -142,7 +165,7 @@ export default function UtmReportPage() {
                 <div>
                     <h1 className={styles.title}>UTM別レポート</h1>
                     <p className={styles.subtitle}>
-                        utm_source × utm_medium × utm_campaign 別のセッション・ユーザー・CV・期待売上換算。各UTMが「どの施策のリンクで・いつ発行されるか」を注記します。
+                        utm_source × utm_medium × utm_campaign × utm_content 別のセッション・ユーザー・CV・期待売上換算。各UTMが「どの施策のリンクで・いつ発行されるか」を注記します。
                     </p>
                 </div>
                 <BackLink href="/">ダッシュボード</BackLink>
@@ -154,6 +177,10 @@ export default function UtmReportPage() {
                 <strong>読み方</strong>: ここに出るのは<strong>流入UTM</strong>（メール/LINE/SMS通知・広告など外部→サイトで新規セッションを作るもの）。
                 フッター/サイドバー/バナー等の<strong>サイト内リンクUTM</strong>（utm_source=xwork/thanks）は、GA4がUTMをセッション開始時のみ読むため<strong>ここには出ません</strong>（＝正常）。
                 完全な一覧・命名規則は<a href="/docs/glossary" className={styles.strong}> 用語集のUTM節</a>／docs/utm-naming-convention.md。
+                <br />
+                <strong>utm_content</strong> は「同じ配信の中のどのリンク／どの文面か」を分ける4つ目の軸です。
+                ステップメールはリンク位置（profile_register / line_settings / recommend_N）、スカウトSMSは文面のAB（featured_a / featured_b）、広告はクリエイティブIDが入ります。
+                付けていない配信は <code>(not set)</code> に寄るので、下の「utm_contentで分ける」を外すとcampaignまでの粒度に畳めます。
             </div>
 
             <RelatedPages pages={[{ href: '/line-report', label: 'LINEレポート' }, { href: '/cv-types', label: '求人種別CV分析' }, { href: '/cv-value', label: 'CV単価・お金まわり' }]} />
@@ -174,6 +201,10 @@ export default function UtmReportPage() {
                     onChange={(e) => setQuery(e.target.value)}
                     aria-label="UTMを検索"
                 />
+                <label className={styles.toggle}>
+                    <input type="checkbox" checked={splitByContent} onChange={(e) => setSplitByContent(e.target.checked)} />
+                    utm_contentで分ける
+                </label>
             </div>
 
             {loading && <p className={styles.loading}>読み込み中...</p>}
@@ -200,7 +231,7 @@ export default function UtmReportPage() {
                         <div className={styles.summaryCard}>
                             <span className={styles.summaryLabel}>UTMの種類</span>
                             <span className={styles.summaryValue}>{totals.kinds.toLocaleString()}</span>
-                            <span className={styles.summaryHint}>source×medium×campaign の組合せ数</span>
+                            <span className={styles.summaryHint}>{splitByContent ? 'source×medium×campaign×content の組合せ数' : 'source×medium×campaign の組合せ数'}</span>
                         </div>
                     </div>
 
@@ -223,7 +254,7 @@ export default function UtmReportPage() {
                                 <thead>
                                     <tr>
                                         <th className={`${styles.sortable} ${sortKey === 'category' ? styles.sortActive : ''}`} onClick={() => toggleSort('category')}>区分{arrow('category')}</th>
-                                        <th className={`${styles.sortable} ${sortKey === 'utm' ? styles.sortActive : ''}`} onClick={() => toggleSort('utm')}>source / medium / campaign{arrow('utm')}</th>
+                                        <th className={`${styles.sortable} ${sortKey === 'utm' ? styles.sortActive : ''}`} onClick={() => toggleSort('utm')}>source / medium / campaign{splitByContent ? ' / content' : ''}{arrow('utm')}</th>
                                         <th>意味・発行タイミング</th>
                                         <th className={`${styles.num} ${styles.sortable} ${sortKey === 'sessions' ? styles.sortActive : ''}`} onClick={() => toggleSort('sessions')}>セッション{arrow('sessions')}</th>
                                         <th className={`${styles.num} ${styles.sortable} ${sortKey === 'users' ? styles.sortActive : ''}`} onClick={() => toggleSort('users')}>ユーザー{arrow('users')}</th>
@@ -234,14 +265,20 @@ export default function UtmReportPage() {
                                 <tbody>
                                     {sortedRows.map((r, i) => {
                                         const d = describeUtm(r.source, r.medium, r.campaign)
+                                        const hasContent = splitByContent && !isEmptyUtmValue(r.content)
+                                        const contentNote = hasContent ? describeUtmContent(r.source, r.medium, r.campaign, r.content) : null
                                         const cv = totalCvOf(r)
                                         return (
-                                            <tr key={`${r.source}|${r.medium}|${r.campaign}|${i}`}>
+                                            <tr key={`${r.source}|${r.medium}|${r.campaign}|${r.content}|${i}`}>
                                                 <td><Badge category={d.category} /></td>
-                                                <td className={styles.mono}>{r.source} / {r.medium}<br />{r.campaign}</td>
+                                                <td className={styles.mono}>
+                                                    {r.source} / {r.medium}<br />{r.campaign}
+                                                    {hasContent && <><br /><span className={styles.content}>content: {r.content}</span></>}
+                                                </td>
                                                 <td>
                                                     <div className={styles.meaning}>{d.label}</div>
                                                     <div className={styles.timing}>{d.timing}</div>
+                                                    {contentNote && <div className={styles.timing}>content: {contentNote}</div>}
                                                     {d.warning && <div className={styles.warn}>⚠️ {d.warning}</div>}
                                                 </td>
                                                 <td className={`${styles.num} ${styles.strong}`}>{r.sessions.toLocaleString()}</td>

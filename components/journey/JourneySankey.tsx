@@ -88,7 +88,7 @@ export default function JourneySankey({ nodes, flows, goalLabel, totalGoalViews,
             itemStyle: { color: nodeColor(n.id), borderWidth: 0 },
             label:
                 n.stage === 2
-                    ? { position: 'left' as const, color: '#fbbf24', fontWeight: 700 as const }
+                    ? { position: 'left' as const, color: '#d97706', fontWeight: 700 as const }
                     : undefined,
         }))
 

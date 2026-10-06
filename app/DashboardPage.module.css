@@ -260,6 +260,8 @@
     transition: all 1s;
     box-sizing: border-box;
     overflow: hidden;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .statCardClickable:hover {
@@ -281,21 +283,33 @@
 .pageMetricsGrid .statCard:nth-child(6n + 6) { border-left: 4px solid var(--cyan-400); border-right: 4px solid var(--cyan-400); border-bottom: 4px solid var(--cyan-400); }
 .pageMetricsGrid .statCard:nth-child(6n + 1) .statCardInner {
     background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard:nth-child(6n + 2) .statCardInner {
     background: linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard:nth-child(6n + 3) .statCardInner {
     background: linear-gradient(135deg, rgba(251, 146, 60, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard:nth-child(6n + 4) .statCardInner {
     background: linear-gradient(135deg, rgba(244, 114, 182, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard:nth-child(6n + 5) .statCardInner {
     background: linear-gradient(135deg, rgba(74, 222, 128, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard:nth-child(6n + 6) .statCardInner {
     background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, var(--gray-800) 100%);
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 .pageMetricsGrid .statCard.statCardClickable:nth-child(6n + 1) .statCardInner { box-shadow: 0 0.4em 0.1em 0.019em rgba(96, 165, 250, 0.45); }
 .pageMetricsGrid .statCard.statCardClickable:nth-child(6n + 2) .statCardInner { box-shadow: 0 0.4em 0.1em 0.019em rgba(167, 139, 250, 0.45); }

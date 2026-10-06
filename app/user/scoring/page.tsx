@@ -54,9 +54,9 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 ]
 
 const RANK_META = {
-    active: { label: '活性', color: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.3)', icon: '🟢' },
-    dormant: { label: '休眠', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)', icon: '🟡' },
-    churn: { label: '離脱リスク', color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)', icon: '🔴' },
+    active: { label: '活性', color: '#16a34a', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.3)', icon: '🟢' },
+    dormant: { label: '休眠', color: '#d97706', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)', icon: '🟡' },
+    churn: { label: '離脱リスク', color: '#ef4444', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)', icon: '🔴' },
 }
 
 function ScoreBar({ value, max = 25, color }: { value: number; max?: number; color: string }) {
@@ -330,25 +330,25 @@ export default function ScoringPage() {
                                                                 <div className={styles.detailGrid}>
                                                                     <div className={styles.detailItem}>
                                                                         <p className={styles.detailLabel}>直近性（Recency）<InfoTooltip text="直近7日以内に来訪したユーザーの比率が高いほど高得点。最大25点。" /></p>
-                                                                        <ScoreBar value={seg.scores.recency} color="#818cf8" />
+                                                                        <ScoreBar value={seg.scores.recency} color="#8b5cf6" />
                                                                         <p className={styles.detailScore}>{seg.scores.recency} / 25点</p>
                                                                         <p className={styles.detailNote}>直近7日のユーザー比率: {(seg.recentUserRatio * 100).toFixed(1)}%</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
                                                                         <p className={styles.detailLabel}>頻度（Frequency）<InfoTooltip text="セッション数 ÷ ユーザー数（訪問頻度）が高いほど高得点。最大25点。" /></p>
-                                                                        <ScoreBar value={seg.scores.frequency} color="#34d399" />
+                                                                        <ScoreBar value={seg.scores.frequency} color="#16a34a" />
                                                                         <p className={styles.detailScore}>{seg.scores.frequency} / 25点</p>
                                                                         <p className={styles.detailNote}>セッション/人: {seg.sessionsPerUser.toFixed(2)}</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
                                                                         <p className={styles.detailLabel}>熱量（Engagement）<InfoTooltip text="エンゲージメント率（エンゲージドセッション ÷ 全セッション）が高いほど高得点。最大25点。" /></p>
-                                                                        <ScoreBar value={seg.scores.engagement} color="#fbbf24" />
+                                                                        <ScoreBar value={seg.scores.engagement} color="#d97706" />
                                                                         <p className={styles.detailScore}>{seg.scores.engagement} / 25点</p>
                                                                         <p className={styles.detailNote}>エンゲージメント率: {(seg.engagementRate * 100).toFixed(1)}%</p>
                                                                     </div>
                                                                     <div className={styles.detailItem}>
                                                                         <p className={styles.detailLabel}>深度（Depth）<InfoTooltip text="PV ÷ セッション数（1セッションで何ページ閲覧するか）が高いほど高得点。最大25点。" /></p>
-                                                                        <ScoreBar value={seg.scores.depth} color="#f87171" />
+                                                                        <ScoreBar value={seg.scores.depth} color="#ef4444" />
                                                                         <p className={styles.detailScore}>{seg.scores.depth} / 25点</p>
                                                                         <p className={styles.detailNote}>PV/セッション: {seg.pvPerSession.toFixed(2)}</p>
                                                                     </div>
@@ -390,7 +390,7 @@ export default function ScoringPage() {
                                 ) : 'AIで診断'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {

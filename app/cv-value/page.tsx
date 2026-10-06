@@ -44,10 +44,10 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 ]
 
 const TYPE_COLORS: Record<string, string> = {
-    JobR: '#60a5fa',
-    JobH: '#fbbf24',
-    JobA: '#f87171',
-    signup: '#4ade80',
+    JobR: '#3b82f6',
+    JobH: '#d97706',
+    JobA: '#ef4444',
+    signup: '#16a34a',
 }
 
 const ACTUAL_LABEL_TO_KEY: Record<string, string> = {
@@ -160,7 +160,7 @@ export default function CvValuePage() {
                     ※ 期待売上 = そのCVに紐づくCA活動履歴経由で生まれた入社済の受注額（−返金想定額）÷ CV件数。<strong>成約率 × 平均紹介手数料</strong>に分解できます
                     （例: 会員登録 = 成約率2.3% × 約89万円 ≒ 2.0万円）。<br />
                     ※ 期待値（平均）なので個々のCVに値札がつくわけではありません。「登録を月100件増やす施策 = 月約200万円の売上増と同等」のように<strong>件数×単価で施策同士を比較する</strong>のが正しい使い方です。
-                    受注額ベース（検収・入金ベースではありません）。詳しい読み方は<a href="/docs/glossary" style={{ color: '#93c5fd' }}>用語・ドメイン知識</a>参照。
+                    受注額ベース（検収・入金ベースではありません）。詳しい読み方は<a href="/docs/glossary" style={{ color: '#3b82f6' }}>用語・ドメイン知識</a>参照。
                 </p>
             </div>
 

@@ -40,20 +40,20 @@
 }
 
 .buttonPrimary {
-    background-color: #00BFA6;
+    background-color: #0f766e;
     color: #fff;
-    border: 2px dashed #00BFA6;
+    border: 2px dashed #0f766e;
     box-shadow: rgba(50, 50, 93, 0.25) 0 2px 5px -1px, rgba(0, 0, 0, 0.3) 0 1px 3px -1px;
 }
 
 .buttonPrimary:hover {
     background-color: #fff;
-    color: #00BFA6;
-    border: 2px dashed #00BFA6;
+    color: #0f766e;
+    border: 2px dashed #0f766e;
 }
 
 .buttonPrimary:active {
-    background-color: #87dbd0;
+    background-color: #115e59;
     color: #fff;
 }
 

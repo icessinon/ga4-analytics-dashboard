@@ -70,10 +70,10 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 ]
 
 const TYPE_COLORS: Record<string, string> = {
-    JobR: '#60a5fa',
-    JobH: '#fbbf24',
-    JobA: '#f87171',
-    signup: '#4ade80',
+    JobR: '#3b82f6',
+    JobH: '#d97706',
+    JobA: '#ef4444',
+    signup: '#16a34a',
 }
 
 function pct(v: number | null): string {
@@ -274,7 +274,7 @@ export default function CvTypesPage() {
                                                     <td className={`${styles.num} ${styles.strong}`}>{totalSessions > 0 ? `${((c.sessions / totalSessions) * 100).toFixed(1)}%` : '－'}</td>
                                                     <td className={styles.num}>{c.users.toLocaleString()}</td>
                                                     <td>
-                                                        <span style={{ display: 'inline-block', height: '0.625rem', borderRadius: '0.25rem', background: '#60a5fa', width: `${totalSessions > 0 ? (c.sessions / totalSessions) * 100 : 0}%` }} />
+                                                        <span style={{ display: 'inline-block', height: '0.625rem', borderRadius: '0.25rem', background: '#3b82f6', width: `${totalSessions > 0 ? (c.sessions / totalSessions) * 100 : 0}%` }} />
                                                     </td>
                                                 </tr>
                                             ))}
@@ -419,7 +419,7 @@ export default function CvTypesPage() {
                         <h2 className={styles.sectionTitle}>応募フォームの項目別タップ（着手）</h2>
                         <p className={styles.tableNote} style={{ marginTop: 0 }}>
                             種別ごとに「どの入力項目がどれだけタップ（着手）されているか」の発火数は、専用ページに移しました。フォーム完了率（CVR）と項目別バーをまとめて確認できます。<br />
-                            → <a href="/apply-fields" style={{ color: '#93c5fd', textDecoration: 'underline' }}>応募フォーム 項目別タップ計測</a>
+                            → <a href="/apply-fields" style={{ color: '#3b82f6', textDecoration: 'underline' }}>応募フォーム 項目別タップ計測</a>
                         </p>
                     </div>
 
@@ -487,7 +487,7 @@ export default function CvTypesPage() {
                                         )}
                                         <span className={styles.summaryHint}>会員登録フォーム完了（GA4 thanks到達）</span>
                                     </div>
-                                    <div className={styles.summaryCard} style={{ borderTopColor: '#f87171' }}>
+                                    <div className={styles.summaryCard} style={{ borderTopColor: '#ef4444' }}>
                                         <span className={styles.summaryLabel}>応募と同時の登録</span>
                                         <span className={styles.summaryValue}>{actual.signup.withApplication.toLocaleString()}</span>
                                         <span className={styles.summaryHint}>

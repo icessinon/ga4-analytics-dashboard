@@ -64,9 +64,9 @@ function toMMDD(dateStr: string): string {
 
 function engagementLabel(ratio: number): { text: string; color: string } {
     const pct = ratio * 100
-    if (pct >= 20) return { text: '高エンゲージメント', color: '#34d399' }
-    if (pct >= 10) return { text: '中程度のエンゲージメント', color: '#fbbf24' }
-    return { text: '低エンゲージメント', color: '#f87171' }
+    if (pct >= 20) return { text: '高エンゲージメント', color: '#16a34a' }
+    if (pct >= 10) return { text: '中程度のエンゲージメント', color: '#d97706' }
+    return { text: '低エンゲージメント', color: '#ef4444' }
 }
 
 function delta(current: number, compare: number, fmt: (n: number) => string = String) {
@@ -201,7 +201,7 @@ export default function StickinessPage() {
                 <form onSubmit={handleSubmit}>
                     {/* 期間A */}
                     <div className={styles.periodRow}>
-                        {compareMode && <span className={styles.periodLabel} style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', borderColor: '#6366f1' }}>期間A</span>}
+                        {compareMode && <span className={styles.periodLabel} style={{ background: 'rgba(99,102,241,0.15)', color: '#8b5cf6', borderColor: '#8b5cf6' }}>期間A</span>}
                         <div className={styles.formField}>
                             <label className={styles.label}>開始日</label>
                             <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.input} required />
@@ -215,7 +215,7 @@ export default function StickinessPage() {
                     {/* 期間B */}
                     {compareMode && (
                         <div className={styles.periodRow}>
-                            <span className={styles.periodLabel} style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c', borderColor: '#f97316' }}>期間B</span>
+                            <span className={styles.periodLabel} style={{ background: 'rgba(249,115,22,0.15)', color: '#ea580c', borderColor: '#ea580c' }}>期間B</span>
                             <div className={styles.formField}>
                                 <label className={styles.label}>開始日</label>
                                 <DateInput value={compareStartDate} onChange={(e) => setCompareStartDate(e.target.value)} className={styles.input} required />
@@ -294,13 +294,13 @@ export default function StickinessPage() {
                                         <p className={styles.summaryLabel}>{label}{tooltip && <InfoTooltip text={tooltip} direction="bottom" />}</p>
                                         <div className={styles.compareCardRow}>
                                             <div>
-                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>期間A</span>
+                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(99,102,241,0.15)', color: '#8b5cf6' }}>期間A</span>
                                                 <p className={isHighlight ? styles.summaryHighlight : styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem' }}>
                                                     {fmt(a)}
                                                 </p>
                                             </div>
                                             <div>
-                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c' }}>期間B</span>
+                                                <span className={styles.comparePeriodBadge} style={{ background: 'rgba(249,115,22,0.15)', color: '#ea580c' }}>期間B</span>
                                                 <p className={styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem', color: 'var(--gray-400)' }}>
                                                     {fmt(b)}
                                                 </p>
@@ -334,9 +334,9 @@ export default function StickinessPage() {
                                             formatter={(value: number, name: string) => [value.toLocaleString(), name.toUpperCase()]}
                                         />
                                         <Legend formatter={(value: string) => value.toUpperCase()} wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line type="monotone" dataKey="dau" stroke="#60a5fa" strokeWidth={2} dot={false} name="dau" />
-                                        <Line type="monotone" dataKey="wau" stroke="#34d399" strokeWidth={2} dot={false} name="wau" />
-                                        <Line type="monotone" dataKey="mau" stroke="#fb923c" strokeWidth={2} dot={false} name="mau" />
+                                        <Line type="monotone" dataKey="dau" stroke="#3b82f6" strokeWidth={2} dot={false} name="dau" />
+                                        <Line type="monotone" dataKey="wau" stroke="#16a34a" strokeWidth={2} dot={false} name="wau" />
+                                        <Line type="monotone" dataKey="mau" stroke="#ea580c" strokeWidth={2} dot={false} name="mau" />
                                     </LineChart>
                                 ) : (
                                     <LineChart data={compareChartData} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
@@ -348,8 +348,8 @@ export default function StickinessPage() {
                                             formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]}
                                         />
                                         <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line connectNulls type="monotone" dataKey="dau_a" stroke="#818cf8" strokeWidth={2} dot={false} name={`DAU（期間A: ${startDate}〜${endDate}）`} />
-                                        <Line connectNulls type="monotone" dataKey="dau_b" stroke="#fb923c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`DAU（期間B: ${compareStartDate}〜${compareEndDate}）`} />
+                                        <Line connectNulls type="monotone" dataKey="dau_a" stroke="#8b5cf6" strokeWidth={2} dot={false} name={`DAU（期間A: ${startDate}〜${endDate}）`} />
+                                        <Line connectNulls type="monotone" dataKey="dau_b" stroke="#ea580c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`DAU（期間B: ${compareStartDate}〜${compareEndDate}）`} />
                                     </LineChart>
                                 )}
                             </ResponsiveContainer>
@@ -371,8 +371,8 @@ export default function StickinessPage() {
                                             formatter={(value: number, name: string) => [value?.toLocaleString() ?? '-', name]}
                                         />
                                         <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12 }} />
-                                        <Line connectNulls type="monotone" dataKey="mau_a" stroke="#818cf8" strokeWidth={2} dot={false} name={`MAU（期間A）`} />
-                                        <Line connectNulls type="monotone" dataKey="mau_b" stroke="#fb923c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`MAU（期間B）`} />
+                                        <Line connectNulls type="monotone" dataKey="mau_a" stroke="#8b5cf6" strokeWidth={2} dot={false} name={`MAU（期間A）`} />
+                                        <Line connectNulls type="monotone" dataKey="mau_b" stroke="#ea580c" strokeWidth={2} strokeDasharray="5 4" dot={false} name={`MAU（期間B）`} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
@@ -411,7 +411,7 @@ export default function StickinessPage() {
                                 ) : 'AIで分析'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {

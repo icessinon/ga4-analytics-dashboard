@@ -17,10 +17,10 @@ export interface DailyPoint {
 }
 
 const SERIES: Array<{ key: keyof DailyPoint; label: string; color: string }> = [
-    { key: 'JobR', label: '人材紹介', color: '#60a5fa' },
-    { key: 'JobH', label: 'ハローワーク', color: '#fbbf24' },
-    { key: 'JobA', label: '求人広告', color: '#f87171' },
-    { key: 'signup', label: '会員登録', color: '#4ade80' },
+    { key: 'JobR', label: '人材紹介', color: '#3b82f6' },
+    { key: 'JobH', label: 'ハローワーク', color: '#d97706' },
+    { key: 'JobA', label: '求人広告', color: '#ef4444' },
+    { key: 'signup', label: '会員登録', color: '#16a34a' },
 ]
 
 export default function CvTypesTrendChart({ daily }: { daily: DailyPoint[] }) {

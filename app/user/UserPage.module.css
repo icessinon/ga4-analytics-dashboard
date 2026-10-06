@@ -29,6 +29,8 @@
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .sectionTitle {
@@ -425,13 +427,13 @@
 
 .selectedUserLabel {
     font-size: 0.8125rem;
-    color: #c7d2fe;
+    color: var(--text-on-tint-blue);
 }
 
 .selectedUserId {
     font-family: monospace;
     font-size: 0.8125rem;
-    color: #e0e7ff;
+    color: var(--text-on-tint-violet);
     font-weight: 600;
 }
 

@@ -30,13 +30,13 @@ export default function DropoffRateChart({ data, periodLabel, periods, compariso
     
     const periodColors = [
         '#3b82f6', // 青
-        '#10b981', // 緑
-        '#f59e0b', // オレンジ
+        '#16a34a', // 緑
+        '#d97706', // オレンジ
         '#8b5cf6', // 紫
         '#ec4899', // ピンク
-        '#06b6d4', // シアン
+        '#0891b2', // シアン
         '#84cc16', // ライム
-        '#f97316', // オレンジ
+        '#ea580c', // オレンジ
     ]
     
     let maxDropoffRate = 0
@@ -292,11 +292,11 @@ export default function DropoffRateChart({ data, periodLabel, periods, compariso
                             <Line
                                 type="monotone"
                                 dataKey="dropoffRatePercentB"
-                                stroke="#10b981"
+                                stroke="#16a34a"
                                 strokeWidth={3}
                                 name={comparisonLabel || '期間B'}
-                                dot={{ r: 4, fill: '#10b981' }}
-                                activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                                dot={{ r: 4, fill: '#16a34a' }}
+                                activeDot={{ r: 8, fill: '#16a34a', stroke: '#fff', strokeWidth: 2 }}
                             />
                             <Legend />
                         </LineChart>

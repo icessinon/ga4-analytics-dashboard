@@ -41,9 +41,9 @@ function getDefaultRange() {
 
 function cvrColor(rate: number): string {
     if (rate <= 0) return '#9ca3af'
-    if (rate < 0.01) return '#fbbf24'
-    if (rate < 0.03) return '#34d399'
-    return '#6ee7b7'
+    if (rate < 0.01) return '#d97706'
+    if (rate < 0.03) return '#16a34a'
+    return '#16a34a'
 }
 
 function diffBadge(rateA: number, rateB: number): { text: string; positive: boolean } | null {

@@ -95,13 +95,20 @@ export async function POST(request: Request) {
         }
 
         // 3) ステップ別に集計
-        const blank = () => ({ sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, failed: 0 })
+        // skipped（配信停止・アドレス無しなど、送るべきでなかった人）と failed（送ろうとして落ちた）は
+        // 意味が違う。まとめて「送信失敗」に出すと配信基盤が壊れているように見えるので必ず分ける
+        const blank = () => ({ sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, failed: 0, skipped: 0 })
         const byStep = new Map<string, ReturnType<typeof blank>>()
         const byDay = new Map<string, ReturnType<typeof blank>>()
+        const skipReasons: Record<string, number> = {}
         for (const r of records) {
             const step = stepKeyOf(r)
             const day = jstDay(r.at)
             const ev = r.providerMessageId ? events.get(r.providerMessageId) : undefined
+            if (r.status === 'skipped') {
+                const reason = r.reason ?? '(unknown)'
+                skipReasons[reason] = (skipReasons[reason] ?? 0) + 1
+            }
             for (const [map, key] of [[byStep, step], [byDay, day]] as const) {
                 const b = map.get(key) ?? blank()
                 if (r.status === 'sent') {
@@ -110,6 +117,8 @@ export async function POST(request: Request) {
                     if (ev?.opened) b.opened += 1
                     if (ev?.clicked) b.clicked += 1
                     if (ev?.bounced) b.bounced += 1
+                } else if (r.status === 'skipped') {
+                    b.skipped += 1
                 } else {
                     b.failed += 1
                 }
@@ -179,6 +188,7 @@ export async function POST(request: Request) {
                 sent: a.sent + s.sent, delivered: a.delivered + s.delivered,
                 opened: a.opened + s.opened, clicked: a.clicked + s.clicked,
                 bounced: a.bounced + s.bounced, failed: a.failed + s.failed,
+                skipped: a.skipped + s.skipped,
             }),
             blank(),
         )
@@ -199,6 +209,7 @@ export async function POST(request: Request) {
                 byStatus: scheduleStatus,
                 firstRegisteredAt: schedules.map((x) => x.registeredAt ?? '').filter(Boolean).sort()[0] ?? null,
             },
+            skipReasons,
             unmatchedMessages: messageIds.length - events.size,
             /** 日次Lambdaの発火時刻（JST）。当日分がこの時刻まで0なのは正常 */
             cronHourJst: 12,

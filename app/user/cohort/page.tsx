@@ -30,7 +30,7 @@ interface AbTestMarker {
     winnerVariant: string | null
 }
 
-const MARKER_COLORS = ['#f59e0b', '#ec4899', '#22d3ee', '#a3e635', '#f87171', '#c084fc']
+const MARKER_COLORS = ['#d97706', '#ec4899', '#0891b2', '#a3e635', '#ef4444', '#c084fc']
 function markerColor(i: number) { return MARKER_COLORS[i % MARKER_COLORS.length] }
 
 // テスト期間がコホート週 [weekStart, weekStart+6日] と重なるか
@@ -235,7 +235,7 @@ export default function CohortPage() {
                             ))}
                         </div>
                         <span style={{ marginLeft: '0.5rem' }}>
-                            ／ <span style={{ color: '#a5b4fc' }}>■</span> Week 0（初回訪問週）
+                            ／ <span style={{ color: '#8b5cf6' }}>■</span> Week 0（初回訪問週）
                         </span>
                     </div>
 

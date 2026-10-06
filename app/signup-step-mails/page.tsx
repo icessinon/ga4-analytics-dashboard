@@ -7,6 +7,14 @@ import { parseJsonResponse } from '@/lib/utils/fetch'
 import { STEP_MAIL_STATUS_LABEL } from '@/lib/constants/signupStepMails'
 import styles from './SignupStepMailsPage.module.css'
 
+/** DeliveryRecords の reason をそのまま出すと読めないので日本語に寄せる */
+const SKIP_REASON_LABELS: Record<string, string> = {
+    unsubscribed: '配信停止',
+    no_address: 'メールアドレス無し',
+    not_linked: '未連携',
+    dev_guard: '開発環境ガード',
+}
+
 interface StepRow {
     key: string
     offsetDays: number
@@ -18,6 +26,7 @@ interface StepRow {
     clicked: number
     bounced: number
     failed: number
+    skipped: number
     openRate: number | null
     clickRate: number | null
     ctorRate: number | null
@@ -32,6 +41,7 @@ interface DailyRow {
     clicked: number
     bounced: number
     failed: number
+    skipped: number
     openRate: number | null
 }
 
@@ -40,8 +50,9 @@ interface Response {
     since: string
     steps: StepRow[]
     daily: DailyRow[]
-    totals: { sent: number; delivered: number; opened: number; clicked: number; bounced: number; failed: number; openRate: number | null; clickRate: number | null }
+    totals: { sent: number; delivered: number; opened: number; clicked: number; bounced: number; failed: number; skipped: number; openRate: number | null; clickRate: number | null }
     schedules: { total: number; byStatus: Record<string, number>; firstRegisteredAt: string | null }
+    skipReasons: Record<string, number>
     unmatchedMessages: number
     cronHourJst: number
     todayJst: string
@@ -142,12 +153,25 @@ export default function SignupStepMailsPage() {
                         </div>
                     </div>
 
+                    {/* スキップは配信基盤の異常ではなく、配信停止・アドレス無しなど送るべきでなかった人。
+                        送信失敗と混ぜないよう理由つきで別に出す */}
+                    {data.totals.skipped > 0 && (
+                        <div className={styles.notice}>
+                            対象外として送らなかったメールが {data.totals.skipped.toLocaleString()} 通あります（
+                            {Object.entries(data.skipReasons)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([reason, n]) => `${SKIP_REASON_LABELS[reason] ?? reason} ${n.toLocaleString()}`)
+                                .join(' / ')}
+                            ）。送信失敗ではないため、送信数・開封率の分母には含めていません。
+                        </div>
+                    )}
+
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>ステップ別の送信数・開封率</h2>
                         <div className={styles.legend}>
                             <span className={styles.legendItem}><i className={styles.legendSwatch} style={{ background: '#1e40af' }} />送信</span>
                             <span className={styles.legendItem}><i className={styles.legendSwatch} style={{ background: '#3b82f6' }} />開封</span>
-                            <span className={styles.legendItem}><i className={styles.legendSwatch} style={{ background: '#93c5fd' }} />クリック</span>
+                            <span className={styles.legendItem}><i className={styles.legendSwatch} style={{ background: '#3b82f6' }} />クリック</span>
                         </div>
                         <div className={styles.stepList}>
                             {data.steps.map((s) => (
@@ -168,6 +192,7 @@ export default function SignupStepMailsPage() {
                                             <span>開封 {s.opened.toLocaleString()}</span>
                                             <span>クリック {s.clicked.toLocaleString()}</span>
                                             {s.bounced > 0 && <span>バウンス {s.bounced.toLocaleString()}</span>}
+                                            {s.skipped > 0 && <span>対象外スキップ {s.skipped.toLocaleString()}</span>}
                                             {s.failed > 0 && <span>送信失敗 {s.failed.toLocaleString()}</span>}
                                         </div>
                                     </div>

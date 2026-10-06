@@ -221,7 +221,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: #bfdbfe;
+    color: var(--text-on-tint-blue);
     font-size: 0.9375rem;
 }
 

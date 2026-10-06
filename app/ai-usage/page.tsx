@@ -385,7 +385,7 @@ export default function AiUsagePage() {
                                 width={70}
                             />
                             <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(99,102,241,0.08)' }} />
-                            <Bar dataKey="costUsd" fill="#6366f1" radius={[3, 3, 0, 0]} />
+                            <Bar dataKey="costUsd" fill="#8b5cf6" radius={[3, 3, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>

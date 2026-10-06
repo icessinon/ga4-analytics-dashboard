@@ -114,7 +114,7 @@ function fmtSec(s: number) {
 function DeltaBadge({ a, b }: { a: number; b: number }) {
     const d = pctDiff(a, b)
     if (!d) return <span style={{ color: 'var(--gray-500)' }}>-</span>
-    return <span style={{ color: d.up ? '#34d399' : '#f87171', fontWeight: 600 }}>{d.text}</span>
+    return <span style={{ color: d.up ? '#16a34a' : '#ef4444', fontWeight: 600 }}>{d.text}</span>
 }
 
 export default function InsightsPage() {
@@ -320,7 +320,7 @@ export default function InsightsPage() {
                                             <td className={styles.tdNum} style={{ color: 'var(--gray-100)', fontWeight: 600 }}>{current}</td>
                                             <td className={styles.tdNum} style={{ color: 'var(--gray-400)' }}>{prev}</td>
                                             <td className={styles.tdNum}>
-                                                {delta ? <span style={{ color: delta.up ? '#34d399' : '#f87171', fontWeight: 600 }}>{delta.text}</span> : '-'}
+                                                {delta ? <span style={{ color: delta.up ? '#16a34a' : '#ef4444', fontWeight: 600 }}>{delta.text}</span> : '-'}
                                             </td>
                                         </tr>
                                     ))}
@@ -376,7 +376,7 @@ export default function InsightsPage() {
                                                     <div className={styles.weekTooltip}>
                                                         <p className={styles.weekTooltipLabel}>{lbl}</p>
                                                         <p className={styles.weekTooltipRow}>
-                                                            <span style={{ color: '#6366f1' }}>{trendMetricLabel}</span>
+                                                            <span style={{ color: '#8b5cf6' }}>{trendMetricLabel}</span>
                                                             <span>{disp}</span>
                                                         </p>
                                                     </div>
@@ -386,9 +386,9 @@ export default function InsightsPage() {
                                         <Line
                                             type="monotone"
                                             dataKey={trendMetric}
-                                            stroke="#6366f1"
+                                            stroke="#8b5cf6"
                                             strokeWidth={2}
-                                            dot={{ r: 3, fill: '#6366f1' }}
+                                            dot={{ r: 3, fill: '#8b5cf6' }}
                                             activeDot={{ r: 5 }}
                                         />
                                     </LineChart>
@@ -418,7 +418,7 @@ export default function InsightsPage() {
                                             const isBase = m.label === data.baseMonth
                                             return (
                                                 <tr key={m.label} className={styles.tr}>
-                                                    <td className={styles.td} style={{ fontWeight: isBase ? 700 : 500, color: isBase ? '#a5b4fc' : 'var(--gray-200)' }}>
+                                                    <td className={styles.td} style={{ fontWeight: isBase ? 700 : 500, color: isBase ? '#8b5cf6' : 'var(--gray-200)' }}>
                                                         {m.label}
                                                         {isBase && <span className={styles.baseMonthTag}>基準月</span>}
                                                     </td>
@@ -492,7 +492,7 @@ export default function InsightsPage() {
                                             wrapperStyle={{ fontSize: '0.8125rem', color: '#9ca3af', paddingTop: '0.5rem' }}
                                             formatter={(value) => <span style={{ color: 'var(--gray-400)' }}>{value}</span>}
                                         />
-                                        <Bar dataKey="当月" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={36} />
+                                        <Bar dataKey="当月" fill="#8b5cf6" radius={[3, 3, 0, 0]} maxBarSize={36} />
                                         <Bar dataKey="前月" fill="#374151" radius={[3, 3, 0, 0]} maxBarSize={36} />
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -518,7 +518,7 @@ export default function InsightsPage() {
                                             const prev = data.weeklyBreakdown.previous.find((w) => w.label === week.label)
                                             return (
                                                 <tr key={week.label} className={styles.tr}>
-                                                    <td className={styles.td} style={{ fontWeight: 600, color: '#a5b4fc' }}>{week.label}</td>
+                                                    <td className={styles.td} style={{ fontWeight: 600, color: '#8b5cf6' }}>{week.label}</td>
                                                     <td className={styles.td} style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>
                                                         {week.startDate.slice(5)} 〜 {week.endDate.slice(5)}
                                                     </td>
@@ -580,7 +580,7 @@ export default function InsightsPage() {
                                 ) : 'AIレポートを生成'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {

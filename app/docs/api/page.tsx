@@ -109,7 +109,7 @@ export default function ApiDocsPage() {
                 ))}
             </div>
             <div className={styles.footer}>
-                <Link href="/docs/features" style={{ fontSize: '0.875rem', color: '#818cf8', textDecoration: 'none', marginRight: '1.5rem' }}>
+                <Link href="/docs/features" style={{ fontSize: '0.875rem', color: '#8b5cf6', textDecoration: 'none', marginRight: '1.5rem' }}>
                     機能ドキュメントを見る →
                 </Link>
                 <BackLink href="/">ダッシュボードに戻る</BackLink>

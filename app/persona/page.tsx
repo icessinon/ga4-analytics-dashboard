@@ -21,10 +21,10 @@ import {
 import styles from './PersonaPage.module.css'
 
 // 各軸の配色（左→右で意味づけ）
-const AGE_COLORS = ['#38bdf8', '#22d3ee', '#34d399', '#fbbf24', '#fb923c', '#f87171']
-const GENDER_COLORS: Record<string, string> = { '男性': '#60a5fa', '女性': '#f472b6', 'その他': '#9ca3af' }
-const TIMING_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#6b7280', '#4b5563']
-const SITUATION_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#a3e635', '#38bdf8', '#6b7280', '#374151']
+const AGE_COLORS = ['#0891b2', '#0891b2', '#16a34a', '#d97706', '#ea580c', '#ef4444']
+const GENDER_COLORS: Record<string, string> = { '男性': '#3b82f6', '女性': '#ec4899', 'その他': '#9ca3af' }
+const TIMING_COLORS = ['#ef4444', '#ea580c', '#d97706', '#eab308', '#6b7280', '#4b5563']
+const SITUATION_COLORS = ['#ef4444', '#ea580c', '#d97706', '#a3e635', '#0891b2', '#6b7280', '#374151']
 
 const pct = (v: number) => `${(v * 100).toFixed(0)}%`
 const pct1 = (v: number) => `${(v * 100).toFixed(1)}%`
@@ -61,7 +61,7 @@ function StackBar({ counts, labels, colors }: { counts: Counts; labels: readonly
 }
 
 /** 横棒ランキング（都道府県・雇用形態など） */
-function RankBars({ items, color = '#818cf8', max }: { items: Array<{ label: string; count: number }>; color?: string; max?: number }) {
+function RankBars({ items, color = '#8b5cf6', max }: { items: Array<{ label: string; count: number }>; color?: string; max?: number }) {
     const top = max ?? Math.max(...items.map((i) => i.count), 1)
     return (
         <div className={styles.rankList}>
@@ -203,13 +203,13 @@ export default function PersonaPage() {
                 </div>
                 <div className={styles.card}>
                     <h2 className={styles.sectionTitle}>希望勤務地 上位15</h2>
-                    <RankBars items={overall.prefecture} color="#818cf8" />
+                    <RankBars items={overall.prefecture} color="#8b5cf6" />
                 </div>
                 <div className={styles.card}>
                     <h2 className={styles.sectionTitle}>希望雇用形態</h2>
-                    <RankBars items={Object.entries(overall.employment).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)} color="#34d399" />
+                    <RankBars items={Object.entries(overall.employment).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)} color="#16a34a" />
                     <h2 className={styles.sectionTitle} style={{ marginTop: '1.25rem' }}>転職意欲（現在の気持ち）</h2>
-                    <StackBar counts={overall.mood} labels={['近いうちに転職したい', '今は情報収集したい']} colors={['#f97316', '#6b7280']} />
+                    <StackBar counts={overall.mood} labels={['近いうちに転職したい', '今は情報収集したい']} colors={['#ea580c', '#6b7280']} />
                 </div>
             </div>
 

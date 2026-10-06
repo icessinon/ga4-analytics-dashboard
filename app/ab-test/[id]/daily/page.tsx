@@ -22,9 +22,9 @@ interface VariantDaily {
 type DayRow = { date: string } & Partial<Record<'A' | 'B' | 'C' | 'D', VariantDaily>>
 
 const VARIANT_COLORS: Record<string, string> = {
-    A: '#93c5fd',
-    B: '#86efac',
-    C: '#c4b5fd',
+    A: '#3b82f6',
+    B: '#16a34a',
+    C: '#8b5cf6',
     D: '#fdba74',
 }
 
@@ -196,9 +196,9 @@ export default function AbTestDailyCvrPage() {
                                             key={v}
                                             type="monotone"
                                             dataKey={v}
-                                            stroke={VARIANT_COLORS[v] ?? '#6366f1'}
+                                            stroke={VARIANT_COLORS[v] ?? '#8b5cf6'}
                                             strokeWidth={2}
-                                            dot={{ r: 2, fill: VARIANT_COLORS[v] ?? '#6366f1' }}
+                                            dot={{ r: 2, fill: VARIANT_COLORS[v] ?? '#8b5cf6' }}
                                             activeDot={{ r: 4 }}
                                             connectNulls
                                         />

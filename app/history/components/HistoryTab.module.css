@@ -252,7 +252,7 @@
     border-radius: 0.25rem;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #c7d2fe;
+    color: var(--text-on-tint-blue);
     background-color: rgba(99, 102, 241, 0.18);
     border: 1px solid rgba(99, 102, 241, 0.5);
     white-space: nowrap;

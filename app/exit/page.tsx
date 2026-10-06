@@ -39,7 +39,7 @@ const DEVICE_OPTIONS = [
 ]
 
 // ステップカラー
-const STEP_COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
+const STEP_COLORS = ['#8b5cf6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
 function stepColor(i: number) { return STEP_COLORS[i % STEP_COLORS.length] }
 
 // 離脱率で色を決める
@@ -56,9 +56,9 @@ function exitRateClass(rate: number) {
 }
 
 function exitRateColor(rate: number) {
-    if (rate < 0.3) return '#34d399'
-    if (rate < 0.6) return '#fbbf24'
-    return '#f87171'
+    if (rate < 0.3) return '#16a34a'
+    if (rate < 0.6) return '#d97706'
+    return '#ef4444'
 }
 
 function engClass(rate: number) {
@@ -238,7 +238,7 @@ export default function ExitPage() {
                     {steps.map((step, i) => (
                         <div key={i} className={styles.stepRow}>
                             <span className={styles.stepIndex}>
-                                <span style={{ color: stepColor(i), fontWeight: 700 }}>{i + 1}</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: 700, backgroundColor: `${stepColor(i)}2e`, borderRadius: '999px', padding: '0.05em 0.5em' }}>{i + 1}</span>
                             </span>
                             <select
                                 value={step}
@@ -378,10 +378,10 @@ export default function ExitPage() {
                                             <td className={styles.exitTd}>{row.page}</td>
                                             <td className={styles.exitTdNum}>{row.exits.toLocaleString()}</td>
                                             <td className={styles.exitTdNum}>{row.pageViews.toLocaleString()}</td>
-                                            <td className={styles.exitTdNum} style={{ color: '#93c5fd' }}>
+                                            <td className={styles.exitTdNum} style={{ color: '#3b82f6' }}>
                                                 {row.avgEngagementSec != null ? formatDuration(row.avgEngagementSec) : '-'}
                                             </td>
-                                            <td className={styles.exitTdNum} style={{ color: '#93c5fd' }}>
+                                            <td className={styles.exitTdNum} style={{ color: '#3b82f6' }}>
                                                 {row.scrollRate != null ? `${(row.scrollRate * 100).toFixed(0)}%` : '-'}
                                             </td>
                                             <td className={styles.exitTdNum}>
@@ -432,7 +432,7 @@ export default function ExitPage() {
                                 ) : 'AIで分析'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {

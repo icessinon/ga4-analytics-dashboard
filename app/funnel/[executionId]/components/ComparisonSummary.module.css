@@ -61,6 +61,8 @@
     border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .cardLabel {

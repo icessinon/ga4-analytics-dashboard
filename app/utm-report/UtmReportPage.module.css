@@ -16,13 +16,13 @@
 .title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     margin-bottom: 0.375rem;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.6;
 }
 
@@ -30,7 +30,7 @@
     background-color: rgba(129, 140, 248, 0.1);
     border: 1px solid rgba(129, 140, 248, 0.4);
     border-radius: 0.5rem;
-    color: #a5b4fc;
+    color: var(--indigo-300);
     font-size: 0.8125rem;
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
@@ -46,37 +46,37 @@
 }
 
 .select {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    color: #f9fafb;
+    color: var(--gray-50);
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
 }
 
 .periodNote {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .search {
     flex: 1 1 22rem;
     min-width: 12rem;
-    background-color: #111827;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    color: #f9fafb;
+    color: var(--gray-50);
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
 }
 
 .search::placeholder {
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .search:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
@@ -88,10 +88,10 @@
 }
 
 .chip {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 999px;
-    color: #d1d5db;
+    color: var(--gray-300);
     font-size: 0.8125rem;
     padding: 0.35rem 0.85rem;
     cursor: pointer;
@@ -99,18 +99,18 @@
 }
 
 .chip:hover {
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
 }
 
 .chipActive {
     background-color: rgba(99, 102, 241, 0.18);
-    border-color: #6366f1;
-    color: #c7d2fe;
+    border-color: var(--indigo-500);
+    color: var(--text-on-tint-blue);
     font-weight: 600;
 }
 
 .loading {
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
 }
 
@@ -118,7 +118,7 @@
     background-color: rgba(248, 113, 113, 0.1);
     border: 1px solid rgba(248, 113, 113, 0.4);
     border-radius: 0.5rem;
-    color: #f87171;
+    color: var(--red-400);
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
@@ -137,41 +137,45 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    border-top: 3px solid #6366f1;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-top: 3px solid var(--indigo-500);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .summaryLabel {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .summaryValue {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
 }
 
 .summaryHint {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .card {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .sectionTitle {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     margin-bottom: 1rem;
 }
 
@@ -190,7 +194,7 @@
 
 .count {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .tableWrapper {
@@ -207,14 +211,14 @@
 
 .table th {
     text-align: left;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-weight: 600;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     padding: 0.5rem 0.75rem;
     white-space: nowrap;
     position: sticky;
     top: 0;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     z-index: 1;
 }
 
@@ -224,15 +228,15 @@
 }
 
 .sortable:hover {
-    color: #c7d2fe;
+    color: var(--text-on-tint-blue);
 }
 
 .sortActive {
-    color: #c7d2fe;
+    color: var(--text-on-tint-blue);
 }
 
 .table td {
-    color: #d1d5db;
+    color: var(--gray-300);
     border-bottom: 1px solid rgba(55, 65, 81, 0.5);
     padding: 0.55rem 0.75rem;
     vertical-align: top;
@@ -249,8 +253,28 @@
 .mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.8125rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     white-space: nowrap;
+}
+
+/* utm_content はcampaignの下にぶら下げるので、1段下げて色を落とす */
+.content {
+    color: var(--indigo-300);
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle input {
+    accent-color: var(--indigo-500);
+    cursor: pointer;
 }
 
 .num {
@@ -260,26 +284,38 @@
 
 .strong {
     font-weight: 700;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
+/* 文字は本文色のまま、区分は左のドットで示す。
+   色を文字に乗せると薄い同色背景との差が3.2:1程度しか取れずAAを割るため。 */
 .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     font-size: 0.6875rem;
     font-weight: 700;
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
     white-space: nowrap;
+    color: var(--text-primary);
+}
+
+.badgeDot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    flex: none;
 }
 
 .meaning {
-    color: #e5e7eb;
+    color: var(--gray-200);
     font-size: 0.8125rem;
     line-height: 1.5;
 }
 
 .timing {
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.75rem;
     line-height: 1.5;
     margin-top: 0.15rem;
@@ -288,7 +324,7 @@
 }
 
 .warn {
-    color: #fbbf24;
+    color: var(--amber-400);
     font-size: 0.72rem;
     margin-top: 0.15rem;
     white-space: normal;
@@ -297,13 +333,13 @@
 
 .tableNote {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     line-height: 1.7;
     margin-top: 0.75rem;
 }
 
 .empty {
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
     padding: 1rem 0;
 }

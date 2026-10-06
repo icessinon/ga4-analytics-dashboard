@@ -33,9 +33,9 @@ const PERIOD_OPTIONS: PeriodOption[] = [
 ]
 
 const TYPE_COLORS: Record<string, string> = {
-    JobR: '#60a5fa',
-    JobH: '#fbbf24',
-    JobA: '#f87171',
+    JobR: '#3b82f6',
+    JobH: '#d97706',
+    JobA: '#ef4444',
 }
 
 function pct(v: number | null): string {

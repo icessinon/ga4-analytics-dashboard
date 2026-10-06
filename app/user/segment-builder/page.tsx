@@ -464,7 +464,7 @@ export default function SegmentBuilderPage() {
                                                 )
                                             }}
                                         />
-                                        <Bar dataKey="activeUsers" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                                        <Bar dataKey="activeUsers" fill="#8b5cf6" radius={[3, 3, 0, 0]} maxBarSize={20} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>

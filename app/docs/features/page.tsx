@@ -8,13 +8,13 @@ import type { FeatureDoc } from './featureList'
 import styles from './FeatureDocs.module.css'
 
 const CATEGORY_COLORS: Record<string, { border: string; bg: string; label: string }> = {
-    'KPI・レポート':            { border: '#60a5fa', bg: 'rgba(96,165,250,0.08)',  label: '#60a5fa' },
-    'CV分析':                   { border: '#4ade80', bg: 'rgba(74,222,128,0.08)',  label: '#4ade80' },
-    'チャネル・集客':           { border: '#22d3ee', bg: 'rgba(34,211,238,0.08)',  label: '#22d3ee' },
-    'ABテスト':                 { border: '#fbbf24', bg: 'rgba(251,191,36,0.08)',  label: '#fbbf24' },
-    'コンバージョン・ファネル': { border: '#34d399', bg: 'rgba(52,211,153,0.08)',  label: '#34d399' },
-    '可視化・経路分析':         { border: '#f87171', bg: 'rgba(248,113,113,0.08)', label: '#f87171' },
-    'ユーザー分析':             { border: '#818cf8', bg: 'rgba(99,102,241,0.08)',  label: '#818cf8' },
+    'KPI・レポート':            { border: '#3b82f6', bg: 'rgba(96,165,250,0.08)',  label: '#3b82f6' },
+    'CV分析':                   { border: '#16a34a', bg: 'rgba(74,222,128,0.08)',  label: '#16a34a' },
+    'チャネル・集客':           { border: '#0891b2', bg: 'rgba(34,211,238,0.08)',  label: '#0891b2' },
+    'ABテスト':                 { border: '#d97706', bg: 'rgba(251,191,36,0.08)',  label: '#d97706' },
+    'コンバージョン・ファネル': { border: '#16a34a', bg: 'rgba(52,211,153,0.08)',  label: '#16a34a' },
+    '可視化・経路分析':         { border: '#ef4444', bg: 'rgba(248,113,113,0.08)', label: '#ef4444' },
+    'ユーザー分析':             { border: '#8b5cf6', bg: 'rgba(99,102,241,0.08)',  label: '#8b5cf6' },
     'データ・ツール':           { border: '#9ca3af', bg: 'rgba(156,163,175,0.08)', label: '#9ca3af' },
 }
 

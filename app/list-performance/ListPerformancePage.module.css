@@ -81,6 +81,8 @@
     border-top: 3px solid var(--gray-700);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .summaryLabel {
@@ -105,6 +107,8 @@
     border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .cardHeader {

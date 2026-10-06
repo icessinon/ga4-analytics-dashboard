@@ -7,13 +7,13 @@ import styles from './AbTestDonutCharts.module.css'
 
 const STATUS_COLORS = {
     running: '#16a34a',
-    paused: '#f59e0b',
-    completed: '#6366f1',
+    paused: '#d97706',
+    completed: '#8b5cf6',
 } as const
 
 const OUTCOME_COLORS = {
     victory: '#0891b2',
-    defeat: '#dc2626',
+    defeat: '#ef4444',
 } as const
 
 interface AbTestDonutChartsProps {

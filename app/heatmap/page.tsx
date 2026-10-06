@@ -33,9 +33,9 @@ function getDefaultDates() {
 
 const HEAT_COLORS = [
     '#dbeafe',
-    '#93c5fd',
     '#3b82f6',
-    '#1d4ed8',
+    '#3b82f6',
+    '#3b82f6',
     '#1e3a8a',
 ]
 

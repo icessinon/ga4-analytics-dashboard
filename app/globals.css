@@ -56,6 +56,12 @@
     --cyan-400: #22d3ee;
     --pink-400: #f472b6;
     --blue-900: #1e3a8a;
+    /* 淡い面の上に乗る文字。ダークでは淡く、ライトでは濃くする */
+    --text-on-tint-blue: #bfdbfe;
+    --text-on-tint-green: #bbf7d0;
+    --text-on-tint-amber: #fde68a;
+    --text-on-tint-red: #fecaca;
+    --text-on-tint-violet: #ddd6fe;
 
     /* サーフェス（奥→手前） */
     --bg-base: #111827;
@@ -87,15 +93,17 @@
     --status-warn: #fbbf24;
     --status-bad: #f87171;
 
-    /* 質感。ダークは影が沈むので控えめに当てる */
+    /* 質感（スキューモ）。ダークは影だけだと沈むので、
+       「上辺のハイライト＋下への影」で面の立ち上がりを作る。 */
     --radius-sm: 0.375rem;
     --radius: 0.75rem;
     --radius-lg: 1rem;
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.45);
-    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    --surface-gradient: none;
-    --control-gradient: none;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35);
+    --shadow-raised: 0 2px 4px rgba(0, 0, 0, 0.45), 0 10px 28px rgba(0, 0, 0, 0.5);
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --shadow-sunken: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+    --surface-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0) 55%);
+    --control-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
 }
 
 /**
@@ -147,6 +155,11 @@
     --cyan-400: #0e7490;
     --pink-400: #be185d;
     --blue-900: #1e3a8a;
+    --text-on-tint-blue: #1e40af;
+    --text-on-tint-green: #166534;
+    --text-on-tint-amber: #92400e;
+    --text-on-tint-red: #991b1b;
+    --text-on-tint-violet: #5b21b6;
 
     --bg-base: #e9edf4;
     --bg-surface: #ffffff;
@@ -178,6 +191,7 @@
     --shadow-card: 0 1px 1px rgba(16, 24, 40, 0.04), 0 2px 6px rgba(16, 24, 40, 0.06);
     --shadow-raised: 0 2px 4px rgba(16, 24, 40, 0.06), 0 8px 20px rgba(16, 24, 40, 0.1);
     --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --shadow-sunken: inset 0 2px 4px rgba(16, 24, 40, 0.08);
     --surface-gradient: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
     --control-gradient: linear-gradient(180deg, #ffffff 0%, #eef1f7 100%);
 }
@@ -197,7 +211,7 @@ textarea {
     border-radius: var(--radius-sm);
     background-color: var(--bg-sunken);
     color: var(--text-primary);
-    box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.06);
+    box-shadow: var(--shadow-sunken);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -232,6 +246,9 @@ input[type="date"] {
 
 select {
     color: var(--text-primary);
+    background-color: var(--bg-surface);
+    background-image: var(--control-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
     appearance: none;
     background-repeat: no-repeat !important;
     background-position: right 0.5rem center !important;

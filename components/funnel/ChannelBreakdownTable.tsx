@@ -11,8 +11,8 @@ interface Props {
 
 function cvrColor(rate: number, overallRate: number): string {
     if (overallRate <= 0) return '#e5e7eb'
-    if (rate >= overallRate * 1.2) return '#34d399'
-    if (rate <= overallRate * 0.8) return '#f87171'
+    if (rate >= overallRate * 1.2) return '#16a34a'
+    if (rate <= overallRate * 0.8) return '#ef4444'
     return '#e5e7eb'
 }
 
@@ -72,7 +72,7 @@ export default function ChannelBreakdownTable({ breakdown, overallSteps }: Props
             </table>
             <p className={styles.note}>
                 各セル：上段＝ユーザー数、下段＝そのチャネルのステップ1に対する通過率。
-                全体CVRの色：<span style={{ color: '#34d399' }}>緑＝全体比+20%以上</span>／<span style={{ color: '#f87171' }}>赤＝全体比-20%以下</span>
+                全体CVRの色：<span style={{ color: '#16a34a' }}>緑＝全体比+20%以上</span>／<span style={{ color: '#ef4444' }}>赤＝全体比-20%以下</span>
             </p>
         </div>
     )

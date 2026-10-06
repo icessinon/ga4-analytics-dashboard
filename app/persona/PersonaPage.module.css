@@ -64,6 +64,8 @@
     border-top: 3px solid var(--indigo-500);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .summaryLabel {
@@ -90,6 +92,8 @@
     border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .grid2 {
@@ -289,7 +293,7 @@
 .chipActive {
     background-color: rgba(99, 102, 241, 0.18);
     border-color: var(--indigo-500);
-    color: #c7d2fe;
+    color: var(--text-on-tint-blue);
     font-weight: 600;
 }
 

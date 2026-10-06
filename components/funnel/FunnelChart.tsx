@@ -29,13 +29,13 @@ export default function FunnelChart({ data, periodLabel, periods, comparisonData
 
     const periodColors = [
         '#3b82f6', // 青
-        '#10b981', // 緑
-        '#f59e0b', // オレンジ
+        '#16a34a', // 緑
+        '#d97706', // オレンジ
         '#8b5cf6', // 紫
         '#ec4899', // ピンク
-        '#06b6d4', // シアン
+        '#0891b2', // シアン
         '#84cc16', // ライム
-        '#f97316',
+        '#ea580c',
     ]
 
     const getColor = (dropoffRate: number, index: number, isComparison: boolean, periodIndex: number = 0) => {
@@ -45,20 +45,20 @@ export default function FunnelChart({ data, periodLabel, periods, comparisonData
             return baseColor
         } else if (isComparison) {
             if (periodIndex === 1) {
-                if (index === 0) return '#10b981' // 緑
-                if (dropoffRate < 0.1) return '#10b981'
+                if (index === 0) return '#16a34a' // 緑
+                if (dropoffRate < 0.1) return '#16a34a'
                 if (dropoffRate < 0.3) return '#84cc16'
-                return '#22c55e'
+                return '#16a34a'
             } else {
                 if (index === 0) return '#3b82f6'
                 if (dropoffRate < 0.1) return '#3b82f6'
-                if (dropoffRate < 0.3) return '#60a5fa'
-                return '#2563eb'
+                if (dropoffRate < 0.3) return '#3b82f6'
+                return '#3b82f6'
             }
         } else {
-            if (index === 0) return '#10b981'
-            if (dropoffRate < 0.1) return '#10b981'
-            if (dropoffRate < 0.3) return '#f59e0b'
+            if (index === 0) return '#16a34a'
+            if (dropoffRate < 0.1) return '#16a34a'
+            if (dropoffRate < 0.3) return '#d97706'
             return '#ef4444'
         }
     }
@@ -253,7 +253,7 @@ export default function FunnelChart({ data, periodLabel, periods, comparisonData
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(75, 85, 99, 0.25)', stroke: '#9ca3af', strokeWidth: 1 }} />
                             <Bar dataKey="usersA" radius={[6, 6, 0, 0]} barSize={35} name={periodLabel || '期間A'} fill="#3b82f6" />
-                            <Bar dataKey="usersB" radius={[6, 6, 0, 0]} barSize={35} name={comparisonLabel || '期間B'} fill="#10b981" />
+                            <Bar dataKey="usersB" radius={[6, 6, 0, 0]} barSize={35} name={comparisonLabel || '期間B'} fill="#16a34a" />
                             <Legend />
                         </BarChart>
                     ) : (

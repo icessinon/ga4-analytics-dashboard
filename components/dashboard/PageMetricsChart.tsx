@@ -28,12 +28,12 @@ const CHART_LABELS: Record<ChartMetric, string> = {
 }
 
 const CHART_STROKES: Record<ChartMetric, string> = {
-    pv: '#2563eb',
+    pv: '#3b82f6',
     cv: '#16a34a',
     cvr: '#9333ea',
     sessions: '#ea580c',
     newUserRate: '#0891b2',
-    bounceRate: '#dc2626',
+    bounceRate: '#ef4444',
     bounceCount: '#ea580c',
     averageSessionDuration: '#0891b2',
     engagementRate: '#16a34a',

@@ -29,13 +29,13 @@ export default function ConversionRateChart({ data, periodLabel, targetRate, per
     
     const periodColors = [
         '#3b82f6', // 青
-        '#10b981', // 緑
-        '#f59e0b', // オレンジ
+        '#16a34a', // 緑
+        '#d97706', // オレンジ
         '#8b5cf6', // 紫
         '#ec4899', // ピンク
-        '#06b6d4', // シアン
+        '#0891b2', // シアン
         '#84cc16', // ライム
-        '#f97316', // オレンジ
+        '#ea580c', // オレンジ
     ]
     
     const chartData = data.map((step, index) => {
@@ -251,7 +251,7 @@ export default function ConversionRateChart({ data, periodLabel, targetRate, per
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(75, 85, 99, 0.25)', stroke: '#9ca3af', strokeWidth: 1 }} />
                             <Bar dataKey="conversionRatePercentA" radius={[6, 6, 0, 0]} barSize={35} name={periodLabel || '期間A'} fill="#3b82f6" />
-                            <Bar dataKey="conversionRatePercentB" radius={[6, 6, 0, 0]} barSize={35} name={comparisonLabel || '期間B'} fill="#10b981" />
+                            <Bar dataKey="conversionRatePercentB" radius={[6, 6, 0, 0]} barSize={35} name={comparisonLabel || '期間B'} fill="#16a34a" />
                             <Legend />
                         </BarChart>
                     ) : (
@@ -295,7 +295,7 @@ export default function ConversionRateChart({ data, periodLabel, targetRate, per
                                 {chartData.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
-                                        fill={entry.conversionRatePercent >= (targetRate || 0) * 100 ? '#10b981' : '#3b82f6'}
+                                        fill={entry.conversionRatePercent >= (targetRate || 0) * 100 ? '#16a34a' : '#3b82f6'}
                                     />
                                 ))}
                             </Bar>

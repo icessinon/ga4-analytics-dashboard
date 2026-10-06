@@ -4,6 +4,8 @@
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
     margin-bottom: 2rem;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .inputRow {

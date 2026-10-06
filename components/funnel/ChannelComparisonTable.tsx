@@ -70,7 +70,7 @@ export default function ChannelComparisonTable({ periods }: Props) {
                                 })}
                                 <td className={styles.tdNum}>
                                     {diff != null ? (
-                                        <span className={styles.cvr} style={{ color: diff >= 0 ? '#34d399' : '#f87171' }}>
+                                        <span className={styles.cvr} style={{ color: diff >= 0 ? '#16a34a' : '#ef4444' }}>
                                             {diff >= 0 ? '+' : ''}{diff.toFixed(2)}pt
                                         </span>
                                     ) : (
@@ -84,7 +84,7 @@ export default function ChannelComparisonTable({ periods }: Props) {
             </table>
             <p className={styles.note}>
                 各セル：上段＝エントリー数（ステップ1到達）、下段＝そのチャネルの全体CVR。
-                CVR変化＝最初の期間から最後の期間へのCVR差分（<span style={{ color: '#34d399' }}>緑＝改善</span>／<span style={{ color: '#f87171' }}>赤＝悪化</span>）
+                CVR変化＝最初の期間から最後の期間へのCVR差分（<span style={{ color: '#16a34a' }}>緑＝改善</span>／<span style={{ color: '#ef4444' }}>赤＝悪化</span>）
             </p>
         </div>
     )

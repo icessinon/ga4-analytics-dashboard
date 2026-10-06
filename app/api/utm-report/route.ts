@@ -4,8 +4,11 @@ import { parseDateString } from '@/lib/utils/date'
 
 /**
  * UTM別集計レポート:
- *  GA4 Data API で utm_source × utm_medium × utm_campaign 別に
+ *  GA4 Data API で utm_source × utm_medium × utm_campaign × utm_content 別に
  *  セッション・ユーザー・CV（応募 / LP応募 / 会員登録）を集計する汎用ビュー。
+ *  utm_content は「同じ配信の中のどのリンク／どの文面か」を分ける軸（ステップメールの
+ *  リンク位置、スカウトSMSの文面AB、広告のクリエイティブID）。付いていない配信は
+ *  (not set) に寄るので、content を足しても既存の行が割れるのは使っている配信だけ。
  *  各行の「意味・発行タイミング」注記はフロント側で lib/constants/utmCatalog.ts が付与。
  *
  * 注: GA4 は UTM をセッション開始時のみ読むため、サイト内リンクUTM（フッター等）は
@@ -21,7 +24,7 @@ const CV_PAGES = [
 interface GA4Row { dimensionValues: Array<{ value?: string }>; metricValues: Array<{ value?: string }> }
 
 const num = (v?: string) => parseInt(v ?? '0', 10)
-const key = (s: string, m: string, c: string) => `${s}${m}${c}`
+const key = (s: string, m: string, c: string, ct: string) => [s, m, c, ct].join('\u0001')
 
 export async function POST(request: Request) {
     try {
@@ -35,6 +38,7 @@ export async function POST(request: Request) {
             { name: 'sessionSource' },
             { name: 'sessionMedium' },
             { name: 'sessionCampaignName' },
+            { name: 'sessionManualAdContent' },
         ]
 
         const [main, cvRows] = await Promise.all([
@@ -44,7 +48,7 @@ export async function POST(request: Request) {
                 dimensions: utmDims,
                 metrics: [{ name: 'sessions' }, { name: 'activeUsers' }],
                 orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
-                limit: 300,
+                limit: 500,
             }, accessToken),
             // UTM×CVページ別の到達ユーザー（CVを3種に分解）
             fetchGA4Data({
@@ -58,7 +62,7 @@ export async function POST(request: Request) {
                         })),
                     },
                 },
-                limit: 2000,
+                limit: 3000,
             }, accessToken),
         ])
 
@@ -68,22 +72,25 @@ export async function POST(request: Request) {
             const s = r.dimensionValues[0]?.value ?? '(not set)'
             const m = r.dimensionValues[1]?.value ?? '(not set)'
             const c = r.dimensionValues[2]?.value ?? '(not set)'
-            const path = r.dimensionValues[3]?.value ?? ''
+            const ct = r.dimensionValues[3]?.value ?? '(not set)'
+            const path = r.dimensionValues[4]?.value ?? ''
             const users = num(r.metricValues[0]?.value)
-            const bucket = cvByUtm.get(key(s, m, c)) ?? { applyCv: 0, lpApplyCv: 0, signupCv: 0 }
+            const k = key(s, m, c, ct)
+            const bucket = cvByUtm.get(k) ?? { applyCv: 0, lpApplyCv: 0, signupCv: 0 }
             for (const p of CV_PAGES) {
                 if (path.startsWith(p.prefix)) { bucket[p.key] += users; break }
             }
-            cvByUtm.set(key(s, m, c), bucket)
+            cvByUtm.set(k, bucket)
         }
 
         const rows = ((main.rows ?? []) as GA4Row[]).map((r) => {
             const source = r.dimensionValues[0]?.value ?? '(not set)'
             const medium = r.dimensionValues[1]?.value ?? '(not set)'
             const campaign = r.dimensionValues[2]?.value ?? '(not set)'
-            const cv = cvByUtm.get(key(source, medium, campaign)) ?? { applyCv: 0, lpApplyCv: 0, signupCv: 0 }
+            const content = r.dimensionValues[3]?.value ?? '(not set)'
+            const cv = cvByUtm.get(key(source, medium, campaign, content)) ?? { applyCv: 0, lpApplyCv: 0, signupCv: 0 }
             return {
-                source, medium, campaign,
+                source, medium, campaign, content,
                 sessions: num(r.metricValues[0]?.value),
                 users: num(r.metricValues[1]?.value),
                 ...cv,

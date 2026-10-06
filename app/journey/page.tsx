@@ -78,7 +78,7 @@ interface JourneyData {
     _debug?: { exitQ4Rows: number; exitQ4Error: string; q2RawCount: number; q1RawCount: number; rawN1MapSize: number; q2CatCount: number; q1CatCount: number; crossRows: number; internalBase: string; sampleReferrer: string }
 }
 
-const URL_PALETTE = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f43f5e', '#0ea5e9', '#a78bfa', '#34d399', '#fb923c']
+const URL_PALETTE = ['#16a34a', '#3b82f6', '#d97706', '#8b5cf6', '#0891b2', '#ec4899', '#84cc16', '#f43f5e', '#0891b2', '#8b5cf6', '#16a34a', '#ea580c']
 function urlPathColor(path: string): string {
     const seg = (path || '/').split('/').filter(Boolean)[0] || ''
     let h = 0
@@ -348,10 +348,10 @@ export default function JourneyPage() {
                                         <tr key={i} className={styles.rankRow}>
                                             <td className={styles.rankTd}>{fs.name}</td>
                                             <td className={styles.rankTdNum}>{fs.goalUsers.toLocaleString()}</td>
-                                            <td className={styles.rankTdNum} style={{ color: '#34d399', fontWeight: 600 }}>
+                                            <td className={styles.rankTdNum} style={{ color: '#16a34a', fontWeight: 600 }}>
                                                 {(fs.arrivalRate * 100).toFixed(2)}%
                                             </td>
-                                            <td className={styles.rankTdNum} style={{ color: '#f87171' }}>
+                                            <td className={styles.rankTdNum} style={{ color: '#ef4444' }}>
                                                 {(fs.dropoutRate * 100).toFixed(1)}%
                                             </td>
                                         </tr>
@@ -381,7 +381,7 @@ export default function JourneyPage() {
                         </div>
                         <div className={styles.summaryCard}>
                             <p className={styles.summaryLabel}>離脱率</p>
-                            <p className={`${styles.summaryValue} ${styles.summaryHighlight}`} style={{ color: '#f87171' }}>
+                            <p className={`${styles.summaryValue} ${styles.summaryHighlight}`} style={{ color: '#ef4444' }}>
                                 {data.totalUsers > 0 && data.goalUsers != null
                                     ? (((data.totalUsers - data.goalUsers) / data.totalUsers) * 100).toFixed(1) + '%'
                                     : '-'}
@@ -655,15 +655,15 @@ export default function JourneyPage() {
                                                                     </>
                                                                 )}
                                                                 <span className={styles.pathArrow}>→</span>
-                                                                <span className={styles.pathStep} style={{ color: '#f87171', borderColor: '#f8717160' }}>離脱</span>
+                                                                <span className={styles.pathStep} style={{ color: '#ef4444', borderColor: '#ef444460' }}>離脱</span>
                                                             </div>
                                                         </td>
                                                         <td className={styles.pathTdNum}>{d.dropout.toLocaleString()}</td>
                                                         <td className={styles.pathTdNum} style={{ color: 'var(--gray-400)' }}>{globalPct}%</td>
-                                                        <td className={styles.pathTdNum} style={{ color: '#93c5fd' }}>
+                                                        <td className={styles.pathTdNum} style={{ color: '#3b82f6' }}>
                                                             {sig ? formatDuration(sig.avgEngagementSec) : '-'}
                                                         </td>
-                                                        <td className={styles.pathTdNum} style={{ color: '#93c5fd' }}>
+                                                        <td className={styles.pathTdNum} style={{ color: '#3b82f6' }}>
                                                             {sig ? `${(sig.scrollRate * 100).toFixed(0)}%` : '-'}
                                                         </td>
                                                         <td className={styles.pathTdNum} style={{ color: exitRateColor(sig ? 1 - sig.engagementRate : 0.5) }}>
@@ -712,19 +712,19 @@ export default function JourneyPage() {
                                                                     </>
                                                                 )}
                                                                 <span className={styles.pathArrow}>→</span>
-                                                                <span className={styles.pathStep} style={{ color: '#f87171', borderColor: '#f8717155' }}>離脱</span>
+                                                                <span className={styles.pathStep} style={{ color: '#ef4444', borderColor: '#ef444455' }}>離脱</span>
                                                                 <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--gray-400)' }}>
                                                                     {totalDropouts > 0 ? (d.dropout / totalDropouts * 100).toFixed(1) : '-'}%
                                                                 </span>
                                                                 {dropoutSignalMap[d.n1] && (
-                                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#93c5fd' }}>
+                                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: '#3b82f6' }}>
                                                                         滞在{formatDuration(dropoutSignalMap[d.n1].avgEngagementSec)}・スク{(dropoutSignalMap[d.n1].scrollRate * 100).toFixed(0)}%・Eng{(dropoutSignalMap[d.n1].engagementRate * 100).toFixed(0)}%
                                                                     </span>
                                                                 )}
                                                             </div>
                                                             <div className={styles.pathGroupBar}>
                                                                 <div className={styles.pathGroupBarFill}
-                                                                    style={{ width: `${barPct}%`, background: '#f8717180' }} />
+                                                                    style={{ width: `${barPct}%`, background: '#ef444480' }} />
                                                             </div>
                                                             <span className={styles.pathGroupCount}>{d.dropout.toLocaleString()}</span>
                                                         </div>
@@ -829,7 +829,7 @@ export default function JourneyPage() {
                                 ) : 'AIで分析'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#f87171', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {

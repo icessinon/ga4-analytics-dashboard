@@ -310,7 +310,7 @@
     padding: 0.3rem 0.85rem;
     font-size: 0.8125rem;
     background-color: var(--blue-900);
-    color: #bfdbfe;
+    color: var(--text-on-tint-blue);
     border: 1px solid #2d4a8a;
     border-radius: 5px;
     cursor: pointer;

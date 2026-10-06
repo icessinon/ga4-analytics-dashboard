@@ -40,6 +40,7 @@ export const FEATURE_LIST: FeatureDoc[] = [
             '開封率の分母は配信成功（Delivery）。同一メールで開封イベントが複数回立つため message_id で重複除去している',
             'SESの開封計測は画像読み込み依存で、ブロック環境では低く、Appleのメールプライバシー保護では高く出る。絶対水準ではなくステップ間の差と時系列で見る',
             'SESイベントのBigQuery連携に遅延があるため、直近の送信は開封が未反映になることがある（突合できなかった通数を画面に表示）',
+            'status=skipped（配信停止・アドレス無しなど、そもそも送る対象でなかった人）は送信失敗と分けて「対象外スキップ」として理由別に表示する。送信数・開封率の分母には含めない',
         ],
     },
     {
@@ -401,15 +402,16 @@ export const FEATURE_LIST: FeatureDoc[] = [
         name: 'UTM別レポート',
         href: '/utm-report',
         category: 'チャネル・集客',
-        description: 'utm_source × utm_medium × utm_campaign 別に、セッション・ユーザー・CV（応募/LP応募/会員登録）・期待売上換算を集計する汎用ビュー。各UTMが「どの施策のリンクで・いつ発行されるか」を lib/constants/utmCatalog.ts の辞書で注記する。完全な命名規則は docs/utm-naming-convention.md（用語集のUTM節と同期）。',
+        description: 'utm_source × utm_medium × utm_campaign × utm_content 別に、セッション・ユーザー・CV（応募/LP応募/会員登録）・期待売上換算を集計する汎用ビュー。各UTMが「どの施策のリンクで・いつ発行されるか」を lib/constants/utmCatalog.ts の辞書で注記する。完全な命名規則は docs/utm-naming-convention.md（用語集のUTM節と同期）。',
         capabilities: [
-            'source×medium×campaign別のセッション・ユーザー・CV・CVR・期待売上換算（CV単価係数）',
-            '各行に施策名・発行タイミング・区分バッジ（自社通知/LINE公式/CA配信/スカウトSMS/広告/インフルエンサー等）を注記',
+            'source×medium×campaign×content別のセッション・ユーザー・CV・CVR・期待売上換算（CV単価係数）',
+            '各行に施策名・発行タイミング・区分バッジ（自社通知/LINE公式/CA配信/スカウト配信/広告/インフルエンサー等）を注記',
+            'utm_content が何を分けているかも注記（自社メール=配信内のリンク位置、スカウトSMS=文面AB featured_a/featured_b、広告=クリエイティブID）。「utm_contentで分ける」トグルでcampaign粒度に畳める',
             'medium別フィルタ（email/line/social/sms/cpc/referral…）とサマリー（対象セッション・CV・円換算・UTM種類数）',
             'keep_remider（keep_reminderのタイポ）等のコード側既知の不具合を⚠️注記',
             '注: GA4はUTMをセッション開始時のみ読むため、サイト内リンクUTM（フッター等 utm_source=xwork/thanks）は表示されない（流入UTMのみが対象）',
         ],
-        metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium', 'sessionCampaignName'],
+        metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium', 'sessionCampaignName', 'sessionManualAdContent'],
         apiRoute: 'POST /api/utm-report',
     },
     {

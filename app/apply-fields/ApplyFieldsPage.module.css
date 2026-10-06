@@ -88,6 +88,8 @@
     border-radius: 0.75rem;
     padding: 1.25rem;
     min-width: 0;
+    background-image: var(--surface-gradient);
+    box-shadow: var(--shadow-card), var(--shadow-inset);
 }
 
 .cardHead {

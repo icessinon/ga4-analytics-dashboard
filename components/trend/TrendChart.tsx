@@ -113,12 +113,12 @@ export default function TrendChart({ reportName, weeklyResults, monthlyTotal, mo
     const textColor = isDarkMode ? '#9ca3af' : '#374151'
     const gridColor = isDarkMode ? '#374151' : '#e5e7eb'
     const lineColors = {
-        pv: '#60a5fa',
-        cv: '#34d399',
-        cvr: '#fbbf24',
-        pvMonthly: '#93c5fd',
-        cvMonthly: '#6ee7b7',
-        cvrMonthly: '#fcd34d',
+        pv: '#3b82f6',
+        cv: '#16a34a',
+        cvr: '#d97706',
+        pvMonthly: '#3b82f6',
+        cvMonthly: '#16a34a',
+        cvrMonthly: '#d97706',
     }
 
     return (
