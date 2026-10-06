@@ -1,78 +1,53 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
+import { useCallback, useEffect, useState } from 'react'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import { fetchJson } from '@/lib/utils/fetch'
 import type { Product } from './types'
 import styles from './ProductsPage.module.css'
+
+const EMPTY_FORM = { name: '', description: '', domain: '', ga4PropertyId: '' }
 
 export default function ProductsPage() {
     const { products, setProducts } = useProduct()
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        domain: '',
-        ga4PropertyId: '',
-    })
+    const [formData, setFormData] = useState(EMPTY_FORM)
+    const [saving, setSaving] = useState(false)
 
-    useEffect(() => {
-        fetchProducts()
-    }, [])
-
-    async function fetchProducts() {
+    const fetchProducts = useCallback(async () => {
+        setError(null)
         try {
-            const response = await fetch('/api/products')
-            const data = await response.json()
-            if (data.error) {
-                throw new Error(data.message || data.error)
-            }
+            const data = await fetchJson<{ products?: Product[] }>('/api/products')
             setProducts(data.products || [])
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
-            console.error('Products fetch error:', err)
-            setError(errorMessage)
+            setError(err instanceof Error ? err.message : 'エラーが発生しました')
         } finally {
             setLoading(false)
         }
-    }
+    }, [setProducts])
+
+    useEffect(() => { fetchProducts() }, [fetchProducts])
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        setSaving(true)
+        setError(null)
         try {
-            if (editingProduct) {
-                const response = await fetch('/api/products', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: editingProduct.id,
-                        ...formData,
-                    }),
-                })
-                const data = await response.json()
-                if (data.error) {
-                    throw new Error(data.message || data.error)
-                }
-            } else {
-                const response = await fetch('/api/products', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
-                })
-                const data = await response.json()
-                if (data.error) {
-                    throw new Error(data.message || data.error)
-                }
-            }
-            setEditingProduct(null)
-            setFormData({ name: '', description: '', domain: '', ga4PropertyId: '' })
-            fetchProducts()
+            await fetchJson('/api/products', {
+                method: editingProduct ? 'PUT' : 'POST',
+                body: JSON.stringify(editingProduct ? { id: editingProduct.id, ...formData } : formData),
+            })
+            handleCancel()
+            await fetchProducts()
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
-            setError(errorMessage)
+            setError(err instanceof Error ? err.message : 'エラーが発生しました')
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -88,171 +63,91 @@ export default function ProductsPage() {
 
     function handleCancel() {
         setEditingProduct(null)
-        setFormData({ name: '', description: '', domain: '', ga4PropertyId: '' })
+        setFormData(EMPTY_FORM)
     }
 
     async function handleDelete(id: number) {
         if (!confirm('このプロダクトを削除しますか？')) return
+        setError(null)
         try {
-            const response = await fetch(`/api/products?id=${id}`, {
-                method: 'DELETE',
-            })
-            const data = await response.json()
-            if (data.error) {
-                throw new Error(data.message || data.error)
-            }
-            fetchProducts()
+            await fetchJson(`/api/products?id=${id}`, { method: 'DELETE' })
+            await fetchProducts()
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
-            setError(errorMessage)
+            setError(err instanceof Error ? err.message : 'エラーが発生しました')
         }
     }
 
-    if (loading) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>プロダクト管理</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
-    }
+    const set = (key: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement>) => setFormData((f) => ({ ...f, [key]: e.target.value }))
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>プロダクト管理</h1>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
+        <PageShell pageId="products" status={{ loading, source: 'db' }}>
+            {error && <Alert tone="error">{error}</Alert>}
 
-            {error && (
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
-                </div>
-            )}
-
-            <div className={styles.formSection}>
-                <h2 className={styles.formTitle}>
-                    {editingProduct ? 'プロダクトを編集' : '新しいプロダクトを追加'}
-                </h2>
-                <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>{editingProduct ? `プロダクトを編集: ${editingProduct.name}` : '新しいプロダクトを追加'}</h2>
+                <p className={ui.sectionNote}>GA4 プロパティ ID を設定すると、各分析ページでこのプロダクトを選んで集計できます。</p>
+                <form onSubmit={handleSubmit}>
                     <div className={styles.formGrid}>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>プロダクト名 *</label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className={styles.formInput}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>ドメイン</label>
-                            <input
-                                type="text"
-                                value={formData.domain}
-                                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                                placeholder="example.com"
-                                className={styles.formInput}
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>GA4プロパティID</label>
-                            <input
-                                type="text"
-                                value={formData.ga4PropertyId}
-                                onChange={(e) => setFormData({ ...formData, ga4PropertyId: e.target.value })}
-                                placeholder="492794577"
-                                className={styles.formInput}
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>説明</label>
-                            <input
-                                type="text"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className={styles.formInput}
-                            />
-                        </div>
+                        <label className={styles.field}>
+                            <span className={styles.fieldLabel}>プロダクト名 *</span>
+                            <input type="text" className={ui.input} value={formData.name} onChange={set('name')} required />
+                        </label>
+                        <label className={styles.field}>
+                            <span className={styles.fieldLabel}>ドメイン</span>
+                            <input type="text" className={ui.input} value={formData.domain} onChange={set('domain')} placeholder="example.com" />
+                        </label>
+                        <label className={styles.field}>
+                            <span className={styles.fieldLabel}>GA4プロパティID</span>
+                            <input type="text" className={ui.input} value={formData.ga4PropertyId} onChange={set('ga4PropertyId')} placeholder="534098180" />
+                        </label>
+                        <label className={styles.field}>
+                            <span className={styles.fieldLabel}>説明</span>
+                            <input type="text" className={ui.input} value={formData.description} onChange={set('description')} />
+                        </label>
                     </div>
-                    <div className={styles.formActions}>
-                        <button
-                            type="submit"
-                            className="executionButton"
-                        >
-                            <span>{editingProduct ? '更新' : '追加'}</span>
+                    <div className={ui.controls}>
+                        <button type="submit" className="executionButton" disabled={saving}>
+                            <span>{saving ? '保存中...' : editingProduct ? '更新' : '追加'}</span>
                         </button>
                         {editingProduct && (
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                className={`${styles.button} ${styles.buttonSecondary}`}
-                            >
-                                キャンセル
-                            </button>
+                            <button type="button" onClick={handleCancel} className={ui.btnGhost}>キャンセル</button>
                         )}
                     </div>
                 </form>
             </div>
 
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead className={styles.tableHead}>
-                        <tr>
-                            <th className={styles.tableHeaderCell}>プロダクト名</th>
-                            <th className={styles.tableHeaderCell}>ドメイン</th>
-                            <th className={styles.tableHeaderCell}>GA4プロパティID</th>
-                            <th className={styles.tableHeaderCell}>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody className={styles.tableBody}>
-                        {products.length === 0 ? (
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>登録済みプロダクト</h2>
+                <div className={ui.tableWrap}>
+                    <table className={ui.dataTable}>
+                        <thead>
                             <tr>
-                                <td colSpan={4} className={`${styles.tableCell} ${styles.tableCellCenter}`}>
-                                    プロダクトがありません
-                                </td>
+                                <th>プロダクト名</th>
+                                <th>ドメイン</th>
+                                <th>GA4プロパティID</th>
+                                <th>操作</th>
                             </tr>
-                        ) : (
-                            products.map((product) => (
-                                <tr key={product.id} className={styles.tableRow}>
-                                    <td className={styles.tableCell}>
-                                        {product.name}
-                                    </td>
-                                    <td className={styles.tableCell}>
-                                        {product.domain || '-'}
-                                    </td>
-                                    <td className={styles.tableCell}>
-                                        {product.ga4PropertyId || '-'}
-                                    </td>
-                                    <td className={styles.actionCell}>
-                                        <div className={styles.actionContainer}>
-                                            <button
-                                                onClick={() => handleEdit(product)}
-                                                className={styles.actionButton}
-                                            >
-                                                編集
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(product.id)}
-                                                className={`${styles.actionButton} ${styles.actionButtonDelete}`}
-                                            >
-                                                削除
-                                            </button>
+                        </thead>
+                        <tbody>
+                            {products.length === 0 ? (
+                                <tr><td colSpan={4} className={ui.empty}>プロダクトがありません</td></tr>
+                            ) : products.map((product) => (
+                                <tr key={product.id}>
+                                    <td className={ui.strong}>{product.name}</td>
+                                    <td>{product.domain || '-'}</td>
+                                    <td>{product.ga4PropertyId || '-'}</td>
+                                    <td>
+                                        <div className={styles.actions}>
+                                            <button type="button" onClick={() => handleEdit(product)} className={ui.btnGhost}>編集</button>
+                                            <button type="button" onClick={() => handleDelete(product.id)} className={cx(ui.btnGhost, styles.danger)}>削除</button>
                                         </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </PageShell>
     )
 }

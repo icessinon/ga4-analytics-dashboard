@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import type { AiUsageByDay, AiUsageByFunction, AiUsageLog, AiUsageSummary } from '@/lib/services/aiUsage/aiUsageTypes'
 
 const PRICING: Record<string, { inputPerM: number; outputPerM: number; thinkingPerM: number }> = {
     'gemini-2.5-flash': {
@@ -10,39 +11,11 @@ const PRICING: Record<string, { inputPerM: number; outputPerM: number; thinkingP
     },
 }
 
-export interface ParsedLog {
-    date: string
-    time: string
-    function: string
-    model: string
-    promptTokens: number
-    completionTokens: number
-    thinkingTokens: number
-    totalTokens: number
-    costUsd: number
-}
-
-interface ByFunctionSummary {
-    name: string
-    calls: number
-    tokens: number
-    costUsd: number
-}
-
-interface ByDaySummary {
-    date: string
-    calls: number
-    tokens: number
-    costUsd: number
-}
-
-interface Summary {
-    totalCostUsd: number
-    totalTokens: number
-    callCount: number
-    byFunction: ByFunctionSummary[]
-    byDay: ByDaySummary[]
-}
+// 型は lib/services/aiUsage/aiUsageTypes が正（ページ側も同じものを import type する）
+type ParsedLog = AiUsageLog
+type ByFunctionSummary = AiUsageByFunction
+type ByDaySummary = AiUsageByDay
+type Summary = AiUsageSummary
 
 function calcCost(model: string, prompt: number, completion: number, thinking: number): number {
     const pricing = PRICING[model]
