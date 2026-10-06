@@ -13,75 +13,8 @@ import { useReport } from '@/hooks/useReport'
 import { fetchJson } from '@/lib/utils/fetch'
 import JourneySankey from '@/components/journey/JourneySankey'
 import { nodeColor, exitRateColor } from '@/components/journey/journeyColors'
+import type { JourneyNode, JourneyFlow, PathFlow, DropoutPath, PageSignal, JourneyData } from '@/lib/services/journey/journeyTypes'
 import styles from './JourneyPage.module.css'
-
-interface JourneyNode {
-    id: string
-    stage: number
-    sessions: number
-}
-
-interface JourneyFlow {
-    from: string
-    to: string
-    sessions: number
-}
-
-interface RankingRow {
-    page?: string
-    channel?: string
-    views: number
-    rate: number
-}
-
-interface PathFlow {
-    channel: string
-    n2: string
-    n1: string
-    count: number
-}
-
-interface DropoutPath {
-    channel: string
-    n2: string
-    n1: string
-    dropout: number
-}
-
-interface PageSignal {
-    avgEngagementSec: number
-    scrollRate: number
-    engagementRate: number
-}
-
-interface FormStat {
-    name: string
-    goalUsers: number
-    dropoutUsers: number
-    arrivalRate: number
-    dropoutRate: number
-}
-
-interface JourneyData {
-    nodes: JourneyNode[]
-    flows: JourneyFlow[]
-    totalSessions: number
-    totalUsers: number
-    goalUsers: number
-    formStats: FormStat[]
-    totalGoalViews: number
-    goalLabel: string
-    referrerRanking: RankingRow[]
-    channelRanking: RankingRow[]
-    topPaths: PathFlow[]
-    rawTopPaths: PathFlow[]
-    dropoutPaths: DropoutPath[]
-    rawDropoutPaths: DropoutPath[]
-    pageExitRates: Record<string, number>
-    pageSignals?: Record<string, PageSignal>
-    rawPageSignals?: Record<string, PageSignal>
-    _debug?: { exitQ4Rows: number; exitQ4Error: string; q2RawCount: number; q1RawCount: number; rawN1MapSize: number; q2CatCount: number; q1CatCount: number; crossRows: number; internalBase: string; sampleReferrer: string }
-}
 
 const URL_PALETTE = ['#16a34a', '#3b82f6', '#d97706', '#8b5cf6', '#0891b2', '#ec4899', '#84cc16', '#f43f5e', '#0891b2', '#8b5cf6', '#16a34a', '#ea580c']
 function urlPathColor(path: string): string {

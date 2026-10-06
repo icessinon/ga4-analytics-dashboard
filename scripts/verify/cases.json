@@ -128,5 +128,80 @@
       "endDate": "2026-09-07",
       "deviceCategory": "mobile"
     }
+  },
+  {
+    "name": "journey",
+    "path": "/api/journey",
+    "body": {
+      "propertyId": "534098180",
+      "goalPath": "/members/signup",
+      "goalLabel": "会員登録フォーム",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14",
+      "domain": "x-work.jp"
+    }
+  },
+  {
+    "name": "journey-device",
+    "path": "/api/journey",
+    "body": {
+      "propertyId": "534098180",
+      "goalPath": "/entry/media_",
+      "goalLabel": "応募フォーム",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "domain": "x-work.jp",
+      "deviceFilter": "mobile"
+    }
+  },
+  {
+    "name": "exit",
+    "path": "/api/exit",
+    "body": {
+      "propertyId": "534098180",
+      "steps": [
+        "大職種一覧",
+        "求人詳細",
+        "応募フォーム"
+      ],
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "exit-device",
+    "path": "/api/exit",
+    "body": {
+      "propertyId": "534098180",
+      "steps": [
+        "TOP",
+        "絞り込み検索",
+        "求人詳細",
+        "会員登録フォーム"
+      ],
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "deviceFilter": "mobile"
+    }
+  },
+  {
+    "name": "pageflow",
+    "path": "/api/pageflow",
+    "body": {
+      "propertyId": "534098180",
+      "pagePath": "/lp-thanks",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
+  },
+  {
+    "name": "pageflow-driver",
+    "path": "/api/pageflow",
+    "body": {
+      "propertyId": "534098180",
+      "pagePath": "/driver",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07"
+    }
   }
 ]
