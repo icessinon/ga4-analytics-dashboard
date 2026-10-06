@@ -33,3 +33,12 @@
 .submit {
     margin-left: auto;
 }
+
+/*
+ * 日付入力は globals.css の input ルール（width: 100%）に負けて行いっぱいに伸びるので、
+ * フィルタ行の中では同じ詳細度の連鎖で固定幅に戻す
+ */
+.fieldControl > input[type="date"]:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="image"]) {
+    width: 10.5rem;
+    flex: 0 0 auto;
+}
