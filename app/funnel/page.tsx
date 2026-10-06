@@ -1,12 +1,13 @@
 'use client'
 
 import { Suspense, useState, useEffect } from 'react'
+import Link from 'next/link'
 import DateInput from '@/components/DateInput'
 import { useRouter, useSearchParams } from 'next/navigation'
-import BackLink from '@/components/BackLink'
-import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
 import GeminiConfig from '@/components/GeminiConfig'
+import { ui, cx } from '@/components/ui'
+import { fetchJson } from '@/lib/utils/fetch'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import FunnelChart from '@/components/funnel/FunnelChart'
 import ChannelBreakdownTable from '@/components/funnel/ChannelBreakdownTable'
@@ -100,12 +101,11 @@ function FunnelPageContent() {
             
             async function loadFunnelConfig() {
                 try {
-                    const response = await fetch(`/api/funnel/executions/${executionId}`)
-                    const data = await response.json()
-                    
+                    const data = await fetchJson<{ execution?: any }>(`/api/funnel/executions/${executionId}`)
+
                     if (!isMounted) return
-                    
-                    if (response.ok && data.execution) {
+
+                    if (data.execution) {
                         const execution = data.execution
                         
                         if (!modeParam) {
@@ -281,19 +281,10 @@ function FunnelPageContent() {
                     name: reportName.trim() || undefined,
                 }
 
-                const response = await fetch('/api/funnel/entry-form/compare', {
+                const result = await fetchJson<{ executionId?: number; comparison: ComparisonData }>('/api/funnel/entry-form/compare', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify(requestBody),
                 })
-
-                const result = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(result.message || result.error || '期間比較に失敗しました')
-                }
 
                 if (result.executionId) {
                     router.push(`/funnel/${result.executionId}`)
@@ -314,19 +305,10 @@ function FunnelPageContent() {
                     name: reportName.trim() || undefined,
                 }
 
-                const response = await fetch('/api/funnel/entry-form', {
+                const result = await fetchJson<{ executionId?: number; funnelData: FunnelData }>('/api/funnel/entry-form', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify(requestBody),
                 })
-
-                const result = await response.json()
-
-                if (!response.ok) {
-                    throw new Error(result.message || result.error || 'ファネル分析に失敗しました')
-                }
 
                 if (result.executionId) {
                     router.push(`/funnel/${result.executionId}`)
@@ -341,62 +323,14 @@ function FunnelPageContent() {
         }
     }
 
-    if (loading && !funnelData) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>ファネル分析</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.loaderContainer}>
-                    <div style={{ textAlign: 'center' }}>
-                        <Loader />
-                        <p className={styles.loaderText}>ファネル分析中...</p>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>ファネル分析</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.warningBox}>
-                    <p>
-                        プロダクトを選択してください。ダッシュボードの右上のドロップダウンから選択できます。
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>ファネル分析</h1>
-                    {currentProduct && (
-                        <div className={styles.infoBox}>
-                            <p className={styles.infoText}>
-                                <strong>現在のプロダクト:</strong> {currentProduct.name}
-                                {currentProduct.domain && ` (${currentProduct.domain})`}
-                            </p>
-                        </div>
-                    )}
-                </div>
-                <div className={styles.headerActions}>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                    <BackLink href="/history?tab=funnel" direction="forward">
-                        実行履歴を見る
-                    </BackLink>
-                </div>
-            </div>
-
-            <div className={styles.section}>
+        <PageShell
+            pageId="funnel"
+            requireProduct
+            status={{ loading, error, source: 'ga4', loadingText: 'ファネル分析中...' }}
+            actions={<Link href="/history?tab=funnel" className={ui.btn}>実行履歴を見る →</Link>}
+        >
+            <div className={ui.card}>
                 <div className={styles.tabContainer}>
                     <button
                         type="button"
@@ -427,17 +361,17 @@ function FunnelPageContent() {
                 </div>
             </div>
 
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>分析設定</h2>
+            <div className={ui.card}>
+                <h2 className={ui.sectionTitle}>分析設定</h2>
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.formField}>
-                        <label className={styles.formLabel}>レポート名</label>
+                        <label className={ui.controlLabel}>レポート名</label>
                         <input
                             type="text"
                             value={reportName}
                             onChange={(e) => setReportName(e.target.value)}
                             placeholder="未入力の場合は日時が自動設定されます"
-                            className={styles.formInput}
+                            
                         />
                     </div>
                     {mode === 'compare' && (
@@ -446,58 +380,59 @@ function FunnelPageContent() {
                     {mode === 'single' && (
                         <div className={styles.formGrid}>
                             <div className={styles.formField}>
-                                <label className={styles.formLabel}>開始日</label>
+                                <label className={ui.controlLabel}>開始日</label>
                                                                     <DateInput
                                                                     value={config.startDate}
                                     onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
-                                    className={styles.formInput}
+                                    
                                     required
                                 />
                             </div>
                             <div className={styles.formField}>
-                                <label className={styles.formLabel}>終了日</label>
+                                <label className={ui.controlLabel}>終了日</label>
                                                                     <DateInput
                                                                     value={config.endDate}
                                     onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
-                                    className={styles.formInput}
+                                    
                                     required
                                 />
                             </div>
                             <div className={styles.formField}>
-                                <label className={styles.formLabel}>フィルタ ディメンション</label>
-                                <CustomSelect
+                                <label className={ui.controlLabel}>フィルタ ディメンション</label>
+                                <select
+                                    className={ui.select}
                                     value={config.filterDimension}
-                                    onChange={(v) => setConfig({ ...config, filterDimension: v })}
-                                    options={GA4_FILTER_DIMENSIONS.map((d) => ({ value: d.value, label: d.label }))}
-                                    triggerClassName={styles.formSelect}
-                                    placeholder="選択してください"
+                                    onChange={(e) => setConfig({ ...config, filterDimension: e.target.value })}
                                     aria-label="フィルタ ディメンション"
-                                />
-                                <p className={styles.helpText}>
+                                >
+                                    {GA4_FILTER_DIMENSIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                                </select>
+                                <p className={ui.note}>
                                     フィルタをかけたいディメンションのAPI名。
                                 </p>
                             </div>
                             <div className={styles.formField}>
-                                <label className={styles.formLabel}>フィルタ 演算子</label>
-                                <CustomSelect
+                                <label className={ui.controlLabel}>フィルタ 演算子</label>
+                                <select
+                                    className={ui.select}
                                     value={config.filterOperator}
-                                    onChange={(v) => setConfig({ ...config, filterOperator: v })}
-                                    options={GA4_FILTER_OPERATORS.map((op) => ({ value: op.value, label: op.label }))}
-                                    triggerClassName={styles.formSelect}
+                                    onChange={(e) => setConfig({ ...config, filterOperator: e.target.value })}
                                     aria-label="フィルタ 演算子"
-                                />
-                                <p className={styles.helpText}>
+                                >
+                                    {GA4_FILTER_OPERATORS.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+                                </select>
+                                <p className={ui.note}>
                                     フィルタの条件。
                                 </p>
                             </div>
                             <div className={`${styles.formField} ${styles.formFieldFull}`}>
-                                <label className={styles.formLabel}>フィルタ 式</label>
+                                <label className={ui.controlLabel}>フィルタ 式</label>
                                 <input
                                     type="text"
                                     value={config.filterExpression}
                                     onChange={(e) => setConfig({ ...config, filterExpression: e.target.value })}
                                     placeholder="カンマ区切りで複数指定可能"
-                                    className={styles.formInput}
+                                    
                                 />
                             </div>
                         </div>
@@ -523,22 +458,22 @@ function FunnelPageContent() {
                                     </div>
                                     <div className={styles.formGrid}>
                                         <div className={styles.formField}>
-                                            <label className={styles.formLabel}>ステップ名</label>
+                                            <label className={ui.controlLabel}>ステップ名</label>
                                             <input
                                                 type="text"
                                                 value={step.stepName}
                                                 onChange={(e) => updateStep(index, 'stepName', e.target.value)}
-                                                className={styles.formInput}
+                                                
                                                 required
                                             />
                                         </div>
                                         <div className={styles.formField}>
-                                            <label className={styles.formLabel}>カスタムイベントラベル</label>
+                                            <label className={ui.controlLabel}>カスタムイベントラベル</label>
                                             <LabelInput
                                                 value={step.customEventLabel}
                                                 onChange={(v) => updateStep(index, 'customEventLabel', v)}
                                                 placeholder="EF__Line__Area__新規会員登録（カンマ区切りで複数指定→合算）"
-                                                className={styles.formInput}
+                                                
                                                 required
                                             />
                                         </div>
@@ -549,7 +484,7 @@ function FunnelPageContent() {
                         <button
                             type="button"
                             onClick={addStep}
-                            className={styles.addStepButton}
+                            className={ui.btnGhost}
                         >
                             + ステップを追加
                         </button>
@@ -560,59 +495,48 @@ function FunnelPageContent() {
                         onEnabledChange={(enabled) => setGeminiConfig({ ...geminiConfig, enabled })}
                     />
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`executionButton ${loading ? styles.submitButtonDisabled : ''}`}
-                    >
+                    <button type="submit" disabled={loading} className="executionButton">
                         <span>{loading ? '分析中...' : mode === 'compare' ? '期間比較を実行' : 'ファネル分析を実行'}</span>
                     </button>
                 </form>
             </div>
 
-            {error && (
-                <div className={styles.errorBox}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
-                </div>
-            )}
-
             {comparisonData && comparisonData.periodA && comparisonData.periodB && (
                 <>
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>期間比較サマリー</h2>
-                        <div className={styles.comparisonGrid}>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>期間A: 総エントリー数</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValueBlue}`}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>期間比較サマリー</h2>
+                        <div className={ui.summaryRow}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>期間A: 総エントリー数</p>
+                                <p className={cx(ui.summaryValue, styles.valueBlue)}>
                                     {comparisonData.periodA.data.totalUsers.toLocaleString()} 人
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>期間B: 総エントリー数</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValueBlue}`}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>期間B: 総エントリー数</p>
+                                <p className={cx(ui.summaryValue, styles.valueBlue)}>
                                     {comparisonData.periodB.data.totalUsers.toLocaleString()} 人
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>エントリー数差分</p>
-                                <p className={`${styles.summaryValue} ${
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>エントリー数差分</p>
+                                <p className={cx(ui.summaryValue,
                                     comparisonData.periodB.data.totalUsers - comparisonData.periodA.data.totalUsers >= 0
-                                        ? styles.summaryValueGreen
-                                        : styles.summaryValueRed
-                                }`}>
+                                        ? styles.valueGreen
+                                        : styles.valueRed,
+                                )}>
                                     {comparisonData.periodB.data.totalUsers - comparisonData.periodA.data.totalUsers >= 0 ? '+' : ''}
                                     {(comparisonData.periodB.data.totalUsers - comparisonData.periodA.data.totalUsers).toLocaleString()} 人
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>全体CVR差分</p>
-                                <p className={`${styles.summaryValue} ${
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>全体CVR差分</p>
+                                <p className={cx(ui.summaryValue,
                                     (comparisonData.periodB.data.steps[comparisonData.periodB.data.steps.length - 1]?.conversionRate || 0) -
                                     (comparisonData.periodA.data.steps[comparisonData.periodA.data.steps.length - 1]?.conversionRate || 0) >= 0
-                                        ? styles.summaryValueGreen
-                                        : styles.summaryValueRed
-                                }`}>
+                                        ? styles.valueGreen
+                                        : styles.valueRed,
+                                )}>
                                     {((comparisonData.periodB.data.steps[comparisonData.periodB.data.steps.length - 1]?.conversionRate || 0) -
                                         (comparisonData.periodA.data.steps[comparisonData.periodA.data.steps.length - 1]?.conversionRate || 0)) * 100 >= 0 ? '+' : ''}
                                     {(((comparisonData.periodB.data.steps[comparisonData.periodB.data.steps.length - 1]?.conversionRate || 0) -
@@ -622,7 +546,7 @@ function FunnelPageContent() {
                         </div>
                     </div>
 
-                    <div className={styles.section}>
+                    <div className={ui.card}>
                         <ComparisonCharts
                             periods={comparisonData.periods || (comparisonData.periodA && comparisonData.periodB ? [comparisonData.periodA, comparisonData.periodB] : [])}
                             periodA={comparisonData.periodA}
@@ -630,8 +554,8 @@ function FunnelPageContent() {
                         />
                     </div>
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>詳細比較テーブル</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>詳細比較テーブル</h2>
                         <ComparisonTable
                             comparison={comparisonData.comparison}
                             periods={comparisonData.periods || (comparisonData.periodA && comparisonData.periodB ? [comparisonData.periodA, comparisonData.periodB] : [])}
@@ -640,8 +564,8 @@ function FunnelPageContent() {
                         />
                     </div>
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>チャネル別CVR変化</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>チャネル別CVR変化</h2>
                         <ChannelComparisonTable
                             periods={comparisonData.periods || (comparisonData.periodA && comparisonData.periodB ? [comparisonData.periodA, comparisonData.periodB] : [])}
                         />
@@ -651,43 +575,43 @@ function FunnelPageContent() {
 
             {funnelData && (
                 <>
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>サマリー</h2>
-                        <div className={styles.summaryGrid}>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>集計期間</p>
-                                <p className={styles.summaryValue}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>サマリー</h2>
+                        <div className={ui.summaryRow}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>集計期間</p>
+                                <p className={ui.summaryValue}>
                                     {config.startDate} ～ {config.endDate}
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>総エントリー数</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValueBlue}`}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>総エントリー数</p>
+                                <p className={cx(ui.summaryValue, styles.valueBlue)}>
                                     {funnelData.totalUsers.toLocaleString()} 人
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>最終ステップ到達数</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValueGreen}`}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>最終ステップ到達数</p>
+                                <p className={cx(ui.summaryValue, styles.valueGreen)}>
                                     {funnelData.steps[funnelData.steps.length - 1]?.users.toLocaleString() || 0} 人
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>全体コンバージョン率</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValuePurple}`}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>全体コンバージョン率</p>
+                                <p className={cx(ui.summaryValue, styles.valuePurple)}>
                                     {((funnelData.steps[funnelData.steps.length - 1]?.conversionRate || 0) * 100).toFixed(2)}%
                                 </p>
                             </div>
-                            <div className={styles.summaryItem}>
-                                <p className={styles.summaryLabel}>最大離脱ステップ</p>
-                                <p className={`${styles.summaryValue} ${styles.summaryValueRed}`}>
+                            <div className={ui.summaryCard}>
+                                <p className={ui.summaryLabel}>最大離脱ステップ</p>
+                                <p className={cx(ui.summaryValue, styles.valueRed)}>
                                     {getMaxDropoffStep(funnelData.steps)}
                                 </p>
                             </div>
                             {config.filterExpression && (
-                                <div className={styles.summaryItem}>
-                                    <p className={styles.summaryLabel}>フィルター条件</p>
-                                    <p className={styles.summaryValue}>
+                                <div className={ui.summaryCard}>
+                                    <p className={ui.summaryLabel}>フィルター条件</p>
+                                    <p className={ui.summaryValue}>
                                         {config.filterDimension} {config.filterOperator} {config.filterExpression}
                                     </p>
                                 </div>
@@ -695,24 +619,24 @@ function FunnelPageContent() {
                         </div>
                     </div>
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>ファネルチャート</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>ファネルチャート</h2>
                         <FunnelChart data={funnelData.steps} />
                     </div>
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>コンバージョン率グラフ</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>コンバージョン率グラフ</h2>
                         <ConversionRateChart data={funnelData.steps} />
                     </div>
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>ドロップオフ率グラフ</h2>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>ドロップオフ率グラフ</h2>
                         <DropoffRateChart data={funnelData.steps} />
                     </div>
 
                     {(funnelData.channelBreakdown?.length ?? 0) > 0 && (
-                        <div className={styles.section}>
-                            <h2 className={styles.sectionTitle}>チャネル別ファネル</h2>
+                        <div className={ui.card}>
+                            <h2 className={ui.sectionTitle}>チャネル別ファネル</h2>
                             <ChannelBreakdownTable
                                 breakdown={funnelData.channelBreakdown!}
                                 overallSteps={funnelData.steps}
@@ -721,55 +645,53 @@ function FunnelPageContent() {
                     )}
 
                     {funnelData.geminiEvaluation && (
-                        <div className={styles.section}>
-                            <h2 className={styles.sectionTitle}>AI評価</h2>
-                            <div className={styles.geminiBox}>
-                                <p className={styles.geminiText}>
-                                    {funnelData.geminiEvaluation}
-                                </p>
+                        <div className={ui.card}>
+                            <h2 className={ui.sectionTitle}>AI評価</h2>
+                            <div className={ui.aiResult}>
+                                <p className={styles.geminiText}>{funnelData.geminiEvaluation}</p>
                             </div>
                         </div>
                     )}
 
-                    <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>詳細データ</h2>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className={styles.table}>
-                                <thead className={styles.tableHead}>
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>詳細データ</h2>
+                        <div className={ui.tableWrap}>
+                            <table className={ui.dataTable}>
+                                <thead>
                                     <tr>
-                                        <th className={styles.tableHeaderCell}>ステップ</th>
-                                        <th className={styles.tableHeaderCell}>カスタムイベントラベル</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>ユーザー数</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>クリック数</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>ビュー数</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>コンバージョン率</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>ドロップオフ率</th>
-                                        <th className={styles.tableHeaderCell} style={{ textAlign: 'right' }}>継続率</th>
+                                        <th>ステップ</th>
+                                        <th>カスタムイベントラベル</th>
+                                        <th className={ui.num}>ユーザー数</th>
+                                        <th className={ui.num}>クリック数</th>
+                                        <th className={ui.num}>ビュー数</th>
+                                        <th className={ui.num}>コンバージョン率</th>
+                                        <th className={ui.num}>ドロップオフ率</th>
+                                        <th className={ui.num}>継続率</th>
                                     </tr>
                                 </thead>
-                                <tbody className={styles.tableBody}>
+                                <tbody>
                                     {funnelData.steps.map((step, index) => {
                                         const continuationRate = index > 0 ? 1 - step.dropoffRate : 1
                                         return (
-                                            <tr key={index} className={styles.tableRow}>
-                                                <td className={styles.tableCell}>{step.stepName}</td>
-                                                <td className={styles.tableCell}>{step.customEventLabel}</td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                            <tr key={index}>
+                                                <td>{step.stepName}</td>
+                                                <td>{step.customEventLabel}</td>
+                                                <td className={ui.num}>
                                                     {step.users.toLocaleString()}
                                                 </td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                                <td className={ui.num}>
                                                     {step.clickUsers.toLocaleString()}
                                                 </td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                                <td className={ui.num}>
                                                     {step.viewUsers.toLocaleString()}
                                                 </td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                                <td className={ui.num}>
                                                     {(step.conversionRate * 100).toFixed(2)}%
                                                 </td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                                <td className={ui.num}>
                                                     {(step.dropoffRate * 100).toFixed(2)}%
                                                 </td>
-                                                <td className={styles.tableCell} style={{ textAlign: 'right' }}>
+                                                <td className={ui.num}>
                                                     {(continuationRate * 100).toFixed(2)}%
                                                 </td>
                                             </tr>
@@ -781,13 +703,13 @@ function FunnelPageContent() {
                     </div>
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }
 
 export default function FunnelPage() {
     return (
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={<PageShell pageId="funnel" status={{ loading: true, source: 'ga4' }}>{null}</PageShell>}>
             <FunnelPageContent />
         </Suspense>
     )
