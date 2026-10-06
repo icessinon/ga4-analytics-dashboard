@@ -215,5 +215,92 @@
       "fetchedAt",
       "scannedBytes"
     ]
+  },
+  {
+    "name": "signup-funnel",
+    "path": "/api/signup-funnel",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "signup-funnel-form",
+    "path": "/api/signup-funnel",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14",
+      "form": "Sekokan"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "signup-funnel-trend",
+    "path": "/api/signup-funnel/trend",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "scout-funnel",
+    "path": "/api/scout/funnel",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    },
+    "volatile": [
+      "fetchedAt"
+    ]
+  },
+  {
+    "name": "funnel-path",
+    "path": "/api/funnel/path",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14",
+      "steps": [
+        {
+          "name": "求人詳細",
+          "type": "page",
+          "matchType": "PARTIAL_REGEXP",
+          "value": "/media_"
+        },
+        {
+          "name": "応募フォーム",
+          "type": "page",
+          "matchType": "BEGINS_WITH",
+          "value": "/entry/media_"
+        },
+        {
+          "name": "応募",
+          "type": "click",
+          "matchType": "BEGINS_WITH",
+          "value": "EF__Job"
+        }
+      ]
+    }
+  },
+  {
+    "name": "engagement-page-paths",
+    "path": "/api/funnel/engagement/page-paths",
+    "body": {
+      "propertyId": "534098180",
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-14"
+    }
   }
 ]

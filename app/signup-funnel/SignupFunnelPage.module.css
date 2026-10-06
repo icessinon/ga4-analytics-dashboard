@@ -1,78 +1,4 @@
-.container {
-    max-width: 72rem;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gray-50);
-    margin-bottom: 0.375rem;
-}
-
-.subtitle {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-    line-height: 1.6;
-}
-
-.notice {
-    background-color: rgba(251, 191, 36, 0.1);
-    border: 1px solid rgba(251, 191, 36, 0.4);
-    border-radius: 0.5rem;
-    color: var(--amber-400);
-    font-size: 0.875rem;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-}
-
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.select {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    color: var(--gray-50);
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
-}
-
-.periodNote {
-    font-size: 0.8125rem;
-    color: var(--gray-400);
-}
-
-.loading {
-    color: var(--gray-400);
-    font-size: 0.875rem;
-}
-
-.error {
-    background-color: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.4);
-    border-radius: 0.5rem;
-    color: var(--red-400);
-    font-size: 0.875rem;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-}
-
+/* ── 職種フォームの切替タブ（推移の指標切替にも流用） ── */
 .formTabs {
     display: flex;
     flex-wrap: wrap;
@@ -81,57 +7,24 @@
 }
 
 .formTab {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
+    background-color: var(--bg-surface);
+    background-image: var(--control-gradient);
+    border: 1px solid var(--border);
     border-radius: 9999px;
-    color: var(--gray-400);
+    color: var(--text-secondary);
     font-size: 0.8125rem;
     padding: 0.375rem 0.875rem;
     cursor: pointer;
+    box-shadow: var(--shadow-card);
 }
 
+/* 選択中は押し込んだ見た目 */
 .formTabActive {
-    background-color: rgba(96, 165, 250, 0.15);
-    border-color: var(--blue-400);
-    color: var(--blue-300);
-}
-
-.summaryRow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.summaryCard {
-    flex: 1 1 11rem;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-top: 3px solid var(--green-400);
-    border-radius: 0.75rem;
-    padding: 1rem 1.25rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.summaryLabel {
-    font-size: 0.8125rem;
-    color: var(--gray-400);
-}
-
-.summaryValue {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gray-50);
-}
-
-.summaryHint {
-    font-size: 0.75rem;
-    color: var(--gray-500);
+    background-image: none;
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    box-shadow: var(--shadow-sunken);
 }
 
 .summaryYen {
@@ -140,62 +33,11 @@
     color: var(--green-400);
 }
 
-.card {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.sectionTitle {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--gray-50);
-    margin-bottom: 1rem;
-}
-
-.tableWrapper {
-    overflow-x: auto;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-
-.table th {
-    text-align: left;
-    color: var(--gray-400);
-    font-weight: 600;
-    border-bottom: 1px solid var(--gray-700);
-    padding: 0.5rem 0.75rem;
-    white-space: nowrap;
-}
-
-.table td {
-    color: var(--gray-300);
-    border-bottom: 1px solid rgba(55, 65, 81, 0.5);
-    padding: 0.5rem 0.75rem;
-    white-space: nowrap;
-}
-
-.num {
-    text-align: right;
-}
-
-.strong {
-    font-weight: 700;
-    color: var(--blue-300);
-}
-
+/* ── 質問別ファネル表 ── */
 .originRow td {
-    color: var(--gray-50);
+    color: var(--text-strong);
     font-weight: 600;
-    border-bottom: 2px solid var(--gray-700);
+    border-bottom: 2px solid var(--border-subtle);
 }
 
 .barCell {
@@ -203,7 +45,7 @@
 }
 
 .barTrack {
-    background-color: rgba(75, 85, 99, 0.4);
+    background-color: var(--bg-raised);
     border-radius: 0.25rem;
     height: 0.625rem;
     overflow: hidden;
@@ -216,16 +58,16 @@
 }
 
 .dropHigh {
-    color: var(--red-400);
+    color: var(--status-bad);
     font-weight: 700;
 }
 
 .dropMid {
-    color: var(--amber-400);
+    color: var(--status-warn);
 }
 
 .dropLow {
-    color: var(--gray-400);
+    color: var(--text-muted);
 }
 
 .partialTag {
@@ -235,51 +77,31 @@
     border-radius: 9999px;
     background-color: rgba(251, 191, 36, 0.12);
     border: 1px solid rgba(251, 191, 36, 0.35);
-    color: var(--amber-400);
+    color: var(--text-on-tint-amber);
     font-size: 0.6875rem;
 }
 
-.tableNote {
-    font-size: 0.75rem;
-    color: var(--gray-500);
-    line-height: 1.7;
-    margin-top: 0.75rem;
-}
-
-@media (max-width: 640px) {
-    .container {
-        padding: 1rem;
-    }
-
-    .card {
-        padding: 1rem;
-    }
-
-    .summaryCard {
-        flex: 1 1 calc(50% - 1rem);
-    }
-}
-
+/* ── 前期間比 ── */
 .deltaUp {
-    color: var(--green-400);
+    color: var(--status-good);
     font-size: 0.8125rem;
     font-weight: 600;
 }
 
 .deltaDown {
-    color: var(--red-400);
+    color: var(--status-bad);
     font-size: 0.8125rem;
     font-weight: 600;
 }
 
 .deltaFlat {
-    color: var(--gray-500);
+    color: var(--text-muted);
     font-size: 0.8125rem;
 }
 
 .compareNote {
     margin: -0.5rem 0 1rem;
     font-size: 0.75rem;
-    color: var(--gray-500);
+    color: var(--text-muted);
     line-height: 1.6;
 }
