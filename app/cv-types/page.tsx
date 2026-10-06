@@ -8,23 +8,9 @@ import CvTypesTrendChart, { type DailyPoint } from '@/components/cv-types/CvType
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import type { CvTypesResponse } from '@/lib/services/cv/cvTypesTypes'
 import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'
 import styles from './CvTypesPage.module.css'
-
-interface JobTypeRow {
-    key: string
-    label: string
-    detailViews: number
-    formViews: number
-    completed: number
-    detailToForm: number | null
-    formToComplete: number | null
-    overallRate: number | null
-    channels?: { organic: number; direct: number; crm: number; paid: number; other: number }
-    viaList?: number
-    viaListRate?: number | null
-    fields?: Array<{ name: string; users: number }>
-}
 
 interface ActualCell { member: number; guest: number }
 interface ActualTypeRow {
@@ -50,16 +36,6 @@ interface RouteFunnelResponse {
     listUsers: number
     types: RouteFunnelType[]
     totals: { viaList: RouteFunnelSide; direct: RouteFunnelSide }
-}
-
-interface CvTypesResponse {
-    jobTypes: JobTypeRow[]
-    listViews?: number
-    channelMix?: Array<{ channel: string; sessions: number; users: number }>
-    signup: { formViews: number; completed: number; formToComplete: number | null }
-    daily: DailyPoint[]
-    startDate: string
-    endDate: string
 }
 
 const PERIOD_OPTIONS: PeriodOption[] = [

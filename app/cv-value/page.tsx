@@ -7,6 +7,7 @@ import RelatedPages from '@/components/RelatedPages'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import type { CvTypesResponse } from '@/lib/services/cv/cvTypesTypes'
 import {
     CV_UNIT_VALUE_ASOF,
     CV_UNIT_VALUE_YEN,
@@ -15,19 +16,6 @@ import {
     formatYenApprox,
 } from '@/lib/constants/cvUnitValue'
 import styles from './CvValuePage.module.css'
-
-interface JobTypeRow {
-    key: string
-    label: string
-    completed: number
-}
-
-interface CvTypesResponse {
-    jobTypes: JobTypeRow[]
-    signup: { completed: number }
-    startDate: string
-    endDate: string
-}
 
 interface ActualTypeRow { label: string; total: number }
 interface ActualResponse {

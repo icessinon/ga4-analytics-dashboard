@@ -7,24 +7,8 @@ import RelatedPages from '@/components/RelatedPages'
 import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
+import type { CvTypesResponse } from '@/lib/services/cv/cvTypesTypes'
 import styles from './ApplyFieldsPage.module.css'
-
-interface FieldRow { name: string; users: number }
-interface JobTypeRow {
-    key: string
-    label: string
-    detailViews: number
-    formViews: number
-    completed: number
-    formToComplete: number | null
-    overallRate: number | null
-    fields?: FieldRow[]
-}
-interface CvTypesResponse {
-    jobTypes: JobTypeRow[]
-    startDate: string
-    endDate: string
-}
 
 const PERIOD_OPTIONS: PeriodOption[] = [
     { value: '14daysAgo', label: '過去14日' },
