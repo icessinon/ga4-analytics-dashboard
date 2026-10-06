@@ -1,38 +1,13 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin-bottom: 0.25rem;
-}
-
-.subtitle {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
-
 /* ── 凡例 ── */
 .legendSection {
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
     padding: 0.875rem 1rem;
-    background: var(--gray-800);
-    border: 1px solid var(--gray-700);
-    border-radius: 0.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
 }
 
 .legendItem {
@@ -46,66 +21,13 @@
 
 .legendLabel {
     font-weight: 600;
-    color: var(--gray-200);
+    color: var(--text-primary);
     white-space: nowrap;
 }
 
-.legendDesc { color: var(--gray-500); }
+.legendDesc { color: var(--text-muted); }
 
-/* ── フォーム ── */
-.section {
-    background-color: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    background-image: var(--surface-gradient);
-    box-shadow: var(--shadow-card), var(--shadow-inset);
-}
-
-.sectionTitle {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--gray-100);
-    margin-bottom: 1rem;
-}
-
-.formGrid {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.formField {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.formLabel {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.formSelect {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background-color: var(--gray-900);
-    color: var(--gray-100);
-    font-size: 0.875rem;
-    min-width: 160px;
-}
-
-.formSelect:focus {
-    outline: none;
-    border-color: var(--indigo-500);
-}
-
-.formActions { margin-top: 1rem; }
-
-/* ── サマリー ── */
+/* ── サマリー（ランク色の面なので共通カードは使わない） ── */
 .summaryRow {
     display: flex;
     gap: 1rem;
@@ -117,7 +39,7 @@
     flex: 1;
     min-width: 160px;
     border: 1px solid;
-    border-radius: 0.5rem;
+    border-radius: var(--radius);
     padding: 1.25rem;
     text-align: center;
 }
@@ -133,18 +55,16 @@
 .summaryCount {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--gray-100);
+    color: var(--text-strong);
 }
 
 .summaryUsers {
     font-size: 0.75rem;
-    color: var(--gray-400);
+    color: var(--text-muted);
     margin-top: 0.25rem;
 }
 
-/* ── テーブル ── */
-.tableWrapper { overflow-x: auto; }
-
+/* ── テーブル（展開行を持つため共通 dataTable ではなく専用） ── */
 .table {
     width: 100%;
     border-collapse: collapse;
@@ -153,9 +73,9 @@
 
 .table th {
     padding: 0.625rem 0.75rem;
-    background-color: var(--gray-900);
-    border-bottom: 1px solid var(--gray-700);
-    color: var(--gray-400);
+    background-color: var(--bg-sunken);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-muted);
     font-weight: 600;
     white-space: nowrap;
 }
@@ -169,18 +89,18 @@
     transition: background 0.1s;
 }
 
-.dataRow:hover { background: rgba(255,255,255,0.03); }
+.dataRow:hover { background: var(--bg-hover); }
 
 .tdLabel {
     padding: 0.625rem 0.75rem;
-    color: var(--gray-200);
+    color: var(--text-primary);
     font-weight: 500;
 }
 
 .tdNum {
     padding: 0.625rem 0.75rem;
     text-align: right;
-    color: var(--gray-300);
+    color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -207,15 +127,15 @@
 
 .scoreMax {
     font-size: 0.6875rem;
-    color: var(--gray-500);
+    color: var(--text-muted);
     margin-left: 2px;
 }
 
 .expandBtn {
     background: none;
-    border: 1px solid var(--gray-700);
+    border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    color: var(--gray-500);
+    color: var(--text-muted);
     cursor: pointer;
     padding: 0.125rem 0.5rem;
     font-size: 0.6875rem;
@@ -223,12 +143,12 @@
 }
 
 .expandBtn:hover {
-    border-color: var(--indigo-500);
-    color: var(--indigo-300);
+    border-color: var(--accent);
+    color: var(--accent-text);
 }
 
 /* ── 詳細展開行 ── */
-.detailRow { background: var(--gray-900); }
+.detailRow { background: var(--bg-sunken); }
 
 .detailCell { padding: 1rem 1.25rem; }
 
@@ -242,18 +162,16 @@
     .detailGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
-.detailItem { }
-
 .detailLabel {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--gray-400);
+    color: var(--text-muted);
     margin-bottom: 0.375rem;
 }
 
 .scoreBar {
     height: 6px;
-    background: var(--gray-800);
+    background: var(--bg-surface);
     border-radius: 3px;
     overflow: hidden;
     margin-bottom: 0.25rem;
@@ -268,54 +186,11 @@
 .detailScore {
     font-size: 0.875rem;
     font-weight: 700;
-    color: var(--gray-100);
+    color: var(--text-strong);
     margin-bottom: 0.125rem;
 }
 
 .detailNote {
     font-size: 0.6875rem;
-    color: var(--gray-500);
-}
-
-/* ── その他 ── */
-.note {
-    margin-top: 1rem;
-    font-size: 0.75rem;
-    color: var(--gray-500);
-    line-height: 1.6;
-}
-
-.empty {
-    color: var(--gray-500);
-    text-align: center;
-    padding: 2rem;
-}
-
-.errorBox {
-    background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--red-300);
-    margin-bottom: 1.5rem;
-}
-
-.errorTitle { font-weight: 600; margin-bottom: 0.25rem; }
-
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 0;
-    gap: 1rem;
-    color: var(--gray-400);
-}
-
-.warningBox {
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid var(--amber-600);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--amber-300);
+    color: var(--text-muted);
 }

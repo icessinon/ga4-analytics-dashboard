@@ -157,17 +157,3 @@
     color: var(--text-primary);
 }
 
-/* ── AI 分析結果 ── */
-.aiResult {
-    background: var(--accent-soft);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 1.25rem;
-}
-
-.aiResult p {
-    font-size: 0.9rem;
-    color: var(--text-primary);
-    line-height: 1.7;
-    margin-bottom: 0.5rem;
-}

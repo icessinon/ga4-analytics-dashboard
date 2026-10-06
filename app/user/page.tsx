@@ -1,54 +1,16 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import DateInput from '@/components/DateInput'
-import BackLink from '@/components/BackLink'
-import Loader from '@/components/Loader'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import PeriodSelect from '@/components/PeriodSelect'
+import LoadState from '@/components/LoadState'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import type { UserSegment, UserSegmentListResponse, UserTimelineEvent, UserTimelineResponse } from '@/lib/services/user/userSegmentsTypes'
 import styles from './UserPage.module.css'
-
-// ────────────────────────────────────────────────────────────
-// 型定義
-// ────────────────────────────────────────────────────────────
-interface Segment {
-    deviceCategory: string
-    browser: string
-    operatingSystem: string
-    country: string
-    sessionSource: string
-    sessionMedium: string
-    lastDate: string
-    totalUsers: number
-    totalSessions: number
-    totalPageViews: number
-    totalEvents: number
-}
-
-interface UserEvent {
-    sortKey: string
-    date: string
-    time: string
-    eventName: string
-    pagePath: string
-    pageTitle: string
-    sessionSource: string
-    deviceCategory: string
-    eventCount: number
-    userCount: number
-}
-
-// ────────────────────────────────────────────────────────────
-// ユーティリティ
-// ────────────────────────────────────────────────────────────
-function getDefaultDateRange() {
-    const today = new Date()
-    const past = new Date(today)
-    past.setDate(today.getDate() - 29)
-    const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    return { startDate: fmt(past), endDate: fmt(today) }
-}
 
 function eventBadgeClass(eventName: string): string {
     if (eventName === 'page_view') return styles.badgePageView
@@ -63,7 +25,7 @@ function notSet(v: string) {
     return !v || v === '(not set)'
 }
 
-function segmentLabel(s: Segment): string {
+function segmentLabel(s: UserSegment): string {
     const parts = [
         s.deviceCategory,
         s.browser,
@@ -74,233 +36,130 @@ function segmentLabel(s: Segment): string {
     return parts.join(' · ')
 }
 
-// ────────────────────────────────────────────────────────────
-// メインコンポーネント
-// ────────────────────────────────────────────────────────────
 export default function UserPage() {
     const { currentProduct } = useProduct()
-    const router = useRouter()
-    const { startDate: defaultStart, endDate: defaultEnd } = getDefaultDateRange()
+    const periodState = usePeriodRange('30daysAgo')
+    const { range } = periodState
 
-    // 共通フォーム
-    const [startDate, setStartDate] = useState(defaultStart)
-    const [endDate, setEndDate] = useState(defaultEnd)
-
-    // セグメント一覧
-    const [listLoading, setListLoading] = useState(false)
-    const [segments, setSegments] = useState<Segment[] | null>(null)
-    const [listError, setListError] = useState<string | null>(null)
+    // ─── セグメント一覧（手動実行。行数が多く GA4 の 1 万行取得なので期間変更で勝手には取りに行かない） ───
+    const list = useReport<UserSegmentListResponse>('/api/user/list', {
+        body: { propertyId: currentProduct?.ga4PropertyId, startDate: range?.startDate, endDate: range?.endDate },
+        manual: true,
+    })
+    const segments = list.data?.segments ?? null
     const [listSearch, setListSearch] = useState('')
-    const [sortCol, setSortCol] = useState<keyof Segment>('totalUsers')
+    const [sortCol, setSortCol] = useState<keyof UserSegment>('totalUsers')
     const [sortAsc, setSortAsc] = useState(false)
 
-    // タイムライン
-    const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null)
-    const [timelineLoading, setTimelineLoading] = useState(false)
-    const [events, setEvents] = useState<UserEvent[] | null>(null)
-    const [timelineError, setTimelineError] = useState<string | null>(null)
+    // ─── タイムライン（行クリックで取得） ───
+    const [selectedSegment, setSelectedSegment] = useState<UserSegment | null>(null)
+    const timeline = useReport<UserTimelineResponse>('/api/user/timeline', {
+        body: {
+            propertyId: currentProduct?.ga4PropertyId,
+            startDate: range?.startDate,
+            endDate: range?.endDate,
+            deviceCategory: selectedSegment?.deviceCategory,
+            browser: selectedSegment?.browser,
+            operatingSystem: selectedSegment?.operatingSystem,
+            country: selectedSegment?.country,
+            sessionSource: selectedSegment?.sessionSource,
+            sessionMedium: selectedSegment?.sessionMedium,
+        },
+        manual: true,
+    })
+    const events = timeline.data?.events ?? null
     const [eventFilter, setEventFilter] = useState('')
     const [tlSearch, setTlSearch] = useState('')
 
-    // ─── セグメント一覧取得 ───
-    const fetchSegments = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!currentProduct) return
-        setListLoading(true)
-        setListError(null)
-        setSegments(null)
-        setSelectedSegment(null)
-        setEvents(null)
-
-        try {
-            const res = await fetch('/api/user/list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    startDate,
-                    endDate,
-                }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
-            setSegments(data.segments)
-        } catch (err) {
-            setListError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setListLoading(false)
-        }
-    }
-
-    // ─── タイムライン取得 ───
-    const fetchTimeline = async (seg: Segment) => {
-        setSelectedSegment(seg)
-        setTimelineLoading(true)
-        setTimelineError(null)
-        setEvents(null)
+    // body が state 由来なので、選択が反映された描画の後に run する
+    const runTimeline = useRef(timeline.run)
+    runTimeline.current = timeline.run
+    const resetTimeline = useRef(timeline.reset)
+    resetTimeline.current = timeline.reset
+    useEffect(() => {
         setEventFilter('')
         setTlSearch('')
+        if (selectedSegment) runTimeline.current()
+        else resetTimeline.current()
+    }, [selectedSegment])
 
-        try {
-            const res = await fetch('/api/user/timeline', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct!.ga4PropertyId,
-                    startDate,
-                    endDate,
-                    deviceCategory:  seg.deviceCategory,
-                    browser:         seg.browser,
-                    operatingSystem: seg.operatingSystem,
-                    country:         seg.country,
-                    sessionSource:   seg.sessionSource,
-                    sessionMedium:   seg.sessionMedium,
-                }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.message || data.error || '取得に失敗しました')
-            setEvents(data.events)
-        } catch (err) {
-            setTimelineError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setTimelineLoading(false)
-        }
+    function handleSubmit() {
+        if (!currentProduct || !range) return
+        setSelectedSegment(null)
+        list.run()
     }
 
     // ─── 一覧フィルタ・ソート ───
     const sortedSegments = useMemo(() => {
         if (!segments) return []
-        let list = segments
+        let rows = segments
         if (listSearch) {
             const q = listSearch.toLowerCase()
-            list = list.filter((s) =>
+            rows = rows.filter((s) =>
                 [s.browser, s.operatingSystem, s.deviceCategory, s.sessionSource, s.sessionMedium, s.country]
                     .some((v) => v.toLowerCase().includes(q))
             )
         }
-        return [...list].sort((a, b) => {
+        return [...rows].sort((a, b) => {
             const av = a[sortCol] ?? ''
             const bv = b[sortCol] ?? ''
-            const cmp = typeof av === 'number' && typeof bv === 'number'
-                ? av - bv
-                : String(av).localeCompare(String(bv))
+            const cmp = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv))
             return sortAsc ? cmp : -cmp
         })
     }, [segments, listSearch, sortCol, sortAsc])
 
-    const handleSort = (key: keyof Segment) => {
+    const handleSort = (key: keyof UserSegment) => {
         if (sortCol === key) setSortAsc((p) => !p)
         else { setSortCol(key); setSortAsc(false) }
     }
-    const sortIcon = (key: keyof Segment) => sortCol === key ? (sortAsc ? ' ▲' : ' ▼') : ''
+    const sortIcon = (key: keyof UserSegment) => sortCol === key ? (sortAsc ? ' ▲' : ' ▼') : ''
 
     // ─── タイムラインフィルタ ───
     const { filteredEvents, groupedByDate, uniqueEventNames } = useMemo(() => {
-        if (!events) return { filteredEvents: [], groupedByDate: {}, uniqueEventNames: [] }
+        if (!events) return { filteredEvents: [] as UserTimelineEvent[], groupedByDate: {} as Record<string, UserTimelineEvent[]>, uniqueEventNames: [] as string[] }
         const uniqueEventNames = [...new Set(events.map((e) => e.eventName))].sort()
         let filtered = events
         if (eventFilter) filtered = filtered.filter((e) => e.eventName === eventFilter)
         if (tlSearch) {
             const q = tlSearch.toLowerCase()
             filtered = filtered.filter((e) =>
-                e.pagePath.toLowerCase().includes(q) ||
-                e.pageTitle.toLowerCase().includes(q) ||
-                e.eventName.toLowerCase().includes(q)
+                e.pagePath.toLowerCase().includes(q) || e.pageTitle.toLowerCase().includes(q) || e.eventName.toLowerCase().includes(q)
             )
         }
-        const groupedByDate: Record<string, UserEvent[]> = {}
-        for (const ev of filtered) {
-            if (!groupedByDate[ev.date]) groupedByDate[ev.date] = []
-            groupedByDate[ev.date].push(ev)
-        }
+        const groupedByDate: Record<string, UserTimelineEvent[]> = {}
+        for (const ev of filtered) (groupedByDate[ev.date] ??= []).push(ev)
         return { filteredEvents: filtered, groupedByDate, uniqueEventNames }
     }, [events, eventFilter, tlSearch])
 
-    // ────────────────────────────────────────────────────────
-    // レンダリング
-    // ────────────────────────────────────────────────────────
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>ユーザー行動分析</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.warningBox}>
-                    プロダクトを選択してください。右上のドロップダウンから選択できます。
-                </div>
-            </div>
-        )
-    }
+    const chips = (s: UserSegment) => (
+        <>
+            {!notSet(s.deviceCategory) && <span className={cx(styles.chip, styles.chipDevice)}>{s.deviceCategory}</span>}
+            {!notSet(s.browser) && <span className={cx(styles.chip, styles.chipBrowser)}>{s.browser}</span>}
+            {!notSet(s.operatingSystem) && <span className={cx(styles.chip, styles.chipOS)}>{s.operatingSystem}</span>}
+            {!notSet(s.sessionSource) && <span className={cx(styles.chip, styles.chipSource)}>{s.sessionSource}</span>}
+        </>
+    )
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>ユーザー行動分析</h1>
-                    <p className={styles.subtitle}>
-                        デバイス・ブラウザ・OS・流入元ごとのセグメント一覧を表示し、クリックで行動タイムラインを確認
-                    </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-                        <button onClick={() => router.push('/user/segment-builder')} className={styles.subNavBtn}>
-                            ユーザーリスト抽出
-                        </button>
-                        <button onClick={() => router.push('/user/scoring')} className={styles.subNavBtn}>
-                            活動スコアリング
-                        </button>
-                        <button onClick={() => router.push('/user/cohort')} className={styles.subNavBtn}>
-                            コホートリテンション
-                        </button>
-                        <button onClick={() => router.push('/user/stickiness')} className={styles.subNavBtn}>
-                            スティッキネス
-                        </button>
-                    </div>
+        <PageShell
+            pageId="user"
+            requireProduct
+            status={{ loading: list.loading, error: list.error, source: 'ga4', onRetry: list.run }}
+            controls={
+                <div className={ui.card}>
+                    <FilterBar onSubmit={handleSubmit} submitLabel="セグメント一覧を取得" submitting={list.loading} disabled={!currentProduct || !range}>
+                        <FilterField label="期間">
+                            <PeriodSelect state={periodState} />
+                        </FilterField>
+                    </FilterBar>
                 </div>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            {/* 検索フォーム */}
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>期間</h2>
-                <form onSubmit={fetchSegments}>
-                    <div className={styles.formGrid}>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>開始日</label>
-                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.formInput} required />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.formLabel}>終了日</label>
-                            <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.formInput} required />
-                        </div>
-                    </div>
-                    <div className={styles.formActions}>
-                        <button type="submit" disabled={listLoading} className="executionButton">
-                            {listLoading ? '取得中...' : 'セグメント一覧を取得'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {listError && (
-                <div className={styles.errorBox}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{listError}</p>
-                </div>
-            )}
-
-            {listLoading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <span>セグメント一覧を取得中...</span>
-                </div>
-            )}
-
-            {/* セグメント一覧 */}
-            {segments && !listLoading && (
-                <div className={styles.section}>
+            }
+        >
+            {segments && (
+                <div className={ui.card}>
                     <div className={styles.resultHeader}>
-                        <p className={styles.resultTitle}>セグメント一覧</p>
-                        <p className={styles.resultMeta}>{sortedSegments.length} 件 / 全 {segments.length} 件</p>
+                        <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>セグメント一覧</h2>
+                        <p className={ui.note}>{sortedSegments.length} 件 / 全 {segments.length} 件</p>
                     </div>
                     <div className={styles.filterBar}>
                         <input
@@ -309,10 +168,9 @@ export default function UserPage() {
                             onChange={(e) => setListSearch(e.target.value)}
                             placeholder="ブラウザ・OS・流入元・国で絞り込み"
                             className={styles.filterInput}
-                            style={{ width: 260 }}
                         />
                     </div>
-                    <div className={styles.tableWrapper}>
+                    <div className={ui.tableWrap}>
                         <table className={styles.userTable}>
                             <thead className={styles.userTableHead}>
                                 <tr>
@@ -331,33 +189,25 @@ export default function UserPage() {
                             <tbody>
                                 {sortedSegments.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className={styles.userTableCell} style={{ textAlign: 'center', color: 'var(--gray-500)', padding: '2rem' }}>
-                                            データがありません
-                                        </td>
+                                        <td colSpan={10} className={cx(styles.userTableCell, ui.empty)}>データがありません</td>
                                     </tr>
                                 ) : sortedSegments.map((seg, i) => (
                                     <tr
                                         key={i}
-                                        className={`${styles.userTableRow} ${selectedSegment === seg ? styles.userTableRowSelected : ''}`}
-                                        onClick={() => fetchTimeline(seg)}
+                                        className={cx(styles.userTableRow, selectedSegment === seg && styles.userTableRowSelected)}
+                                        onClick={() => setSelectedSegment(seg)}
                                         title="クリックしてタイムラインを表示"
                                     >
-                                        <td className={`${styles.userTableCell} ${styles.numCell}`}>{seg.totalUsers.toLocaleString()}</td>
-                                        <td className={`${styles.userTableCell} ${styles.numCell}`}>{seg.totalSessions.toLocaleString()}</td>
-                                        <td className={`${styles.userTableCell} ${styles.numCell}`}>{seg.totalPageViews.toLocaleString()}</td>
-                                        <td className={`${styles.userTableCell} ${styles.numCell}`}>{seg.totalEvents.toLocaleString()}</td>
-                                        <td className={styles.userTableCell}>
-                                            {!notSet(seg.deviceCategory) && <span className={`${styles.chip} ${styles.chipDevice}`}>{seg.deviceCategory}</span>}
-                                        </td>
-                                        <td className={styles.userTableCell}>
-                                            {!notSet(seg.browser) && <span className={`${styles.chip} ${styles.chipBrowser}`}>{seg.browser}</span>}
-                                        </td>
-                                        <td className={styles.userTableCell}>
-                                            {!notSet(seg.operatingSystem) && <span className={`${styles.chip} ${styles.chipOS}`}>{seg.operatingSystem}</span>}
-                                        </td>
+                                        <td className={cx(styles.userTableCell, styles.numCell)}>{seg.totalUsers.toLocaleString()}</td>
+                                        <td className={cx(styles.userTableCell, styles.numCell)}>{seg.totalSessions.toLocaleString()}</td>
+                                        <td className={cx(styles.userTableCell, styles.numCell)}>{seg.totalPageViews.toLocaleString()}</td>
+                                        <td className={cx(styles.userTableCell, styles.numCell)}>{seg.totalEvents.toLocaleString()}</td>
+                                        <td className={styles.userTableCell}>{!notSet(seg.deviceCategory) && <span className={cx(styles.chip, styles.chipDevice)}>{seg.deviceCategory}</span>}</td>
+                                        <td className={styles.userTableCell}>{!notSet(seg.browser) && <span className={cx(styles.chip, styles.chipBrowser)}>{seg.browser}</span>}</td>
+                                        <td className={styles.userTableCell}>{!notSet(seg.operatingSystem) && <span className={cx(styles.chip, styles.chipOS)}>{seg.operatingSystem}</span>}</td>
                                         <td className={styles.userTableCell}>
                                             {!notSet(seg.sessionSource) && (
-                                                <span className={`${styles.chip} ${styles.chipSource}`}>
+                                                <span className={cx(styles.chip, styles.chipSource)}>
                                                     {seg.sessionSource}{!notSet(seg.sessionMedium) ? ` / ${seg.sessionMedium}` : ''}
                                                 </span>
                                             )}
@@ -372,103 +222,72 @@ export default function UserPage() {
                 </div>
             )}
 
-            {/* タイムライン */}
             {selectedSegment && (
-                <div className={styles.section}>
+                <div className={ui.card}>
                     <div className={styles.selectedUserBanner}>
                         <div>
                             <span className={styles.selectedUserLabel}>選択中のセグメント: </span>
                             <span className={styles.selectedUserId}>{segmentLabel(selectedSegment)}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            {!notSet(selectedSegment.deviceCategory) && <span className={`${styles.chip} ${styles.chipDevice}`}>{selectedSegment.deviceCategory}</span>}
-                            {!notSet(selectedSegment.browser) && <span className={`${styles.chip} ${styles.chipBrowser}`}>{selectedSegment.browser}</span>}
-                            {!notSet(selectedSegment.operatingSystem) && <span className={`${styles.chip} ${styles.chipOS}`}>{selectedSegment.operatingSystem}</span>}
-                            {!notSet(selectedSegment.sessionSource) && <span className={`${styles.chip} ${styles.chipSource}`}>{selectedSegment.sessionSource}</span>}
-                            <button className={styles.clearButton} onClick={() => { setSelectedSegment(null); setEvents(null) }}>
-                                閉じる
-                            </button>
+                        <div className={styles.selectedUserChips}>
+                            {chips(selectedSegment)}
+                            <button type="button" className={ui.btnGhost} onClick={() => setSelectedSegment(null)}>閉じる</button>
                         </div>
                     </div>
 
-                    {timelineLoading && (
-                        <div className={styles.loaderContainer}>
-                            <Loader />
-                            <span>タイムラインを取得中...</span>
-                        </div>
-                    )}
-
-                    {timelineError && (
-                        <div className={styles.errorBox}>
-                            <p className={styles.errorTitle}>エラー</p>
-                            <p>{timelineError}</p>
-                        </div>
-                    )}
-
-                    {events && !timelineLoading && (
-                        <>
-                            <div className={styles.resultHeader}>
-                                <p className={styles.resultTitle}>イベントタイムライン</p>
-                                <p className={styles.resultMeta}>{filteredEvents.length} 件 / 全 {events.length} 件</p>
-                            </div>
-                            <div className={styles.filterBar}>
-                                <input
-                                    type="text"
-                                    value={tlSearch}
-                                    onChange={(e) => setTlSearch(e.target.value)}
-                                    placeholder="ページパス・イベント名で絞り込み"
-                                    className={styles.filterInput}
-                                />
-                                <select
-                                    value={eventFilter}
-                                    onChange={(e) => setEventFilter(e.target.value)}
-                                    className={styles.filterInput}
-                                    style={{ width: 'auto' }}
-                                >
-                                    <option value="">すべてのイベント</option>
-                                    {uniqueEventNames.map((name) => (
-                                        <option key={name} value={name}>{name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {filteredEvents.length === 0 ? (
-                                <p className={styles.emptyState}>該当するイベントがありません</p>
-                            ) : (
-                                <div className={styles.timeline}>
-                                    {Object.entries(groupedByDate).map(([date, dayEvents]) => (
-                                        <div key={date} className={styles.dateGroup}>
-                                            <p className={styles.dateLabel}>{date}</p>
-                                            {dayEvents.map((ev, i) => (
-                                                <div key={`${ev.sortKey}-${i}`} className={styles.eventRow}>
-                                                    <span className={styles.eventTime}>{ev.time}</span>
-                                                    <div className={styles.eventBody}>
-                                                        <div className={styles.eventNameRow}>
-                                                            <span className={`${styles.eventBadge} ${eventBadgeClass(ev.eventName)}`}>
-                                                                {ev.eventName}
-                                                            </span>
-                                                            {ev.userCount > 0 && (
-                                                                <span className={styles.metaChip}>{ev.userCount.toLocaleString()} ユーザー</span>
-                                                            )}
-                                                        </div>
-                                                        {ev.pagePath && !notSet(ev.pagePath) && (
-                                                            <p className={styles.eventPagePath}>{ev.pagePath}</p>
-                                                        )}
-                                                        {ev.pageTitle && !notSet(ev.pageTitle) && (
-                                                            <p className={styles.eventPageTitle}>{ev.pageTitle}</p>
-                                                        )}
-                                                    </div>
-                                                    <span className={styles.eventCount}>×{ev.eventCount.toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ))}
+                    <LoadState variant="inline" loading={timeline.loading} error={timeline.error} source="ga4" onRetry={timeline.run}>
+                        {events && (
+                            <>
+                                <div className={styles.resultHeader}>
+                                    <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>イベントタイムライン</h2>
+                                    <p className={ui.note}>{filteredEvents.length} 件 / 全 {events.length} 件</p>
                                 </div>
-                            )}
-                        </>
-                    )}
+                                <div className={styles.filterBar}>
+                                    <input
+                                        type="text"
+                                        value={tlSearch}
+                                        onChange={(e) => setTlSearch(e.target.value)}
+                                        placeholder="ページパス・イベント名で絞り込み"
+                                        className={styles.filterInput}
+                                    />
+                                    <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)} className={ui.select}>
+                                        <option value="">すべてのイベント</option>
+                                        {uniqueEventNames.map((name) => (
+                                            <option key={name} value={name}>{name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {filteredEvents.length === 0 ? (
+                                    <p className={ui.empty}>該当するイベントがありません</p>
+                                ) : (
+                                    <div className={styles.timeline}>
+                                        {Object.entries(groupedByDate).map(([date, dayEvents]) => (
+                                            <div key={date} className={styles.dateGroup}>
+                                                <p className={styles.dateLabel}>{date}</p>
+                                                {dayEvents.map((ev, i) => (
+                                                    <div key={`${ev.sortKey}-${i}`} className={styles.eventRow}>
+                                                        <span className={styles.eventTime}>{ev.time}</span>
+                                                        <div className={styles.eventBody}>
+                                                            <div className={styles.eventNameRow}>
+                                                                <span className={cx(styles.eventBadge, eventBadgeClass(ev.eventName))}>{ev.eventName}</span>
+                                                                {ev.userCount > 0 && <span className={styles.metaChip}>{ev.userCount.toLocaleString()} ユーザー</span>}
+                                                            </div>
+                                                            {ev.pagePath && !notSet(ev.pagePath) && <p className={styles.eventPagePath}>{ev.pagePath}</p>}
+                                                            {ev.pageTitle && !notSet(ev.pageTitle) && <p className={styles.eventPageTitle}>{ev.pageTitle}</p>}
+                                                        </div>
+                                                        <span className={styles.eventCount}>×{ev.eventCount.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </LoadState>
                 </div>
             )}
-        </div>
+        </PageShell>
     )
 }

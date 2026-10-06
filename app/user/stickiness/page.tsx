@@ -292,7 +292,7 @@ export default function StickinessPage() {
                         </div>
                         {geminiError && <Alert tone="error">{geminiError}</Alert>}
                         {geminiResult && (
-                            <div className={styles.aiResult}>
+                            <div className={ui.aiResult}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                                     return line.trim() ? <p key={i} dangerouslySetInnerHTML={{ __html: bold }} /> : null

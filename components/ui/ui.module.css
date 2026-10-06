@@ -406,3 +406,18 @@
         flex: 1 1 calc(50% - 1rem);
     }
 }
+
+/* ── AI 分析結果（Gemini の Markdown 風テキスト） ── */
+.aiResult {
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+}
+
+.aiResult p {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+}
