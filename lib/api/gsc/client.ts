@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { getServiceAccountCredentials } from '@/lib/serviceAccount'
+import { getServiceAccountCredentials } from '@/lib/api/google/serviceAccount'
 
 /**
  * Search Console API クライアント。

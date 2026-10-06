@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { getServiceAccountCredentials } from '@/lib/serviceAccount'
+import { getServiceAccountCredentials } from '@/lib/api/google/serviceAccount'
 
 /**
  * ダッシュボード自前テーブル（ABテスト履歴・各種実行ログ）の読み書き先。

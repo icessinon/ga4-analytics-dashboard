@@ -1,5 +1,5 @@
 import { google } from 'googleapis'
-import { getServiceAccountCredentials } from '@/lib/serviceAccount'
+import { getServiceAccountCredentials } from '@/lib/api/google/serviceAccount'
 
 /**
  * GA4 BigQuery Export（xmile-drm.analytics_534098180.events_*）への読み取りクライアント。
