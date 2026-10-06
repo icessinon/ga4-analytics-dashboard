@@ -119,7 +119,7 @@ export default function FunnelExecutionDetailPage() {
                 <div className={styles.errorContainer}>
                     <p className={styles.errorTitle}>エラーが発生しました</p>
                     <p>{error || 'ファネル実行が見つかりませんでした'}</p>
-                    <Link href="/funnel/history" className={styles.errorLink}>
+                    <Link href="/history?tab=funnel" className={styles.errorLink}>
                         履歴に戻る
                     </Link>
                 </div>
@@ -158,7 +158,7 @@ export default function FunnelExecutionDetailPage() {
                 <div className={styles.headerRow}>
                     <h1 className={styles.title}>{execution.name || 'ファネル分析'}</h1>
                     <div className={styles.headerActions}>
-                        <BackLink href="/funnel/history">履歴一覧に戻る</BackLink>
+                        <BackLink href="/history?tab=funnel">履歴一覧に戻る</BackLink>
                         <button onClick={handlePrint} className={styles.pdfButton}>
                             PDFで書き出し
                         </button>
@@ -383,7 +383,7 @@ export default function FunnelExecutionDetailPage() {
             ) : null}
 
             <div className={styles.footer}>
-                <BackLink href="/funnel/history">履歴一覧に戻る</BackLink>
+                <BackLink href="/history?tab=funnel">履歴一覧に戻る</BackLink>
             </div>
         </div>
     )

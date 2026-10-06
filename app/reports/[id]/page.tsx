@@ -91,7 +91,7 @@ export default function ReportDetailPage() {
                 <div className={styles.errorContainer}>
                     <p className={styles.errorTitle}>エラーが発生しました</p>
                     <p>{error || 'レポートが見つかりませんでした'}</p>
-                    <Link href="/reports/history" className={styles.errorLink}>
+                    <Link href="/history?tab=reports" className={styles.errorLink}>
                         履歴に戻る
                     </Link>
                 </div>
@@ -109,7 +109,7 @@ export default function ReportDetailPage() {
                 <div className={styles.header}>
                     <div className={styles.headerRow}>
                         <h1 className={styles.title}>ABテストレポート</h1>
-                        <BackLink href="/reports/history">履歴一覧に戻る</BackLink>
+                        <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
                     </div>
                     <p className={styles.executionDate}>
                         実行日時: {formatDate(detail.createdAt)}
@@ -293,7 +293,7 @@ export default function ReportDetailPage() {
                 )}
 
                 <div className={styles.footer}>
-                    <BackLink href="/reports/history">履歴一覧に戻る</BackLink>
+                    <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
                 </div>
             </div>
         )
@@ -305,7 +305,7 @@ export default function ReportDetailPage() {
                 <div className={styles.headerRow}>
                     <h1 className={styles.title}>{detail.report.name}</h1>
                     <div className={styles.headerActions}>
-                        <BackLink href="/reports/history">履歴一覧に戻る</BackLink>
+                        <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
                         <button onClick={handleRerun} className={styles.rerunButton}>
                             再実行
                         </button>
@@ -505,7 +505,7 @@ export default function ReportDetailPage() {
             </div>
 
             <div className={styles.footer}>
-                <BackLink href="/reports/history">履歴一覧に戻る</BackLink>
+                <BackLink href="/history?tab=reports">履歴一覧に戻る</BackLink>
             </div>
         </div>
     )

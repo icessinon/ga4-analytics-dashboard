@@ -390,7 +390,7 @@ function FunnelPageContent() {
                 </div>
                 <div className={styles.headerActions}>
                     <BackLink href="/">ダッシュボードに戻る</BackLink>
-                    <BackLink href="/funnel/history" direction="forward">
+                    <BackLink href="/history?tab=funnel" direction="forward">
                         実行履歴を見る
                     </BackLink>
                 </div>

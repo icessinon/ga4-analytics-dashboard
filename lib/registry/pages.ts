@@ -64,9 +64,7 @@ export const PAGE_IDS = [
     'abTestDetail',
     'abTestDaily',
     'abTestSegment',
-    'funnelHistory',
     'funnelExecution',
-    'reportsHistory',
     'reportDetail',
 ] as const
 export type PageId = (typeof PAGE_IDS)[number]
@@ -962,26 +960,10 @@ export const PAGES: Record<PageId, PageDef> = {
         nav: false,
         parent: 'abTestDetail',
     },
-    funnelHistory: {
-        href: '/funnel/history',
-        title: 'ファネル実行履歴',
-        subtitle: 'エントリーフォームファネルの実行履歴',
-        category: 'tools',
-        nav: false,
-        parent: 'funnel',
-    },
     funnelExecution: {
         href: '/funnel/[executionId]',
         title: 'ファネル実行結果',
         subtitle: '1回のファネル実行の詳細',
-        category: 'tools',
-        nav: false,
-        parent: 'funnelHistory',
-    },
-    reportsHistory: {
-        href: '/reports/history',
-        title: 'レポート履歴',
-        subtitle: 'GA4分析レポートの実行履歴',
         category: 'tools',
         nav: false,
         parent: 'history',
@@ -992,7 +974,7 @@ export const PAGES: Record<PageId, PageDef> = {
         subtitle: '保存済みGA4分析レポートの結果',
         category: 'tools',
         nav: false,
-        parent: 'reportsHistory',
+        parent: 'history',
     },
 }
 
