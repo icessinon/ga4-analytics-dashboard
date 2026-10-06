@@ -66,6 +66,12 @@ function fmtDate(d: string): string {
     return `${d.slice(0, 4)}/${d.slice(4, 6)}/${d.slice(6, 8)}`
 }
 
+/** 'YYYYMMDD' 同士の日数差。配信間隔が週1→週2と変わっているため増分は日割りで見る */
+function daysBetween(newer: string, older: string): number {
+    const toIso = (s: string) => `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T00:00:00Z`
+    return Math.round((Date.parse(toIso(newer)) - Date.parse(toIso(older))) / 86400000)
+}
+
 export default function LineReportPage() {
     const { currentProduct } = useProduct()
     const periodState = usePeriodRange('30daysAgo')
@@ -135,6 +141,9 @@ export default function LineReportPage() {
     // 連携導線は実績のあるものだけ出す（未分類 other は0件でも出すと紛らわしいので同じ扱い）
     const activeChannels = assoc ? assoc.channels.filter((c) => c.users > 0 || (c.viewUsers ?? 0) > 0) : []
     const assocDailyMax = assoc ? Math.max(1, ...assoc.daily.map((d) => d.total)) : 1
+    // 段階に分けられるのは表示人数を取れる導線だけ。基準が混ざらないようバー表示と数値表示を分ける
+    const funnelChannels = activeChannels.filter((c) => (c.viewUsers ?? 0) > 0)
+    const noViewChannels = activeChannels.filter((c) => !c.viewUsers)
     const maxDaily = data ? Math.max(1, ...data.daily.map((d) => d.users)) : 1
     // 日別テーブルは新しい日付が上（降順）
     const dailyDesc = data ? [...data.daily].sort((a, b) => b.date.localeCompare(a.date)) : []
@@ -221,6 +230,51 @@ export default function LineReportPage() {
                     </>
                 )}
             </div>
+
+            {assoc && !assocLoading && funnelChannels.length > 0 && (
+                <div className={styles.card}>
+                    <h2 className={styles.sectionTitle}>導線別ファネル（表示 → 連携 → 見送り）</h2>
+                    <div className={styles.funnelGrid}>
+                        {funnelChannels.map((c) => {
+                            // 表示人数を100%とした段階表示。基準を混ぜないため表示を取れる導線だけを並べる
+                            const base = c.viewUsers ?? 0
+                            const rows: { stage: string; value: number; color: string }[] = [
+                                { stage: '表示', value: base, color: '#6b7280' },
+                                { stage: '連携', value: c.users, color: '#06c755' },
+                                // 閉じるボタンが無い導線（会員登録ブロック）は0になるので段を出さない
+                                ...(c.declineUsers ? [{ stage: '見送り', value: c.declineUsers, color: '#9ca3af' }] : []),
+                            ]
+                            return (
+                                <div key={c.key} className={styles.funnelItem}>
+                                    <div className={styles.funnelName}>{c.label}</div>
+                                    {rows.map((r) => (
+                                        <div key={r.stage} className={styles.funnelRow}>
+                                            <span className={styles.funnelStage}>{r.stage}</span>
+                                            <span className={styles.funnelTrack}>
+                                                <span className={styles.funnelFill} style={{ width: `${base > 0 ? Math.min(100, (r.value / base) * 100) : 0}%`, backgroundColor: r.color }} />
+                                            </span>
+                                            <span className={styles.funnelValue}>
+                                                {r.value.toLocaleString()}
+                                                {r.stage !== '表示' && base > 0 && <span className={styles.funnelPct}>{((r.value / base) * 100).toFixed(0)}%</span>}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    {noViewChannels.length > 0 && (
+                        <p className={styles.tableNote}>
+                            表示を取れない導線（段階に分けられないため連携人数のみ）:{' '}
+                            {noViewChannels.map((c) => `${c.label} ${c.users.toLocaleString()}人`).join(' / ')}
+                        </p>
+                    )}
+                    <p className={styles.tableNote}>
+                        ※ 各カードはその導線の表示人数を100%とした割合です。カード間でバーの長さを比べるものではありません（表示の母数が導線ごとに違うため）。<br />
+                        ※ モーダルの表示は実態より少なく出るため、連携＋見送りが表示に近い値になります。
+                    </p>
+                </div>
+            )}
 
             {assoc && !assocLoading && assoc.daily.length > 0 && (
                 <div className={styles.card}>
@@ -357,6 +411,8 @@ export default function LineReportPage() {
                                             <tr>
                                                 <th>配信日</th>
                                                 <th className={styles.num}>連携者</th>
+                                                <th className={styles.num}>増分</th>
+                                                <th className={styles.num}>1日あたり</th>
                                                 <th className={styles.num}>配信成功</th>
                                                 <th className={styles.num}>受取拒否</th>
                                                 <th className={styles.num}>求人マッチなし</th>
@@ -364,16 +420,25 @@ export default function LineReportPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {data.deliveries.slice(0, 12).map((d) => (
-                                                <tr key={d.unit}>
-                                                    <td>{d.date.slice(0, 4)}/{d.date.slice(4, 6)}/{d.date.slice(6, 8)}</td>
-                                                    <td className={styles.num}>{d.linked.toLocaleString()}</td>
-                                                    <td className={`${styles.num} ${styles.strong}`}>{d.success.toLocaleString()}</td>
-                                                    <td className={styles.num}>{d.optOut.toLocaleString()}<span style={{ color: '#6b7280' }}>{d.linked > 0 ? ` (${((d.optOut / d.linked) * 100).toFixed(1)}%)` : ''}</span></td>
-                                                    <td className={styles.num}>{d.noJobs.toLocaleString()}</td>
-                                                    <td className={styles.num}>{d.error.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
+                                            {data.deliveries.slice(0, 12).map((d, i) => {
+                                                // deliveries は新しい順。1つ後ろの行が前回配信
+                                                const prev = data.deliveries?.[i + 1]
+                                                const delta = prev ? d.linked - prev.linked : null
+                                                const days = prev ? daysBetween(d.date, prev.date) : 0
+                                                const perDay = delta != null && days > 0 ? delta / days : null
+                                                return (
+                                                    <tr key={d.unit}>
+                                                        <td>{fmtDate(d.date)}</td>
+                                                        <td className={styles.num}>{d.linked.toLocaleString()}</td>
+                                                        <td className={styles.num}>{delta != null ? `+${delta.toLocaleString()}` : '－'}</td>
+                                                        <td className={`${styles.num} ${styles.strong}`}>{perDay != null ? perDay.toFixed(1) : '－'}</td>
+                                                        <td className={styles.num}>{d.success.toLocaleString()}</td>
+                                                        <td className={styles.num}>{d.optOut.toLocaleString()}<span style={{ color: '#6b7280' }}>{d.linked > 0 ? ` (${((d.optOut / d.linked) * 100).toFixed(1)}%)` : ''}</span></td>
+                                                        <td className={styles.num}>{d.noJobs.toLocaleString()}</td>
+                                                        <td className={styles.num}>{d.error.toLocaleString()}</td>
+                                                    </tr>
+                                                )
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
