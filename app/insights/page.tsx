@@ -7,9 +7,9 @@ import {
 } from 'recharts'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import InfoTooltip from '@/components/InfoTooltip'
 import styles from './InsightsPage.module.css'
 
 interface CvBreakdown {

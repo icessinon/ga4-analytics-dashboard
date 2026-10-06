@@ -6,7 +6,7 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import DateInput from '@/components/DateInput'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import InfoTooltip from '@/components/InfoTooltip'
 import styles from './SegmentBuilderPage.module.css'
 
 interface Condition {

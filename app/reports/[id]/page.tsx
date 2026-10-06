@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
 import type { ReportDetail } from './types'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import InfoTooltip from '@/components/InfoTooltip'
 import styles from './ReportDetailPage.module.css'
 
 export default function ReportDetailPage() {

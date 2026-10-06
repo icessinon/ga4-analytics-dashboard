@@ -1,6 +1,8 @@
 'use client'
 
 import type { NeonCheckboxProps } from './types'
+// グローバル CSS のまま。装飾アニメーション用に BEM 名の複合セレクタが約 40 本あり、
+// Module 化の書き換えリスクに見合わない。クラス名は neon-checkbox* で他と衝突しない
 import './NeonCheckbox.css'
 
 export default function NeonCheckbox({

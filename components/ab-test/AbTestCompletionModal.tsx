@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import styles from './AbTestCompletionModal.module.css'
 
 export interface AbTestCompletionModalProps {

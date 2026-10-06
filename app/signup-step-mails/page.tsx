@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import RelatedPages from '@/components/RelatedPages'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { STEP_MAIL_STATUS_LABEL } from '@/lib/constants/signupStepMails'
 import styles from './SignupStepMailsPage.module.css'

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { useParams, useRouter } from 'next/navigation'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
 import Loader from '@/components/Loader'

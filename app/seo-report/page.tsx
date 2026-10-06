@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages/RelatedPages'
-import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import RelatedPages from '@/components/RelatedPages'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { withCustomOption, PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './SeoReportPage.module.css'

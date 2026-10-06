@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from '@/components/Link'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './AdvisorPage.module.css'
 

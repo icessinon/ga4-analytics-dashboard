@@ -5,8 +5,8 @@ import { useProduct } from '@/lib/contexts/ProductContext'
 import DateInput from '@/components/DateInput'
 import Loader from '@/components/Loader'
 import BackLink from '@/components/BackLink'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import InfoTooltip from '@/components/InfoTooltip'
+import AISpinner from '@/components/AISpinner'
 import styles from './ExitPage.module.css'
 
 const ALL_STEPS = [

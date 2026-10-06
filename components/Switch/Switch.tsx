@@ -1,7 +1,7 @@
 'use client'
 
 import type { SwitchProps } from './types'
-import './Switch.css'
+import styles from './Switch.module.css'
 
 export default function Switch({
     checked,
@@ -11,7 +11,7 @@ export default function Switch({
     'aria-label': ariaLabel,
 }: SwitchProps) {
     return (
-        <label className={`switch ${className}`.trim()} title={checked ? '非表示にする' : '表示する'}>
+        <label className={`${styles.switch} ${className}`.trim()} title={checked ? '非表示にする' : '表示する'}>
             <input
                 type="checkbox"
                 checked={checked}
@@ -19,7 +19,7 @@ export default function Switch({
                 id={id}
                 aria-label={ariaLabel ?? (checked ? '非表示' : '表示')}
             />
-            <span className="slider" />
+            <span className={styles.slider} />
         </label>
     )
 }

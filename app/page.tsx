@@ -12,7 +12,7 @@ import type { ChartMetric, DashboardStats, PageMetrics, PageMetricsSeriesPoint, 
 import { navGroups } from '@/lib/registry'
 import { getChartPeriodLabel, getMonthOptions, getRangeForGranularity, periodToTimestamp } from '@/app/dashboard/utils'
 import { parseJsonResponse } from '@/lib/utils/fetch'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import InfoTooltip from '@/components/InfoTooltip'
 import styles from './DashboardPage.module.css'
 
 export default function DashboardPage() {

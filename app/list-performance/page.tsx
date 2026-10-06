@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import RelatedPages from '@/components/RelatedPages'
 import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
-import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect/PeriodSelect'
+import PeriodSelect, { usePeriodRange } from '@/components/PeriodSelect'
 import { PeriodOption } from '@/lib/utils/period'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './ListPerformancePage.module.css'

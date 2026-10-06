@@ -13,9 +13,9 @@ import {
 import DateInput from '@/components/DateInput'
 import BackLink from '@/components/BackLink'
 import Loader from '@/components/Loader'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import InfoTooltip from '@/components/InfoTooltip/InfoTooltip'
+import InfoTooltip from '@/components/InfoTooltip'
 import styles from './StickinessPage.module.css'
 
 interface DailyPoint { date: string; dau: number; wau: number; mau: number }

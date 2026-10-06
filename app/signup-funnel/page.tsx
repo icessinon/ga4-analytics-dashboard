@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
 import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import RelatedPages from '@/components/RelatedPages'
 import SignupTrendChart, { TrendSeries } from '@/components/signup-funnel/SignupTrendChart'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import { CV_UNIT_VALUE_ASOF, cvValueYen, formatYenApprox } from '@/lib/constants/cvUnitValue'

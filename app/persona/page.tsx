@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import BackLink from '@/components/BackLink'
-import RelatedPages from '@/components/RelatedPages/RelatedPages'
+import RelatedPages from '@/components/RelatedPages'
 import {
     PERSONA_SNAPSHOT_ASOF,
     PERSONA_BASE,

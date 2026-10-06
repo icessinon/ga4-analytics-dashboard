@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import AISpinner from '@/components/AISpinner/AISpinner'
+import AISpinner from '@/components/AISpinner'
 import { parseJsonResponse } from '@/lib/utils/fetch'
 import styles from './DocsAsk.module.css'
 

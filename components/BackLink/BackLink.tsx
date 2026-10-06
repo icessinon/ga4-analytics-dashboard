@@ -2,7 +2,7 @@
 
 import Link from '@/components/Link'
 import type { BackLinkProps } from './types'
-import './BackLink.css'
+import styles from './BackLink.module.css'
 
 const BackArrowSvg = () => (
     <svg height="16" width="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden>
@@ -19,7 +19,7 @@ const ForwardArrowSvg = () => (
 export default function BackLink({ href, children, className = '', direction = 'back' }: BackLinkProps) {
     const isForward = direction === 'forward'
     return (
-        <Link href={href} className={`backLink ${isForward ? 'backLinkForward' : ''} ${className}`.trim()}>
+        <Link href={href} className={`${styles.backLink} ${isForward ? styles.backLinkForward : ''} ${className}`.trim()}>
             {isForward ? (
                 <>
                     <span>{children}</span>
