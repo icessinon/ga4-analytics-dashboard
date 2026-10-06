@@ -11,7 +11,7 @@
 # 接続情報は .env の PROD_DASHBOARD_URL / _USER / _PASSWORD（.env は gitignore 済み）。
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COOKIE_JAR="${TMPDIR:-/tmp}/ga4-prod-dashboard-cookie.txt"
 
 RELOGIN=0

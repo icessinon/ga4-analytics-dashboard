@@ -5,7 +5,7 @@
 #   scripts/ab-slack-report.sh <abTestId>
 # 例: scripts/ab-slack-report.sh 8
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 ID="${1:?usage: ab-slack-report.sh <abTestId>}"
 MODE="prod"
