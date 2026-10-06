@@ -87,7 +87,7 @@
     flex-direction: column;
     gap: 0.25rem;
     padding: 0.625rem 0.875rem;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-hover);
     border-radius: 8px;
     border: 1px solid #334155;
 }
@@ -109,6 +109,6 @@
 .emptyState {
     padding: 2rem;
     text-align: center;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.9375rem;
 }

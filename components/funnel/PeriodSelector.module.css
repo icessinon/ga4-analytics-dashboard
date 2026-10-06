@@ -1,6 +1,6 @@
 .container {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -26,13 +26,13 @@
 .quickSelectButton {
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
-    background-color: #374151;
+    background-color: var(--gray-700);
     border-radius: 0.25rem;
     transition: background-color 0.2s;
 }
 
 .quickSelectButton:hover {
-    background-color: #4b5563;
+    background-color: var(--gray-600);
 }
 
 .periodsList {
@@ -43,9 +43,9 @@
 
 .periodItem {
     padding: 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .periodHeader {
@@ -60,7 +60,7 @@
 }
 
 .removeButton {
-    color: #dc2626;
+    color: var(--red-600);
     font-size: 0.875rem;
     transition: color 0.2s;
 }
@@ -96,14 +96,14 @@
 .fieldInput {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
 }
 
 .addButton {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.5rem;
     font-size: 0.875rem;
@@ -111,5 +111,5 @@
 }
 
 .addButton:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }

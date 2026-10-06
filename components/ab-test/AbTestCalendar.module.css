@@ -1,6 +1,6 @@
 .container {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1.5rem;
 }
@@ -20,27 +20,27 @@
 
 .monthButton {
     padding: 0.25rem 0.75rem;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 0.25rem;
     transition: background-color 0.2s;
-    background: #1f2937;
-    color: #f3f4f6;
+    background: var(--gray-800);
+    color: var(--gray-100);
     cursor: pointer;
 }
 
 .monthButton:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .monthTitle {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .todayButton {
     padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -50,7 +50,7 @@
 }
 
 .todayButton:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .calendarGrid {
@@ -64,16 +64,16 @@
     text-align: center;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .dayCell {
     padding: 0.5rem;
     min-height: 80px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.25rem;
     transition: background-color 0.2s;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
 }
 
 .dayCellOtherMonth {
@@ -81,7 +81,7 @@
 }
 
 .dayCellToday {
-    box-shadow: 0 0 0 2px #2563eb;
+    box-shadow: 0 0 0 2px var(--blue-600);
 }
 
 .dayCellClickable {
@@ -89,17 +89,17 @@
 }
 
 .dayCellClickable:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .dayNumber {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .dayNumberOtherMonth {
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .testList {
@@ -129,11 +129,11 @@
 }
 
 .testItemBlue {
-    background-color: #3b82f6;
+    background-color: var(--blue-500);
 }
 
 .testItemGreen {
-    background-color: #22c55e;
+    background-color: var(--green-500);
 }
 
 .testItemPurple {
@@ -141,7 +141,7 @@
 }
 
 .testItemOrange {
-    background-color: #f97316;
+    background-color: var(--orange-500);
 }
 
 .testItemPink {
@@ -149,7 +149,7 @@
 }
 
 .testItemIndigo {
-    background-color: #6366f1;
+    background-color: var(--indigo-500);
 }
 
 .testItemTeal {
@@ -157,25 +157,25 @@
 }
 
 .testItemRed {
-    background-color: #ef4444;
+    background-color: var(--red-500);
 }
 
 .testMore {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .legend {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .legendTitle {
     font-size: 0.875rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .legendItems {
@@ -198,25 +198,25 @@
 }
 
 .legendColorBlue {
-    background-color: #3b82f6;
+    background-color: var(--blue-500);
 }
 
 .legendColorBlueCompleted {
-    background-color: #3b82f6;
+    background-color: var(--blue-500);
     opacity: 0.7;
 }
 
 .legendHint {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-top: 0.5rem;
 }
 
 .tooltip {
     position: fixed;
     z-index: 50;
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
     padding: 0.75rem;
@@ -228,12 +228,12 @@
     font-weight: 600;
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .tooltipText {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 0.25rem;
 }
 
@@ -246,7 +246,7 @@
 
 .tooltipLink {
     font-size: 0.75rem;
-    color: #60a5fa;
+    color: var(--blue-400);
     margin-top: 0.5rem;
     font-weight: 600;
 }

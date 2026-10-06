@@ -13,9 +13,9 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     background: transparent;
-    color: #6b7280;
+    color: var(--gray-500);
     font-size: 9px;
     font-style: normal;
     font-weight: 700;
@@ -28,19 +28,19 @@
 
 .iconActive,
 .icon:hover {
-    border-color: #6366f1;
-    color: #818cf8;
+    border-color: var(--indigo-500);
+    color: var(--indigo-400);
 }
 
 .popup {
     width: 220px;
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 6px;
     padding: 8px 10px;
     font-size: 11px;
     line-height: 1.55;
-    color: #d1d5db;
+    color: var(--gray-300);
     font-style: normal;
     font-weight: 400;
     white-space: normal;
@@ -58,10 +58,10 @@
 
 .popup:not(.popupBottom)::after {
     top: 100%;
-    border-top-color: #374151;
+    border-top-color: var(--gray-700);
 }
 
 .popupBottom::after {
     bottom: 100%;
-    border-bottom-color: #374151;
+    border-bottom-color: var(--gray-700);
 }

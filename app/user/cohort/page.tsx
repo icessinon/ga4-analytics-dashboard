@@ -257,20 +257,20 @@ export default function CohortPage() {
                                         background: markerColor(ti), marginRight: 4, verticalAlign: 'middle',
                                     }} />
                                     {t.name}
-                                    <span style={{ color: '#9ca3af' }}>
+                                    <span style={{ color: 'var(--gray-400)' }}>
                                         （{new Date(t.startDate).toLocaleDateString('ja-JP')}〜{t.endDate ? new Date(t.endDate).toLocaleDateString('ja-JP') : '継続中'}
                                         {t.winnerVariant ? `・勝者${t.winnerVariant}` : ''}）
                                     </span>
                                 </span>
                             ))}
-                            <p style={{ margin: '0.35rem 0 0', color: '#9ca3af' }}>
+                            <p style={{ margin: '0.35rem 0 0', color: 'var(--gray-400)' }}>
                                 ●が付いた初回訪問週のコホートは施策実施中に流入したユーザーです。施策前後のコホートでリテンション率を比較できます。
                             </p>
                         </div>
                     )}
 
                     {cohorts.length === 0 ? (
-                        <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem' }}>
+                        <p style={{ color: 'var(--gray-500)', textAlign: 'center', padding: '2rem' }}>
                             データがありません。期間を広げて再試行してください。
                         </p>
                     ) : (

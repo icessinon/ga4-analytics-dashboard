@@ -14,10 +14,10 @@
 .backLink {
     display: inline-flex;
     align-items: center;
-    color: #2563eb;
+    color: var(--blue-600);
     text-decoration: none;
     padding: 0.5rem 1rem;
-    border: 1px solid #93c5fd;
+    border: 1px solid var(--blue-300);
     border-radius: 0.5rem;
 }
 
@@ -27,8 +27,8 @@
 }
 
 .backLink {
-        color: #60a5fa;
-        border-color: #1e3a8a;
+        color: var(--blue-400);
+        border-color: var(--blue-900);
     }
 
 .title {
@@ -40,17 +40,17 @@
 
 .subtitle {
     font-size: 0.9375rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin: 0 0 1rem 0;
 }
 
 .infoBox {
     padding: 0.75rem 1rem;
     background-color: rgba(30, 58, 138, 0.2);
-    border: 1px solid #1e3a8a;
+    border: 1px solid var(--blue-900);
     border-radius: 0.5rem;
     font-size: 0.875rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .warningBox {
@@ -64,7 +64,7 @@
 .section {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -102,11 +102,11 @@
 
 .input {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--gray-300);
     border-radius: 4px;
     font-size: 1rem;
-    background-color: #1f2937;
-    color: #111827;
+    background-color: var(--gray-800);
+    color: var(--gray-900);
     max-width: 240px;
     box-sizing: border-box;
 }
@@ -121,7 +121,7 @@
 
 .submitButton {
     padding: 0.75rem 1.5rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: #ffffff;
     border: none;
     border-radius: 6px;
@@ -132,7 +132,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .submitButton:disabled {
@@ -146,7 +146,7 @@
     gap: 0.5rem;
     cursor: pointer;
     font-size: 0.9375rem;
-    color: #374151;
+    color: var(--gray-700);
 }
 
 .checkbox {
@@ -156,7 +156,7 @@
 
 .helpText {
     font-size: 0.8125rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin: 0.25rem 0 0 0;
 }
 
@@ -170,7 +170,7 @@
     background-color: #fef2f2;
     border: 1px solid #fecaca;
     border-radius: 0.5rem;
-    color: #dc2626;
+    color: var(--red-600);
     margin-bottom: 1rem;
 }
 
@@ -185,7 +185,7 @@
 
 .loaderText {
     margin-top: 1rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .resultSection {
@@ -213,16 +213,16 @@
 .monthSwitcherLabel {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .monthSwitcherSelect {
     padding: 0.4rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 6px;
     font-size: 0.9375rem;
-    background-color: #1f2937;
-    color: #e5e7eb;
+    background-color: var(--gray-800);
+    color: var(--gray-200);
     box-sizing: border-box;
 }
 
@@ -240,22 +240,22 @@
 .tdPagePath {
     text-align: left;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #4b5563;
-    color: #e5e7eb;
+    border-bottom: 1px solid var(--gray-600);
+    color: var(--gray-200);
 }
 
 .thRight,
 .tdRight {
     text-align: right;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #4b5563;
-    color: #e5e7eb;
+    border-bottom: 1px solid var(--gray-600);
+    color: var(--gray-200);
 }
 
 .th {
     font-weight: 600;
-    background-color: #374151;
-    color: #e5e7eb;
+    background-color: var(--gray-700);
+    color: var(--gray-200);
 }
 
 .tdPagePath {
@@ -303,13 +303,13 @@
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .aiRerunButton {
     padding: 0.3rem 0.85rem;
     font-size: 0.8125rem;
-    background-color: #1e3a8a;
+    background-color: var(--blue-900);
     color: #bfdbfe;
     border: 1px solid #2d4a8a;
     border-radius: 5px;
@@ -325,7 +325,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .aiSummaryBox {
@@ -337,21 +337,21 @@
 
 .aiSummaryEmpty {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin: 0;
 }
 
 .rowLimitNote {
     margin: 0 0 0.5rem 0;
     font-size: 0.8rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .emptyBox {
     padding: 2rem;
     text-align: center;
-    color: #6b7280;
-    background-color: #374151;
+    color: var(--gray-500);
+    background-color: var(--gray-700);
     border-radius: 8px;
 }
 
@@ -367,14 +367,14 @@
 .searchInput {
     padding: 0.4rem 0.75rem;
     font-size: 0.875rem;
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 6px;
-    color: #f3f4f6;
+    color: var(--gray-100);
     outline: none;
     width: 220px;
 }
 
 .searchInput:focus {
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
 }

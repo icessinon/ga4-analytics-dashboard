@@ -200,7 +200,7 @@ export default function FunnelHistoryTab({ productId }: FunnelHistoryTabProps) {
                                                         詳細を見る
                                                     </Link>
                                                 ) : (
-                                                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>-</span>
+                                                    <span style={{ color: 'var(--gray-400)', fontSize: '0.875rem' }}>-</span>
                                                 )}
                                                 <button
                                                     onClick={() => handleDelete(exec.id)}

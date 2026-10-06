@@ -18,11 +18,11 @@
     font-size: 1.875rem;
     font-weight: 700;
     margin: 0 0 0.25rem 0;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .description {
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .loaderContainer {
@@ -36,16 +36,16 @@
 
 .errorContainer {
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorTitle {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .retryButton {
@@ -64,8 +64,8 @@
 }
 
 .searchContainer {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -79,16 +79,16 @@
 .searchInput {
     flex: 1;
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
 }
 
 .clearButton {
     padding: 0.5rem 1.5rem;
-    background-color: #374151;
-    color: #e5e7eb;
+    background-color: var(--gray-700);
+    color: var(--gray-200);
     border-radius: 0.5rem;
     border: none;
     cursor: pointer;
@@ -96,31 +96,31 @@
 }
 
 .clearButton:hover {
-    background-color: #4b5563;
+    background-color: var(--gray-600);
 }
 
 .searchHint {
     margin-top: 0.5rem;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .countText {
     margin-bottom: 1rem;
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .emptyContainer {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 2rem;
     text-align: center;
 }
 
 .emptyText {
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 1rem;
 }
 
@@ -139,8 +139,8 @@
 }
 
 .tableContainer {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     overflow: hidden;
 }
@@ -150,7 +150,7 @@
 }
 
 .tableHeader {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .tableHeaderCell {
@@ -158,27 +158,27 @@
     text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #e5e7eb;
-    border-bottom: 1px solid #4b5563;
+    color: var(--gray-200);
+    border-bottom: 1px solid var(--gray-600);
 }
 
 .tableBody {
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .tableRow {
     transition: background-color 0.2s;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
 }
 
 .tableRow:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .tableCell {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .actionCell {
@@ -187,7 +187,7 @@
 }
 
 .detailLink {
-    color: #60a5fa;
+    color: var(--blue-400);
     text-decoration: none;
     font-size: 0.875rem;
     transition: text-decoration 0.2s;
@@ -198,7 +198,7 @@
 }
 
 .deleteButton {
-    color: #f87171;
+    color: var(--red-400);
     background: none;
     border: none;
     cursor: pointer;
@@ -226,16 +226,16 @@
 
 .paginationButton {
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #1f2937;
-    color: #e5e7eb;
+    background-color: var(--gray-800);
+    color: var(--gray-200);
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .paginationButton:hover:not(:disabled) {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .paginationButton:disabled {
@@ -244,9 +244,9 @@
 }
 
 .paginationButtonActive {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
-    border-color: #2563eb;
+    border-color: var(--blue-600);
 }
 
 .paginationButtonActive:hover {
@@ -261,14 +261,14 @@
 .footer {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .footerLink {
     display: inline-flex;
     align-items: center;
     padding: 0.75rem 1.5rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.5rem;
     text-decoration: none;
@@ -276,7 +276,7 @@
 }
 
 .footerLink:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .reportNameCell {
@@ -287,7 +287,7 @@
 }
 
 .reportNameMain {
-    color: #f9fafb;
+    color: var(--gray-50);
     font-weight: 500;
 }
 
@@ -311,16 +311,16 @@
 
 .statusBadgeCompleted {
     background-color: rgba(22, 101, 52, 0.3);
-    color: #86efac;
+    color: var(--green-300);
 }
 
 .statusBadgeFailed {
     background-color: rgba(185, 28, 28, 0.3);
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .statusBadgeRunning {
     background-color: rgba(30, 58, 138, 0.4);
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 

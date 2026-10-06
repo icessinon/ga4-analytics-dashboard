@@ -16,13 +16,13 @@
 .title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     margin-bottom: 0.375rem;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.6;
 }
 
@@ -30,7 +30,7 @@
     background-color: rgba(251, 191, 36, 0.1);
     border: 1px solid rgba(251, 191, 36, 0.4);
     border-radius: 0.5rem;
-    color: #fbbf24;
+    color: var(--amber-400);
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
@@ -45,21 +45,21 @@
 }
 
 .select {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    color: #f9fafb;
+    color: var(--gray-50);
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
 }
 
 .periodNote {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .loading {
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
 }
 
@@ -67,7 +67,7 @@
     background-color: rgba(248, 113, 113, 0.1);
     border: 1px solid rgba(248, 113, 113, 0.4);
     border-radius: 0.5rem;
-    color: #f87171;
+    color: var(--red-400);
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
@@ -86,32 +86,32 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    border-top: 3px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
+    border-top: 3px solid var(--gray-700);
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
 }
 
 .summaryLabel {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .summaryValue {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .summaryHint {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .card {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -120,7 +120,7 @@
 .sectionTitle {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     margin-bottom: 1rem;
 }
 
@@ -136,15 +136,15 @@
 
 .table th {
     text-align: left;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-weight: 600;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     padding: 0.5rem 0.75rem;
     white-space: nowrap;
 }
 
 .table td {
-    color: #d1d5db;
+    color: var(--gray-300);
     border-bottom: 1px solid rgba(55, 65, 81, 0.5);
     padding: 0.5rem 0.75rem;
     white-space: nowrap;
@@ -156,12 +156,12 @@
 
 .strong {
     font-weight: 700;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .yen {
     font-weight: 700;
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .typeDot {
@@ -173,14 +173,14 @@
 }
 
 .totalRow td {
-    border-top: 2px solid #374151;
+    border-top: 2px solid var(--gray-700);
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
 }
 
 .tableNote {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     line-height: 1.7;
     margin-top: 0.75rem;
 }
@@ -189,22 +189,22 @@
     white-space: normal;
     min-width: 16rem;
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .formula {
-    background-color: #111827;
-    border: 1px solid #374151;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 0.875rem 1rem;
-    color: #f9fafb;
+    color: var(--gray-50);
     font-size: 0.9375rem;
     line-height: 1.6;
     margin-bottom: 1.25rem;
 }
 
 .formula strong {
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .defList {
@@ -215,33 +215,33 @@
 
 .defTerm {
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     font-size: 0.9375rem;
     margin-bottom: 0.3rem;
 }
 
 .defBody {
     font-size: 0.8125rem;
-    color: #d1d5db;
+    color: var(--gray-300);
     line-height: 1.75;
 }
 
 .defBody code {
-    background-color: #111827;
-    border: 1px solid #374151;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-700);
     border-radius: 0.25rem;
     padding: 0.05rem 0.35rem;
     font-size: 0.8125rem;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .defFlag {
-    border-left: 3px solid #fbbf24;
+    border-left: 3px solid var(--amber-400);
     padding-left: 0.85rem;
 }
 
 .defFlag .defTerm {
-    color: #fbbf24;
+    color: var(--amber-400);
 }
 
 @media (max-width: 640px) {

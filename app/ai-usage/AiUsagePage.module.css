@@ -2,9 +2,9 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1.5rem;
-    background: #111827;
+    background: var(--gray-900);
     min-height: 100vh;
-    color: #f9fafb;
+    color: var(--gray-50);
 }
 
 .header {
@@ -23,12 +23,12 @@
 .title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .headerActions {
@@ -58,36 +58,36 @@
 }
 
 .card {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.75rem;
     padding: 1.25rem 1.5rem;
 }
 
 .cardLabel {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 0.5rem;
 }
 
 .cardValue {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
 }
 
 .cardSub {
     font-size: 0.8125rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin-top: 0.25rem;
 }
 
 .accentCard {
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
 }
 
 .accentCard .cardValue {
-    color: #a5b4fc;
+    color: var(--indigo-300);
 }
 
 /* ── Period card grid (3 cols) ── */
@@ -109,14 +109,14 @@
     display: flex;
     gap: 0;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
 }
 
 .tab {
     padding: 0.625rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #9ca3af;
+    color: var(--gray-400);
     background: none;
     border: none;
     cursor: pointer;
@@ -126,41 +126,41 @@
 }
 
 .tabActive {
-    color: #a5b4fc;
-    border-bottom-color: #6366f1;
+    color: var(--indigo-300);
+    border-bottom-color: var(--indigo-500);
 }
 
 .tab:hover:not(.tabActive) {
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 /* ── Chart ── */
 .chartWrapper {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1rem 0.5rem 0.5rem;
     margin-bottom: 1.5rem;
 }
 
 .chartTooltip {
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     line-height: 1.6;
 }
 
 .chartTooltipLabel {
     font-weight: 600;
-    color: #a5b4fc;
+    color: var(--indigo-300);
     margin-bottom: 0.25rem;
 }
 
 .chartTooltipSub {
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.75rem;
 }
 
@@ -172,17 +172,17 @@
 .sectionTitle {
     font-size: 1rem;
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--gray-200);
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
 }
 
 /* ── Tables ── */
 .tableWrapper {
     overflow-x: auto;
     border-radius: 0.5rem;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
 }
 
 .table {
@@ -192,8 +192,8 @@
 }
 
 .table th {
-    background: #374151;
-    color: #d1d5db;
+    background: var(--gray-700);
+    color: var(--gray-300);
     font-weight: 600;
     text-align: left;
     padding: 0.75rem 1rem;
@@ -206,10 +206,10 @@
 }
 
 .table td {
-    background: #1f2937;
-    color: #e5e7eb;
+    background: var(--gray-800);
+    color: var(--gray-200);
     padding: 0.75rem 1rem;
-    border-top: 1px solid #374151;
+    border-top: 1px solid var(--gray-700);
 }
 
 .table tr:hover td {
@@ -218,7 +218,7 @@
 
 .funcName {
     font-weight: 500;
-    color: #a5b4fc;
+    color: var(--indigo-300);
 }
 
 .costCell {
@@ -227,31 +227,31 @@
 }
 
 .costUsd {
-    color: #34d399;
+    color: var(--teal-400);
     display: block;
 }
 
 .costJpy {
-    color: #9ca3af;
+    color: var(--gray-400);
     display: block;
     font-size: 0.75rem;
 }
 
 .tokenBreakdown {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
-.tokenInput { color: #60a5fa; }
-.tokenThinking { color: #f59e0b; }
-.tokenOutput { color: #34d399; }
+.tokenInput { color: var(--blue-400); }
+.tokenThinking { color: var(--amber-500); }
+.tokenOutput { color: var(--teal-400); }
 
 .modelBadge {
     display: inline-block;
     padding: 0.125rem 0.5rem;
     border-radius: 9999px;
     background: rgba(99,102,241,0.15);
-    color: #a5b4fc;
+    color: var(--indigo-300);
     font-size: 0.75rem;
     border: 1px solid rgba(99,102,241,0.3);
 }
@@ -259,25 +259,25 @@
 /* ── Page path label ── */
 .pagePath {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     font-family: monospace;
 }
 
 /* ── Export button ── */
 .exportBtn {
     padding: 0.5rem 1rem;
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.8125rem;
     cursor: pointer;
     transition: border-color 0.15s, color 0.15s;
 }
 
 .exportBtn:hover {
-    border-color: #6366f1;
-    color: #a5b4fc;
+    border-color: var(--indigo-500);
+    color: var(--indigo-300);
 }
 
 /* ── Table actions row ── */
@@ -290,24 +290,24 @@
 /* ── Note ── */
 .note {
     font-size: 0.8125rem;
-    color: #6b7280;
+    color: var(--gray-500);
     text-align: center;
     margin-top: 2rem;
     padding: 1rem;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
-    background: #1f2937;
+    background: var(--gray-800);
 }
 
 /* ── Error / loading ── */
 .loading {
-    color: #9ca3af;
+    color: var(--gray-400);
     text-align: center;
     padding: 4rem 0;
 }
 
 .error {
-    color: #f87171;
+    color: var(--red-400);
     text-align: center;
     padding: 4rem 0;
 }

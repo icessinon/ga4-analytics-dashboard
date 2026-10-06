@@ -405,7 +405,7 @@ export default function AiUsagePage() {
                         <tbody>
                             {periodRows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', color: '#6b7280' }}>データなし</td>
+                                    <td colSpan={5} style={{ textAlign: 'center', color: 'var(--gray-500)' }}>データなし</td>
                                 </tr>
                             ) : (
                                 periodRows.map((row) => (
@@ -453,7 +453,7 @@ export default function AiUsagePage() {
                         <tbody>
                             {summary.byFunction.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', color: '#6b7280' }}>データなし</td>
+                                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--gray-500)' }}>データなし</td>
                                 </tr>
                             ) : (
                                 summary.byFunction.map((row) => {
@@ -465,7 +465,7 @@ export default function AiUsagePage() {
                                                 {detail.page ? (
                                                     <span className={styles.pagePath}>{detail.page}</span>
                                                 ) : (
-                                                    <span style={{ color: '#6b7280' }}>—</span>
+                                                    <span style={{ color: 'var(--gray-500)' }}>—</span>
                                                 )}
                                             </td>
                                             <td>{row.calls.toLocaleString()}</td>
@@ -503,7 +503,7 @@ export default function AiUsagePage() {
                         <tbody>
                             {recentLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', color: '#6b7280' }}>データなし</td>
+                                    <td colSpan={6} style={{ textAlign: 'center', color: 'var(--gray-500)' }}>データなし</td>
                                 </tr>
                             ) : (
                                 recentLogs.map((log, i) => {
@@ -516,7 +516,7 @@ export default function AiUsagePage() {
                                                 {detail.page ? (
                                                     <span className={styles.pagePath}>{detail.page}</span>
                                                 ) : (
-                                                    <span style={{ color: '#6b7280' }}>—</span>
+                                                    <span style={{ color: 'var(--gray-500)' }}>—</span>
                                                 )}
                                             </td>
                                             <td>

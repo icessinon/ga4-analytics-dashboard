@@ -438,7 +438,7 @@ export default function ExitPage() {
                                 {geminiResult.split('\n').map((line, i) => {
                                     const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                                     const bold = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}

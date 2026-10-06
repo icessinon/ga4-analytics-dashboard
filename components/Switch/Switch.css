@@ -20,7 +20,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #4b5563;
+    background-color: var(--gray-600);
     box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.4);
     transition: 0.4s;
     border-radius: 5px;
@@ -34,13 +34,13 @@
     border-radius: 50%;
     left: 0.25em;
     bottom: 0.25em;
-    background-color: #e5e7eb;
+    background-color: var(--gray-200);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: 0.4s;
 }
 
 .switch input:checked + .slider {
-    background-color: #16a34a;
+    background-color: var(--green-600);
     box-shadow: inset 2px 4px 8px rgba(0, 0, 0, 0.25);
 }
 

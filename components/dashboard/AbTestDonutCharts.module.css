@@ -13,8 +13,8 @@
 
 .chartWrap {
     display: block;
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 1rem;
     padding: 1.25rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -25,20 +25,20 @@
 }
 
 .chartWrap:hover {
-    border-color: #6b7280;
+    border-color: var(--gray-500);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
     transform: translateY(-2px);
 }
 
 .chartWrap:focus-visible {
-    outline: 2px solid #60a5fa;
+    outline: 2px solid var(--blue-400);
     outline-offset: 2px;
 }
 
 .chartTitle {
     font-size: 0.9375rem;
     font-weight: 600;
-    color: #d1d5db;
+    color: var(--gray-300);
     margin: 0 0 0.5rem 0;
     text-align: center;
 }
@@ -48,6 +48,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
 }

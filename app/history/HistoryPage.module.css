@@ -14,11 +14,11 @@
 .backLink {
     display: inline-flex;
     align-items: center;
-    color: #2563eb;
+    color: var(--blue-600);
     text-decoration: none;
     margin-bottom: 0.5rem;
     padding: 0.5rem 1rem;
-    border: 1px solid #93c5fd;
+    border: 1px solid var(--blue-300);
     border-radius: 0.5rem;
     transition: background-color 0.2s;
 }
@@ -29,8 +29,8 @@
 }
 
 .backLink {
-        color: #60a5fa;
-        border-color: #1e3a8a;
+        color: var(--blue-400);
+        border-color: var(--blue-900);
     }
 
 .title {
@@ -40,12 +40,12 @@
 }
 
 .description {
-    color: #4b5563;
+    color: var(--gray-600);
 }
 
 .tabContainer {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -66,21 +66,21 @@
 }
 
 .tabButtonActive {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
 }
 
 .tabButtonInactive {
-    background-color: #4b5563;
-    color: #374151;
+    background-color: var(--gray-600);
+    color: var(--gray-700);
 }
 
 .tabButtonInactive:hover {
-    background-color: #d1d5db;
+    background-color: var(--gray-300);
 }
 
 .tabButtonInactive {
-        background-color: #374151;
-        color: #d1d5db;
+        background-color: var(--gray-700);
+        color: var(--gray-300);
     }
 

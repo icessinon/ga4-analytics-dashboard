@@ -17,20 +17,20 @@
     text-align: left;
     cursor: pointer;
     box-sizing: border-box;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #1f2937;
-    color: #f3f4f6;
+    background-color: var(--gray-800);
+    color: var(--gray-100);
     transition: border-color 0.2s;
 }
 
 .trigger:hover:not(:disabled) {
-    border-color: #6b7280;
+    border-color: var(--gray-500);
 }
 
 .trigger:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--blue-500);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
@@ -55,7 +55,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #e5e7eb;
+    color: var(--gray-200);
     transition: transform 0.2s ease;
     pointer-events: none;
     flex-shrink: 0;
@@ -71,9 +71,9 @@
     left: 0;
     right: 0;
     margin-top: 2px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
     z-index: 50;
     overflow: hidden;
@@ -84,15 +84,15 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #4b5563;
-    background-color: #111827;
+    border-bottom: 1px solid var(--gray-600);
+    background-color: var(--gray-900);
 }
 
 .searchIcon {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9ca3af;
+    color: var(--gray-400);
     flex-shrink: 0;
 }
 
@@ -102,13 +102,13 @@
     padding: 0.375rem 0;
     border: none;
     background: none;
-    color: #f3f4f6;
+    color: var(--gray-100);
     font-size: inherit;
     outline: none;
 }
 
 .searchInput::placeholder {
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .optionsList {
@@ -118,7 +118,7 @@
 
 .emptyOption {
     padding: 0.75rem 1rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
     text-align: center;
 }
@@ -129,7 +129,7 @@
     padding: 0.5rem 1rem;
     border: none;
     background: none;
-    color: #f3f4f6;
+    color: var(--gray-100);
     font-size: inherit;
     text-align: left;
     cursor: pointer;
@@ -137,10 +137,10 @@
 }
 
 .option:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .optionSelected {
-    background-color: #1e3a8a;
+    background-color: var(--blue-900);
     font-weight: 500;
 }

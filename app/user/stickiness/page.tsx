@@ -301,7 +301,7 @@ export default function StickinessPage() {
                                             </div>
                                             <div>
                                                 <span className={styles.comparePeriodBadge} style={{ background: 'rgba(249,115,22,0.15)', color: '#fb923c' }}>期間B</span>
-                                                <p className={styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem', color: '#9ca3af' }}>
+                                                <p className={styles.summaryValue} style={{ fontSize: '1.5rem', marginTop: '0.25rem', color: 'var(--gray-400)' }}>
                                                     {fmt(b)}
                                                 </p>
                                             </div>
@@ -416,7 +416,7 @@ export default function StickinessPage() {
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}

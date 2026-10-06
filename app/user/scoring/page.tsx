@@ -373,7 +373,7 @@ export default function ScoringPage() {
                     {/* Gemini AI診断 */}
                     <div className={styles.section}>
                         <h2 className={styles.sectionTitle}>AIによるセグメント診断</h2>
-                        <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginBottom: '1rem' }}>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', marginBottom: '1rem' }}>
                             スコアリング結果をもとに、活性・休眠・離脱リスクの行動パターン差異と施策を生成します
                         </p>
                         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -395,7 +395,7 @@ export default function ScoringPage() {
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}

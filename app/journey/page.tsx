@@ -466,7 +466,7 @@ export default function JourneyPage() {
                             </div>
 
                             {displayedPaths.length === 0 ? (
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', padding: '0.5rem 0' }}>
+                                <p style={{ fontSize: '0.875rem', color: 'var(--gray-500)', padding: '0.5rem 0' }}>
                                     {pathDataMode === 'url' ? 'URLデータなし（再分析で取得されます）' : 'データなし'}
                                 </p>
                             ) : pathView === 'table' ? (
@@ -511,7 +511,7 @@ export default function JourneyPage() {
                                                             </div>
                                                         </td>
                                                         <td className={styles.pathTdNum}>{p.count.toLocaleString()}</td>
-                                                        <td className={styles.pathTdNum} style={{ color: '#9ca3af' }}>
+                                                        <td className={styles.pathTdNum} style={{ color: 'var(--gray-400)' }}>
                                                             {totalPathCount > 0 ? ((p.count / totalPathCount) * 100).toFixed(1) : '-'}%
                                                         </td>
                                                     </tr>
@@ -659,7 +659,7 @@ export default function JourneyPage() {
                                                             </div>
                                                         </td>
                                                         <td className={styles.pathTdNum}>{d.dropout.toLocaleString()}</td>
-                                                        <td className={styles.pathTdNum} style={{ color: '#9ca3af' }}>{globalPct}%</td>
+                                                        <td className={styles.pathTdNum} style={{ color: 'var(--gray-400)' }}>{globalPct}%</td>
                                                         <td className={styles.pathTdNum} style={{ color: '#93c5fd' }}>
                                                             {sig ? formatDuration(sig.avgEngagementSec) : '-'}
                                                         </td>
@@ -691,7 +691,7 @@ export default function JourneyPage() {
                                                     <span className={styles.chipDot} style={{ background: nodeColor(channel) }} />
                                                     <span className={styles.pathGroupChannel}>{channel}</span>
                                                     <span className={styles.pathGroupTotal}>離脱計 {channelTotal.toLocaleString()}</span>
-                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                    <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--gray-400)' }}>
                                                         (離脱全体の{totalDropouts > 0 ? (channelTotal / totalDropouts * 100).toFixed(1) : '-'}%)
                                                     </span>
                                                 </div>
@@ -713,7 +713,7 @@ export default function JourneyPage() {
                                                                 )}
                                                                 <span className={styles.pathArrow}>→</span>
                                                                 <span className={styles.pathStep} style={{ color: '#f87171', borderColor: '#f8717155' }}>離脱</span>
-                                                                <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                                <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--gray-400)' }}>
                                                                     {totalDropouts > 0 ? (d.dropout / totalDropouts * 100).toFixed(1) : '-'}%
                                                                 </span>
                                                                 {dropoutSignalMap[d.n1] && (
@@ -834,7 +834,7 @@ export default function JourneyPage() {
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}

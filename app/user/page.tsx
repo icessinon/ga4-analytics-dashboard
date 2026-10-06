@@ -331,7 +331,7 @@ export default function UserPage() {
                             <tbody>
                                 {sortedSegments.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className={styles.userTableCell} style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
+                                        <td colSpan={10} className={styles.userTableCell} style={{ textAlign: 'center', color: 'var(--gray-500)', padding: '2rem' }}>
                                             データがありません
                                         </td>
                                     </tr>

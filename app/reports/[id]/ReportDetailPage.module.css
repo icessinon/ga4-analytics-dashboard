@@ -26,11 +26,11 @@
     font-size: 1.875rem;
     font-weight: 700;
     margin: 0;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .executionDate {
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-top: 0.5rem;
 }
 
@@ -45,23 +45,23 @@
 
 .errorContainer {
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorTitle {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorLink {
     margin-top: 1rem;
     display: inline-block;
     padding: 0.5rem 1rem;
-    background-color: #dc2626;
+    background-color: var(--red-600);
     color: white;
     border-radius: 0.25rem;
     text-decoration: none;
@@ -69,7 +69,7 @@
 }
 
 .errorLink:hover {
-    background-color: #b91c1c;
+    background-color: var(--red-700);
 }
 
 .rerunButton {
@@ -79,8 +79,8 @@
     height: 2.75rem;
     padding: 0 1.5rem;
     border-radius: 10px;
-    border: 2px dashed #16a34a;
-    background-color: #16a34a;
+    border: 2px dashed var(--green-600);
+    background-color: var(--green-600);
     color: #fff;
     font-size: 0.875rem;
     letter-spacing: 0.05em;
@@ -91,13 +91,13 @@
 }
 
 .rerunButton:hover {
-    background-color: #1f2937;
-    color: #16a34a;
-    border: 2px dashed #16a34a;
+    background-color: var(--gray-800);
+    color: var(--green-600);
+    border: 2px dashed var(--green-600);
 }
 
 .rerunButton:active {
-    background-color: #86efac;
+    background-color: var(--green-300);
     color: #fff;
 }
 
@@ -106,8 +106,8 @@
     }
 
 .card {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -117,7 +117,7 @@
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .infoGrid {
@@ -134,31 +134,31 @@
 
 .infoLabel {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .infoValue {
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .errorMessage {
     margin-top: 1rem;
     padding: 1rem;
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.25rem;
 }
 
 .errorMessageTitle {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorMessageText {
     font-size: 0.875rem;
-    color: #fca5a5;
+    color: var(--red-300);
     margin-top: 0.25rem;
 }
 
@@ -181,43 +181,43 @@
 }
 
 .cvrCard {
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
-    background-color: #111827;
+    background-color: var(--gray-900);
 }
 
 .cvrCardTitle {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .cvrLabel {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .cvrValue {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .cvrValueBlue {
-    color: #60a5fa;
+    color: var(--blue-400);
 }
 
 .cvrValueGreen {
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .cvrValuePurple {
-    color: #a78bfa;
+    color: var(--violet-400);
 }
 
 .cvrValueOrange {
-    color: #fb923c;
+    color: var(--orange-400);
 }
 
 .evaluationGrid {
@@ -240,24 +240,24 @@
 
 .evaluationLabel {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 0.25rem;
 }
 
 .evaluationValue {
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .evaluationValueLarge {
     font-weight: 600;
     font-size: 1.125rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .evaluationSubtext {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-top: 0.25rem;
 }
 
@@ -265,26 +265,26 @@
     margin-top: 1rem;
     padding: 1rem;
     background-color: rgba(37, 99, 235, 0.15);
-    border: 1px solid #3b82f6;
+    border: 1px solid var(--blue-500);
     border-radius: 0.25rem;
 }
 
 .geminiTitle {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .geminiText {
     font-size: 0.875rem;
-    color: #93c5fd;
+    color: var(--blue-300);
     margin-top: 0.25rem;
     white-space: pre-wrap;
 }
 
 .configContainer {
-    background-color: #111827;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-600);
     padding: 1rem;
     border-radius: 0.25rem;
     overflow: auto;
@@ -293,21 +293,21 @@
 .configPre {
     font-size: 0.75rem;
     margin: 0;
-    color: #e5e7eb;
+    color: var(--gray-200);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 .footer {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .footerLink {
     display: inline-flex;
     align-items: center;
     padding: 0.75rem 1.5rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.5rem;
     text-decoration: none;
@@ -315,5 +315,5 @@
 }
 
 .footerLink:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }

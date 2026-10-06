@@ -16,13 +16,13 @@
 .title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f9fafb;
+    color: var(--gray-50);
     margin-bottom: 0.5rem;
 }
 
 .lead {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.7;
     max-width: 44rem;
 }
@@ -35,7 +35,7 @@
 }
 
 .subLink {
-    color: #60a5fa;
+    color: var(--blue-400);
     font-size: 0.8125rem;
     text-decoration: none;
 }
@@ -51,8 +51,8 @@
 .sectionTitle {
     font-size: 1.125rem;
     font-weight: 700;
-    color: #93c5fd;
-    border-left: 3px solid #2563eb;
+    color: var(--blue-300);
+    border-left: 3px solid var(--blue-600);
     padding-left: 0.75rem;
     margin-bottom: 1rem;
 }
@@ -60,7 +60,7 @@
 .subTitle {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: #d1d5db;
+    color: var(--gray-300);
     margin: 1.25rem 0 0.5rem;
 }
 
@@ -68,23 +68,23 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8125rem;
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     overflow: hidden;
 }
 
 .table th {
     text-align: left;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-weight: 600;
     background-color: rgba(17, 24, 39, 0.6);
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     padding: 0.625rem 0.875rem;
 }
 
 .table td {
-    color: #d1d5db;
+    color: var(--gray-300);
     border-bottom: 1px solid rgba(55, 65, 81, 0.5);
     padding: 0.625rem 0.875rem;
     line-height: 1.6;
@@ -94,7 +94,7 @@
 .table td:first-child {
     white-space: nowrap;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .table code,
@@ -103,12 +103,12 @@
     border-radius: 0.25rem;
     padding: 0.0625rem 0.375rem;
     font-size: 0.75rem;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .note {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.7;
     margin-top: 0.75rem;
     padding: 0.75rem 1rem;
@@ -119,7 +119,7 @@
 
 .list {
     font-size: 0.8125rem;
-    color: #d1d5db;
+    color: var(--gray-300);
     line-height: 1.8;
     padding-left: 1.25rem;
 }
@@ -150,7 +150,7 @@
 }
 
 .extLink {
-    color: #60a5fa;
+    color: var(--blue-400);
     text-decoration: underline;
     margin: 0 0.25rem;
 }

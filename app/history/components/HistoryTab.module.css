@@ -9,22 +9,22 @@
 
 .errorContainer {
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorTitle {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .retryButton {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
-    background-color: #dc2626;
+    background-color: var(--red-600);
     color: white;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -33,12 +33,12 @@
 }
 
 .retryButton:hover {
-    background-color: #b91c1c;
+    background-color: var(--red-700);
 }
 
 .searchForm {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -52,17 +52,17 @@
 .searchInput {
     flex: 1;
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     font-size: 0.875rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
 }
 
 .clearButton {
     padding: 0.5rem 1.5rem;
-    background-color: #374151;
-    color: #e5e7eb;
+    background-color: var(--gray-700);
+    color: var(--gray-200);
     border-radius: 0.5rem;
     transition: background-color 0.2s;
     font-size: 0.875rem;
@@ -71,38 +71,38 @@
 }
 
 .clearButton:hover {
-    background-color: #4b5563;
+    background-color: var(--gray-600);
 }
 
 .helpText {
     margin-top: 0.5rem;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .countText {
     margin-bottom: 1rem;
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .emptyState {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 2rem;
     text-align: center;
 }
 
 .emptyText {
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 1rem;
 }
 
 .createButton {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -111,19 +111,19 @@
 }
 
 .createButton:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .table {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     overflow: hidden;
     width: 100%;
 }
 
 .tableHead {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .tableHeader {
@@ -131,27 +131,27 @@
     text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .tableBody {
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .tableRow {
-    border-bottom: 1px solid #4b5563;
+    border-bottom: 1px solid var(--gray-600);
     transition: background-color 0.2s;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
 }
 
 .tableRow:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .tableCell {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .actionCell {
@@ -164,7 +164,7 @@
 }
 
 .actionLink {
-    color: #60a5fa;
+    color: var(--blue-400);
     text-decoration: none;
     font-size: 0.875rem;
     transition: text-decoration 0.2s;
@@ -175,7 +175,7 @@
 }
 
 .deleteButton {
-    color: #f87171;
+    color: var(--red-400);
     background: none;
     border: none;
     cursor: pointer;
@@ -203,16 +203,16 @@
 
 .paginationButton {
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
-    background-color: #1f2937;
-    color: #e5e7eb;
+    background-color: var(--gray-800);
+    color: var(--gray-200);
     transition: background-color 0.2s;
     cursor: pointer;
 }
 
 .paginationButton:hover:not(:disabled) {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .paginationButton:disabled {
@@ -221,9 +221,9 @@
 }
 
 .paginationButtonActive {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
-    border-color: #2563eb;
+    border-color: var(--blue-600);
 }
 
 .statusBadge {
@@ -242,7 +242,7 @@
 }
 
 .reportNameMain {
-    color: #f9fafb;
+    color: var(--gray-50);
     font-weight: 500;
 }
 
@@ -260,16 +260,16 @@
 
 .statusBadgeCompleted {
     background-color: rgba(22, 101, 52, 0.3);
-    color: #86efac;
+    color: var(--green-300);
 }
 
 .statusBadgeFailed {
     background-color: rgba(185, 28, 28, 0.3);
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .statusBadgeRunning {
     background-color: rgba(30, 58, 138, 0.4);
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 

@@ -8,7 +8,7 @@
 }
 
 .headerRow {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .headerCell {
@@ -16,8 +16,8 @@
     text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #e5e7eb;
-    border-bottom: 1px solid #4b5563;
+    color: var(--gray-200);
+    border-bottom: 1px solid var(--gray-600);
 }
 
 .headerCellLeft {
@@ -37,8 +37,8 @@
     text-align: left;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #9ca3af;
-    border-bottom: 1px solid #4b5563;
+    color: var(--gray-400);
+    border-bottom: 1px solid var(--gray-600);
 }
 
 .subHeaderCellLeft {
@@ -54,14 +54,14 @@
 }
 
 .bodyRow:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .bodyCell {
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: #f3f4f6;
-    border-bottom: 1px solid #4b5563;
+    color: var(--gray-100);
+    border-bottom: 1px solid var(--gray-600);
 }
 
 .bodyCellLeft {
@@ -81,15 +81,15 @@
 }
 
 .positiveValue {
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .negativeValue {
-    color: #f87171;
+    color: var(--red-400);
 }
 
 .emptyCell {
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .emptyState {
@@ -97,12 +97,12 @@
     align-items: center;
     justify-content: center;
     height: 16rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .baselineLabel {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-left: 0.25rem;
 }
 

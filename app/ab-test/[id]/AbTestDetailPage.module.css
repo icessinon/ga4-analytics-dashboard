@@ -32,8 +32,8 @@
     height: 2.75rem;
     padding: 0 1.5rem;
     border-radius: 10px;
-    border: 2px solid #6366f1;
-    background-color: #6366f1;
+    border: 2px solid var(--indigo-500);
+    background-color: var(--indigo-500);
     color: #fff;
     font-size: 0.875rem;
     letter-spacing: 0.05em;
@@ -43,9 +43,9 @@
 }
 
 .segmentButton:hover {
-    background-color: #1f2937;
-    color: #6366f1;
-    border-color: #6366f1;
+    background-color: var(--gray-800);
+    color: var(--indigo-500);
+    border-color: var(--indigo-500);
 }
 
 .editButton {
@@ -55,8 +55,8 @@
     height: 2.75rem;
     padding: 0 1.5rem;
     border-radius: 10px;
-    border: 2px dashed #16a34a;
-    background-color: #16a34a;
+    border: 2px dashed var(--green-600);
+    background-color: var(--green-600);
     color: #fff;
     font-size: 0.875rem;
     letter-spacing: 0.05em;
@@ -67,13 +67,13 @@
 }
 
 .editButton:hover {
-    background-color: #1f2937;
-    color: #16a34a;
-    border: 2px dashed #16a34a;
+    background-color: var(--gray-800);
+    color: var(--green-600);
+    border: 2px dashed var(--green-600);
 }
 
 .editButton:active {
-    background-color: #86efac;
+    background-color: var(--green-300);
     color: #fff;
 }
 
@@ -85,7 +85,7 @@
     font-size: 1.875rem;
     font-weight: 700;
     margin: 0;
-    color: #f3f4f6;
+    color: var(--gray-100);
     /* 幅が足りないときはタイトルが1文字ずつ縦に潰れず、ボタン行が下に折り返すようにする */
     flex: 1 1 20rem;
     min-width: 0;
@@ -108,28 +108,28 @@
     flex: 1 1 10rem;
     min-width: 0;
     background-color: rgba(17, 24, 39, 0.55);
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 0.875rem 1.25rem;
 }
 
 .resultSummaryLabel {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0 0 0.375rem;
 }
 
 .resultSummaryWinner {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #4ade80;
+    color: var(--green-400);
     margin: 0;
 }
 
 .resultSummaryValue {
     font-size: 1.375rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin: 0;
 }
 
@@ -144,21 +144,21 @@
     flex: 1 1 18rem;
     min-width: 0;
     background-color: rgba(17, 24, 39, 0.55);
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 0.875rem 1.25rem;
 }
 
 .resultFactorText {
     font-size: 0.875rem;
-    color: #d1d5db;
+    color: var(--gray-300);
     line-height: 1.7;
     margin: 0;
     white-space: pre-wrap;
 }
 
 .subtitle {
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-top: 0.5rem;
 }
 
@@ -173,23 +173,23 @@
 
 .errorContainer {
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorTitle {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #fca5a5;
+    color: var(--red-300);
 }
 
 .errorLink {
     margin-top: 1rem;
     display: inline-block;
     padding: 0.5rem 1rem;
-    background-color: #dc2626;
+    background-color: var(--red-600);
     color: white;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -197,12 +197,12 @@
 }
 
 .errorLink:hover {
-    background-color: #b91c1c;
+    background-color: var(--red-700);
 }
 
 .section {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -212,7 +212,7 @@
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .infoGrid {
@@ -238,13 +238,13 @@
 
 .infoLabel {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 0.5rem;
 }
 
 .infoValue {
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .statusContainer {
@@ -258,32 +258,32 @@
     width: 100%;
     min-height: 2rem;
     padding: 0.375rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
     transition: opacity 0.2s;
     cursor: pointer;
-    background-color: #1f2937;
-    color: #f3f4f6;
+    background-color: var(--gray-800);
+    color: var(--gray-100);
 }
 
 .statusSelectRunning {
     background-color: rgba(22, 101, 52, 0.35);
-    color: #86efac;
-    border-color: #16a34a;
+    color: var(--green-300);
+    border-color: var(--green-600);
 }
 
 .statusSelectCompleted {
-    background-color: #374151;
-    color: #e5e7eb;
-    border-color: #4b5563;
+    background-color: var(--gray-700);
+    color: var(--gray-200);
+    border-color: var(--gray-600);
 }
 
 .statusSelectPaused {
     background-color: rgba(245, 158, 11, 0.2);
-    color: #fcd34d;
-    border-color: #d97706;
+    color: var(--amber-300);
+    border-color: var(--amber-600);
 }
 
 .statusSelectDisabled {
@@ -297,7 +297,7 @@
 
 .statusUpdating {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .scheduleList {
@@ -314,12 +314,12 @@
 
 .scheduleLabel {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .scheduleValue {
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .scheduleBadge {
@@ -330,7 +330,7 @@
 
 .scheduleBadgeEnabled {
     background-color: rgba(22, 101, 52, 0.35);
-    color: #86efac;
+    color: var(--green-300);
 }
 
 .labelSection {
@@ -341,15 +341,15 @@
 
 .labelBlock {
     padding: 0.75rem 1rem;
-    background-color: #111827;
-    border: 1px solid #374151;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-700);
     border-radius: 0.375rem;
 }
 
 .labelBlockTitle {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0 0 0.25rem 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -357,7 +357,7 @@
 
 .labelBlockValue {
     font-size: 0.875rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     margin: 0;
     word-break: break-all;
     display: flex;
@@ -374,7 +374,7 @@
 
 .labelEmpty {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0;
 }
 
@@ -387,7 +387,7 @@
 
 .refreshButton {
     padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border: none;
     border-radius: 0.375rem;
@@ -398,7 +398,7 @@
 }
 
 .refreshButton:hover:not(:disabled) {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .refreshButton:disabled {
@@ -414,13 +414,13 @@
 
 .currentMeta {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0;
 }
 
 .currentError {
     font-size: 0.875rem;
-    color: #fca5a5;
+    color: var(--red-300);
     margin: 0 0 0.75rem 0;
 }
 
@@ -428,7 +428,7 @@
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     font-size: 0.9375rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .currentCallout strong {
@@ -437,27 +437,27 @@
 
 .currentCalloutWin {
     background-color: rgba(22, 101, 52, 0.25);
-    border: 1px solid #16a34a;
-    color: #86efac;
+    border: 1px solid var(--green-600);
+    color: var(--green-300);
 }
 
 .currentCalloutPending {
     background-color: rgba(245, 158, 11, 0.12);
-    border: 1px solid #d97706;
-    color: #fcd34d;
+    border: 1px solid var(--amber-600);
+    color: var(--amber-300);
 }
 
 .currentCalloutNeutral {
-    background-color: #111827;
-    border: 1px solid #374151;
-    color: #9ca3af;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-700);
+    color: var(--gray-400);
 }
 
 .currentCalloutError {
     margin-top: 0.5rem;
     background-color: rgba(153, 27, 27, 0.2);
-    border: 1px solid #dc2626;
-    color: #fca5a5;
+    border: 1px solid var(--red-600);
+    color: var(--red-300);
     font-size: 0.875rem;
 }
 
@@ -474,16 +474,16 @@
 .currentTable th {
     text-align: left;
     padding: 0.5rem 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-weight: 600;
-    border-bottom: 1px solid #4b5563;
+    border-bottom: 1px solid var(--gray-600);
     white-space: nowrap;
 }
 
 .currentTable td {
     padding: 0.625rem 0.75rem;
-    color: #e5e7eb;
-    border-bottom: 1px solid #374151;
+    color: var(--gray-200);
+    border-bottom: 1px solid var(--gray-700);
     white-space: nowrap;
 }
 
@@ -495,7 +495,7 @@
     margin-left: 0.5rem;
     padding: 0.125rem 0.5rem;
     background-color: rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
+    color: var(--blue-300);
     border-radius: 9999px;
     font-size: 0.6875rem;
     font-weight: 600;
@@ -503,22 +503,22 @@
 
 .currentCvr {
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .currentLiftUp {
-    color: #4ade80;
+    color: var(--green-400);
     font-weight: 600;
 }
 
 .currentLiftDown {
-    color: #f87171;
+    color: var(--red-400);
     font-weight: 600;
 }
 
 .funnelDropoff {
     margin-left: 0.25rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.8125rem;
 }
 
@@ -528,17 +528,17 @@
 
 .funnelBestMark {
     margin-left: 0.375rem;
-    color: #4ade80;
+    color: var(--green-400);
 }
 
 .funnelTotalRow td {
-    border-top: 2px solid #4b5563;
+    border-top: 2px solid var(--gray-600);
     font-weight: 600;
 }
 
 .currentNote {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin: 0;
 }
 
@@ -549,7 +549,7 @@
 .labelBreakdownTitle {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #d1d5db;
+    color: var(--gray-300);
     margin-bottom: 0.5rem;
 }
 
@@ -567,7 +567,7 @@
 
 .reportItem {
     display: block;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
     transition: background-color 0.2s;
@@ -576,7 +576,7 @@
 }
 
 .reportItem:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .reportItemClickable {
@@ -595,22 +595,22 @@
 
 .reportItemTitle {
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .reportItemDetails {
     margin-top: 0.5rem;
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .reportItemError {
-    color: #f87171;
+    color: var(--red-400);
 }
 
 .reportItemButton {
     padding: 0.5rem 1rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
@@ -620,24 +620,24 @@
 }
 
 .reportItemButton:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .reportEmpty {
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .footer {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .footerLink {
     display: inline-flex;
     align-items: center;
     padding: 0.75rem 1.5rem;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: white;
     border-radius: 0.5rem;
     transition: background-color 0.2s;
@@ -645,7 +645,7 @@
 }
 
 .footerLink:hover {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .aiReport {
@@ -657,7 +657,7 @@
 }
 
 .aiReportLine {
-    color: #d1d5db;
+    color: var(--gray-300);
     font-size: 0.875rem;
     line-height: 1.7;
     min-height: 0.5rem;
@@ -665,7 +665,7 @@
 }
 
 .aiReportLine strong {
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .funnelControls {
@@ -677,7 +677,7 @@
 
 .basisToggle {
     display: inline-flex;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     overflow: hidden;
 }
@@ -685,7 +685,7 @@
 .basisButton,
 .basisActive {
     background-color: transparent;
-    color: #9ca3af;
+    color: var(--gray-400);
     border: none;
     font-size: 0.8125rem;
     padding: 0.375rem 0.875rem;
@@ -694,14 +694,14 @@
 }
 
 .basisActive {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: #fff;
     font-weight: 600;
 }
 
 .basisButton:hover:not(:disabled) {
-    background-color: #374151;
-    color: #e5e7eb;
+    background-color: var(--gray-700);
+    color: var(--gray-200);
 }
 
 .basisButton:disabled,
@@ -714,9 +714,9 @@
     margin: 0.5rem 0 0;
     padding: 0.375rem 0.75rem;
     font-size: 0.8125rem;
-    color: #a5b4fc;
+    color: var(--indigo-300);
     background-color: rgba(99, 102, 241, 0.12);
-    border-left: 3px solid #6366f1;
+    border-left: 3px solid var(--indigo-500);
     border-radius: 0.25rem;
     line-height: 1.6;
 }
@@ -724,21 +724,21 @@
 .reportRegenerate {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px dashed #374151;
+    border-top: 1px dashed var(--gray-700);
 }
 
 .reportRegenerateLabel {
     display: block;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--gray-200);
     margin-bottom: 0.25rem;
 }
 
 .reportRegenerateHint {
     margin: 0 0 0.5rem;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.6;
 }
 
@@ -758,17 +758,17 @@
     padding: 0;
     font-size: 1.125rem;
     line-height: 1;
-    color: #9ca3af;
-    background-color: #374151;
-    border: 1px solid #4b5563;
+    color: var(--gray-400);
+    background-color: var(--gray-700);
+    border: 1px solid var(--gray-600);
     border-radius: 9999px;
     cursor: pointer;
 }
 
 .reportPerspectiveClearIcon:hover {
     color: #fff;
-    background-color: #ef4444;
-    border-color: #ef4444;
+    background-color: var(--red-500);
+    border-color: var(--red-500);
 }
 
 .reportPerspectiveInput {
@@ -776,9 +776,9 @@
     padding: 0.625rem 2.25rem 0.625rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.6;
-    color: #e5e7eb;
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    color: var(--gray-200);
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     resize: vertical;
     font-family: inherit;
@@ -786,7 +786,7 @@
 
 .reportPerspectiveInput:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--blue-600);
 }
 
 .reportPerspectiveInput:disabled {
@@ -802,7 +802,7 @@
 }
 
 .reportRegenerateButton {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: #fff;
     border: none;
     font-size: 0.875rem;
@@ -813,7 +813,7 @@
 }
 
 .reportRegenerateButton:hover:not(:disabled) {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .reportRegenerateButton:disabled {
@@ -824,7 +824,7 @@
 .reportError {
     margin: 0.625rem 0 0;
     font-size: 0.8125rem;
-    color: #f87171;
+    color: var(--red-400);
 }
 
 .buttonInner {
@@ -836,7 +836,7 @@
 .funnelVariantNames {
     display: block;
     font-size: 0.6875rem;
-    color: #fbbf24;
+    color: var(--amber-400);
     margin-top: 0.125rem;
 }
 
@@ -846,7 +846,7 @@
     gap: 0.25rem;
     font-size: 0.8125rem;
     font-weight: 400;
-    color: #60a5fa;
+    color: var(--blue-400);
     text-decoration: none;
     margin-left: 0.75rem;
     vertical-align: middle;

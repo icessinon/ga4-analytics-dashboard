@@ -1,8 +1,8 @@
 .scheduleConfig {
     padding: 16px;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 8px;
-    background: #1f2937;
+    background: var(--gray-800);
 }
 
 .checkboxLabel {
@@ -37,7 +37,7 @@
 }
 
 .radioLabel:hover {
-    background: #374151;
+    background: var(--gray-700);
 }
 
 .radioLabel input[type="radio"] {
@@ -47,10 +47,10 @@
 .numberInput {
     width: 60px;
     padding: 4px 8px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
-    background: #1f2937;
-    color: #f3f4f6;
+    background: var(--gray-800);
+    color: var(--gray-100);
 }
 
 .dateTimeInputs {
@@ -61,10 +61,10 @@
 
 .dateTimeInputs input {
     padding: 4px 8px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
-    background: #1f2937;
-    color: #f3f4f6;
+    background: var(--gray-800);
+    color: var(--gray-100);
 }
 
 .dateTimeInputs input[type="time"]::-webkit-calendar-picker-indicator {
@@ -78,25 +78,25 @@
     gap: 12px;
     margin-left: 16px;
     padding: 12px;
-    background: #111827;
+    background: var(--gray-900);
     border-radius: 4px;
 }
 
 .recurringConfig select,
 .recurringSelect {
     padding: 4px 8px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
-    background: #1f2937;
-    color: #f3f4f6;
+    background: var(--gray-800);
+    color: var(--gray-100);
 }
 
 .recurringConfig input[type="time"] {
     padding: 4px 8px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
-    background: #1f2937;
-    color: #f3f4f6;
+    background: var(--gray-800);
+    color: var(--gray-100);
 }
 
 .recurringConfig input[type="time"]::-webkit-calendar-picker-indicator {
@@ -115,13 +115,13 @@
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
     cursor: pointer;
 }
 
 .dayCheckbox:hover {
-    background: #374151;
+    background: var(--gray-700);
 }
 
 .dayCheckbox input[type="checkbox"] {

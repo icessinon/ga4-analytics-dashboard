@@ -19,7 +19,7 @@
     margin: 0;
     font-size: 0.9375rem;
     line-height: 1.6;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .toc {
@@ -27,7 +27,7 @@
     padding: 1rem 1.25rem;
     background: rgba(31, 41, 55, 0.5);
     border-radius: 0.5rem;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
 }
 
 .tocTitle {
@@ -35,7 +35,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0 0 0.5rem;
 }
 
@@ -50,7 +50,7 @@
 
 .tocLink {
     font-size: 0.875rem;
-    color: #93c5fd;
+    color: var(--blue-300);
     text-decoration: none;
 }
 
@@ -73,7 +73,7 @@
     font-weight: 600;
     margin: 0 0 0.75rem;
     padding-bottom: 0.35rem;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     color: rgb(var(--foreground-rgb));
 }
 
@@ -87,7 +87,7 @@
 }
 
 .endpoint {
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 0.375rem;
     overflow: hidden;
     background: rgba(31, 41, 55, 0.4);
@@ -109,7 +109,7 @@
 }
 
 .endpointHead:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-hover);
 }
 
 .method {
@@ -123,13 +123,13 @@
 
 .method {
     background: #1e3a5f;
-    color: #93c5fd;
+    color: var(--blue-300);
 }
 
 .path {
     flex-shrink: 0;
     font-family: ui-monospace, monospace;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.8125rem;
 }
 
@@ -142,19 +142,19 @@
 .chevron {
     flex-shrink: 0;
     font-size: 0.625rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .endpointBody {
     padding: 1rem 1.25rem;
-    border-top: 1px solid #374151;
+    border-top: 1px solid var(--gray-700);
     font-size: 0.875rem;
     line-height: 1.55;
 }
 
 .description {
     margin: 0 0 1rem;
-    color: #d1d5db;
+    color: var(--gray-300);
 }
 
 .section {
@@ -166,7 +166,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0 0 0.5rem;
 }
 
@@ -180,7 +180,7 @@
 .table td {
     padding: 0.35rem 0.75rem;
     text-align: left;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
 }
 
 .table th {
@@ -203,18 +203,18 @@
     background: rgba(0, 0, 0, 0.15);
     border-radius: 0.25rem;
     font-size: 0.8125rem;
-    color: #d1d5db;
+    color: var(--gray-300);
 }
 
 .footer {
     margin-top: 2.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #374151;
+    border-top: 1px solid var(--gray-700);
     font-size: 0.875rem;
 }
 
 .footer a {
-    color: #93c5fd;
+    color: var(--blue-300);
     text-decoration: none;
 }
 

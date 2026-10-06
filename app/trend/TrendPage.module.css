@@ -12,7 +12,7 @@
 }
 
 .backLink {
-    color: #3b82f6;
+    color: var(--blue-500);
     text-decoration: none;
     font-size: 0.875rem;
 }
@@ -24,14 +24,14 @@
 .title {
     font-size: 2rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin: 0;
 }
 
 .formContainer {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -51,15 +51,15 @@
 .label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #d1d5db;
+    color: var(--gray-300);
 }
 
 .input {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
     font-size: 1rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     color: #ffffff;
 }
 
@@ -70,18 +70,18 @@
 
 .input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--blue-500);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .helpText {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .submitButton {
     padding: 0.75rem 1.5rem;
-    background-color: #3b82f6;
+    background-color: var(--blue-500);
     color: #ffffff;
     border: none;
     border-radius: 4px;
@@ -92,7 +92,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
 }
 
 .submitButton:disabled {
@@ -111,19 +111,19 @@
 
 .loaderText {
     margin-top: 1rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .errorContainer {
     padding: 1rem;
     background-color: rgba(185, 28, 28, 0.2);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 4px;
     margin-bottom: 2rem;
 }
 
 .errorText {
-    color: #fca5a5;
+    color: var(--red-300);
     margin: 0;
 }
 
@@ -142,10 +142,10 @@
     gap: 1rem;
     margin-bottom: 0;
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    border: 1px solid #374151;
+    background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+    border: 1px solid var(--gray-700);
     border-radius: 10px;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid var(--blue-500);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -153,7 +153,7 @@
     font-size: 1.375rem;
     font-weight: 700;
     margin: 0;
-    color: #f9fafb;
+    color: var(--gray-50);
     letter-spacing: 0.02em;
 }
 
@@ -166,23 +166,23 @@
 .monthSwitcherLabel {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #9ca3af;
+    color: var(--gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .monthSwitcherSelect {
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 8px;
     font-size: 0.9375rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
     min-width: 140px;
 }
 
 .monthSwitcherSelect:hover {
-    border-color: #6b7280;
+    border-color: var(--gray-500);
 }
 
 .geminiApiKeyInput {
@@ -196,15 +196,15 @@
     gap: 0.5rem;
     cursor: pointer;
     font-size: 0.9375rem;
-    color: #d1d5db;
+    color: var(--gray-300);
 }
 
 .aiSummarySection {
     margin-top: 2.5rem;
     padding: 1.5rem 1.75rem;
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%);
-    border: 1px solid #374151;
-    border-left: 4px solid #3b82f6;
+    border: 1px solid var(--gray-700);
+    border-left: 4px solid var(--blue-500);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -213,7 +213,7 @@
     font-size: 1rem;
     font-weight: 700;
     margin: 0 0 1rem 0;
-    color: #93c5fd;
+    color: var(--blue-300);
     letter-spacing: 0.02em;
 }
 
@@ -228,7 +228,7 @@
 .aiSummaryBox {
     font-size: 0.9375rem;
     line-height: 1.75;
-    color: #e5e7eb;
+    color: var(--gray-200);
     white-space: pre-wrap;
 }
 
@@ -240,7 +240,7 @@
     border: 1px solid #334155;
     box-shadow:
         0 4px 6px -1px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+        0 0 0 1px var(--bg-hover) inset;
     overflow: hidden;
 }
 
@@ -266,7 +266,7 @@
     content: '';
     width: 3px;
     height: 1rem;
-    background: linear-gradient(180deg, #3b82f6, #60a5fa);
+    background: linear-gradient(180deg, var(--blue-500), var(--blue-400));
     border-radius: 2px;
 }
 
@@ -282,22 +282,22 @@
     font-size: 0.9375rem;
     font-weight: 600;
     margin-bottom: 1rem;
-    color: #d1d5db;
+    color: var(--gray-300);
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
 }
 
 .emptyContainer {
     padding: 2.5rem 2rem;
     text-align: center;
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 12px;
     margin-top: 2rem;
 }
 
 .emptyText {
-    color: #9ca3af;
+    color: var(--gray-400);
     line-height: 1.7;
     margin: 0;
 }
@@ -305,7 +305,7 @@
 .section {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -324,16 +324,16 @@
 .searchInput {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
     font-size: 0.875rem;
-    background-color: #1f2937;
+    background-color: var(--gray-800);
     color: #ffffff;
 }
 
 .searchInput:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--blue-500);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -349,13 +349,13 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
     transition: background-color 0.2s;
 }
 
 .reportItem:hover {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .reportItemLabel {
@@ -380,7 +380,7 @@
 .trendBadge {
     padding: 0.25rem 0.5rem;
     background-color: rgba(59, 130, 246, 0.2);
-    color: #93c5fd;
+    color: var(--blue-300);
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -392,7 +392,7 @@
     gap: 0.25rem;
     margin-left: 2rem;
     padding-top: 0.5rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .cvrLabel {
@@ -403,7 +403,7 @@
 
 .cvrLabelTitle {
     font-weight: 500;
-    color: #d1d5db;
+    color: var(--gray-300);
     min-width: 70px;
 }
 
@@ -414,7 +414,7 @@
 
 .noCvrConfig {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-style: italic;
     margin-left: 2rem;
     padding-top: 0.5rem;
@@ -427,14 +427,14 @@
     gap: 1rem;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #4b5563;
+    border-top: 1px solid var(--gray-600);
 }
 
 .paginationButton {
     padding: 0.5rem 1rem;
-    background-color: #1f2937;
-    color: #e5e7eb;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    color: var(--gray-200);
+    border: 1px solid var(--gray-600);
     border-radius: 4px;
     font-size: 0.875rem;
     font-weight: 500;
@@ -443,7 +443,7 @@
 }
 
 .paginationButton:hover:not(:disabled) {
-    background-color: #374151;
+    background-color: var(--gray-700);
 }
 
 .paginationButton:disabled {
@@ -453,6 +453,6 @@
 
 .paginationInfo {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 

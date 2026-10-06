@@ -14,18 +14,18 @@
 .title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 0.25rem;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .section {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -34,7 +34,7 @@
 .sectionTitle {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 1rem;
 }
 
@@ -64,27 +64,27 @@
 .formLabel {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .formInput {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
     font-size: 0.875rem;
 }
 
 .formInput:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
 .formHint {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .formActions {
@@ -93,10 +93,10 @@
 
 .errorBox {
     background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
     margin-bottom: 1.5rem;
 }
 
@@ -112,7 +112,7 @@
     justify-content: center;
     padding: 4rem 0;
     gap: 1rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 /* ── 結果ヘッダー ── */
@@ -128,12 +128,12 @@
 .resultTitle {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .resultMeta {
     font-size: 0.8125rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 /* ── フィルタバー ── */
@@ -148,16 +148,16 @@
 .filterInput {
     padding: 0.375rem 0.625rem;
     font-size: 0.8125rem;
-    background-color: #111827;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-900);
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
-    color: #f3f4f6;
+    color: var(--gray-100);
     width: 200px;
 }
 
 .filterInput:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
 }
 
 /* ── タイムライン ── */
@@ -176,11 +176,11 @@
 .dateLabel {
     font-size: 0.8125rem;
     font-weight: 700;
-    color: #6366f1;
+    color: var(--indigo-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     margin-bottom: 0.5rem;
 }
 
@@ -190,7 +190,7 @@
     gap: 0.75rem;
     align-items: start;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #1f2937;
+    border-bottom: 1px solid var(--gray-800);
     transition: background-color 0.15s;
 }
 
@@ -200,7 +200,7 @@
 
 .eventTime {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     font-variant-numeric: tabular-nums;
     padding-top: 0.125rem;
     white-space: nowrap;
@@ -229,15 +229,15 @@
     white-space: nowrap;
 }
 
-.badgePageView   { background-color: rgba(59, 130, 246, 0.2);  color: #93c5fd; }
+.badgePageView   { background-color: rgba(59, 130, 246, 0.2);  color: var(--blue-300); }
 .badgeClick      { background-color: rgba(16, 185, 129, 0.2);  color: #6ee7b7; }
 .badgeSession    { background-color: rgba(139, 92, 246, 0.2);  color: #c4b5fd; }
-.badgeConversion { background-color: rgba(245, 158, 11, 0.2);  color: #fcd34d; }
-.badgeDefault    { background-color: rgba(107, 114, 128, 0.2); color: #d1d5db; }
+.badgeConversion { background-color: rgba(245, 158, 11, 0.2);  color: var(--amber-300); }
+.badgeDefault    { background-color: rgba(107, 114, 128, 0.2); color: var(--gray-300); }
 
 .eventPagePath {
     font-size: 0.8125rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -245,7 +245,7 @@
 
 .eventPageTitle {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -259,8 +259,8 @@
 
 .metaChip {
     font-size: 0.6875rem;
-    color: #6b7280;
-    background-color: #374151;
+    color: var(--gray-500);
+    background-color: var(--gray-700);
     border-radius: 0.25rem;
     padding: 0.125rem 0.375rem;
     white-space: nowrap;
@@ -269,24 +269,24 @@
 .eventCount {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--gray-400);
     white-space: nowrap;
     padding-top: 0.125rem;
 }
 
 .emptyState {
     text-align: center;
-    color: #6b7280;
+    color: var(--gray-500);
     padding: 3rem 0;
     font-size: 0.9375rem;
 }
 
 .warningBox {
     background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid #d97706;
+    border: 1px solid var(--amber-600);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fcd34d;
+    color: var(--amber-300);
 }
 
 /* ── ユーザー一覧テーブル ── */
@@ -297,7 +297,7 @@
 }
 
 .userTableHead {
-    background-color: #374151;
+    background-color: var(--gray-700);
     position: sticky;
     top: 0;
     z-index: 1;
@@ -307,19 +307,19 @@
     padding: 0.625rem 0.75rem;
     text-align: left;
     font-weight: 600;
-    color: #e5e7eb;
-    border-bottom: 1px solid #4b5563;
+    color: var(--gray-200);
+    border-bottom: 1px solid var(--gray-600);
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
 }
 
 .userTableHead th:hover {
-    background-color: #4b5563;
+    background-color: var(--gray-600);
 }
 
 .userTableRow {
-    border-bottom: 1px solid #374151;
+    border-bottom: 1px solid var(--gray-700);
     cursor: pointer;
     transition: background-color 0.15s;
 }
@@ -330,19 +330,19 @@
 
 .userTableRowSelected {
     background-color: rgba(99, 102, 241, 0.15);
-    border-left: 3px solid #6366f1;
+    border-left: 3px solid var(--indigo-500);
 }
 
 .userTableCell {
     padding: 0.5rem 0.75rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     vertical-align: middle;
 }
 
 .userIdCell {
     font-family: monospace;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -352,7 +352,7 @@
 .numCell {
     text-align: right;
     font-variant-numeric: tabular-nums;
-    color: #f3f4f6;
+    color: var(--gray-100);
     font-weight: 500;
 }
 
@@ -361,29 +361,29 @@
     font-size: 0.6875rem;
     padding: 0.125rem 0.4rem;
     border-radius: 0.25rem;
-    background-color: #374151;
-    color: #d1d5db;
+    background-color: var(--gray-700);
+    color: var(--gray-300);
     white-space: nowrap;
 }
 
-.chipDevice { background-color: rgba(59,130,246,0.15); color: #93c5fd; }
+.chipDevice { background-color: rgba(59,130,246,0.15); color: var(--blue-300); }
 .chipBrowser { background-color: rgba(16,185,129,0.15); color: #6ee7b7; }
 .chipOS { background-color: rgba(139,92,246,0.15); color: #c4b5fd; }
-.chipSource { background-color: rgba(245,158,11,0.15); color: #fcd34d; }
+.chipSource { background-color: rgba(245,158,11,0.15); color: var(--amber-300); }
 
 .tableWrapper {
     overflow-x: auto;
     max-height: 480px;
     overflow-y: auto;
     border-radius: 0.375rem;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
 }
 
 /* ── ビュー切り替えタブ ── */
 .tabs {
     display: flex;
     gap: 0;
-    background-color: #374151;
+    background-color: var(--gray-700);
     border-radius: 0.5rem;
     padding: 0.25rem;
     width: fit-content;
@@ -398,14 +398,14 @@
     border: none;
     cursor: pointer;
     background: transparent;
-    color: #9ca3af;
+    color: var(--gray-400);
     transition: all 0.15s;
 }
 
-.tab:hover { color: #f3f4f6; }
+.tab:hover { color: var(--gray-100); }
 
 .tabActive {
-    background-color: #6366f1;
+    background-color: var(--indigo-500);
     color: #fff;
 }
 
@@ -415,7 +415,7 @@
     align-items: center;
     justify-content: space-between;
     background-color: rgba(99,102,241,0.1);
-    border: 1px solid #6366f1;
+    border: 1px solid var(--indigo-500);
     border-radius: 0.5rem;
     padding: 0.625rem 1rem;
     margin-bottom: 1rem;
@@ -437,29 +437,29 @@
 
 .clearButton {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     background: none;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
     padding: 0.25rem 0.625rem;
     cursor: pointer;
 }
 
-.clearButton:hover { color: #f3f4f6; border-color: #6b7280; }
+.clearButton:hover { color: var(--gray-100); border-color: var(--gray-500); }
 
 .subNavBtn {
     padding: 0.375rem 0.875rem;
     font-size: 0.8125rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
     background: transparent;
-    color: #9ca3af;
+    color: var(--gray-400);
     cursor: pointer;
     transition: 0.2s;
     white-space: nowrap;
 }
 
 .subNavBtn:hover {
-    border-color: #6366f1;
-    color: #a5b4fc;
+    border-color: var(--indigo-500);
+    color: var(--indigo-300);
 }

@@ -1,8 +1,8 @@
 .loader {
     --main-size: 4em;
-    --text-color: #3b82f6;
-    --shine-color: #3b82f640;
-    --shadow-color: #9ca3af;
+    --text-color: var(--blue-500);
+    --shine-color: var(--blue-500)40;
+    --shadow-color: var(--gray-400);
     display: flex;
     justify-content: center;
     align-items: center;

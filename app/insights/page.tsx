@@ -113,7 +113,7 @@ function fmtSec(s: number) {
 
 function DeltaBadge({ a, b }: { a: number; b: number }) {
     const d = pctDiff(a, b)
-    if (!d) return <span style={{ color: '#6b7280' }}>-</span>
+    if (!d) return <span style={{ color: 'var(--gray-500)' }}>-</span>
     return <span style={{ color: d.up ? '#34d399' : '#f87171', fontWeight: 600 }}>{d.text}</span>
 }
 
@@ -317,8 +317,8 @@ export default function InsightsPage() {
                                     {METRICS.map(({ label, tooltip, current, prev, delta }) => (
                                         <tr key={label} className={styles.tr}>
                                             <td className={styles.td}>{label}{tooltip && <InfoTooltip text={tooltip} />}</td>
-                                            <td className={styles.tdNum} style={{ color: '#f3f4f6', fontWeight: 600 }}>{current}</td>
-                                            <td className={styles.tdNum} style={{ color: '#9ca3af' }}>{prev}</td>
+                                            <td className={styles.tdNum} style={{ color: 'var(--gray-100)', fontWeight: 600 }}>{current}</td>
+                                            <td className={styles.tdNum} style={{ color: 'var(--gray-400)' }}>{prev}</td>
                                             <td className={styles.tdNum}>
                                                 {delta ? <span style={{ color: delta.up ? '#34d399' : '#f87171', fontWeight: 600 }}>{delta.text}</span> : '-'}
                                             </td>
@@ -418,11 +418,11 @@ export default function InsightsPage() {
                                             const isBase = m.label === data.baseMonth
                                             return (
                                                 <tr key={m.label} className={styles.tr}>
-                                                    <td className={styles.td} style={{ fontWeight: isBase ? 700 : 500, color: isBase ? '#a5b4fc' : '#e5e7eb' }}>
+                                                    <td className={styles.td} style={{ fontWeight: isBase ? 700 : 500, color: isBase ? '#a5b4fc' : 'var(--gray-200)' }}>
                                                         {m.label}
                                                         {isBase && <span className={styles.baseMonthTag}>基準月</span>}
                                                     </td>
-                                                    <td className={styles.tdNum} style={{ color: '#f3f4f6', fontWeight: isBase ? 600 : 400 }}>{m.activeUsers.toLocaleString()}</td>
+                                                    <td className={styles.tdNum} style={{ color: 'var(--gray-100)', fontWeight: isBase ? 600 : 400 }}>{m.activeUsers.toLocaleString()}</td>
                                                     <td className={styles.tdNum}>{m.newUsers.toLocaleString()}</td>
                                                     <td className={styles.tdNum}>{m.sessions.toLocaleString()}</td>
                                                     <td className={styles.tdNum}>{m.screenPageViews.toLocaleString()}</td>
@@ -431,7 +431,7 @@ export default function InsightsPage() {
                                                     <td className={styles.tdNum}>{(m.lpApplyCv ?? 0).toLocaleString()}</td>
                                                     <td className={styles.tdNum}>{(m.signupCv ?? 0).toLocaleString()}</td>
                                                     <td className={styles.tdNum}>
-                                                        {prev ? <DeltaBadge a={m.activeUsers} b={prev.activeUsers} /> : <span style={{ color: '#6b7280' }}>-</span>}
+                                                        {prev ? <DeltaBadge a={m.activeUsers} b={prev.activeUsers} /> : <span style={{ color: 'var(--gray-500)' }}>-</span>}
                                                     </td>
                                                 </tr>
                                             )
@@ -490,7 +490,7 @@ export default function InsightsPage() {
                                         />
                                         <Legend
                                             wrapperStyle={{ fontSize: '0.8125rem', color: '#9ca3af', paddingTop: '0.5rem' }}
-                                            formatter={(value) => <span style={{ color: '#9ca3af' }}>{value}</span>}
+                                            formatter={(value) => <span style={{ color: 'var(--gray-400)' }}>{value}</span>}
                                         />
                                         <Bar dataKey="当月" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={36} />
                                         <Bar dataKey="前月" fill="#374151" radius={[3, 3, 0, 0]} maxBarSize={36} />
@@ -504,7 +504,7 @@ export default function InsightsPage() {
                                     <thead>
                                         <tr>
                                             <th className={styles.th}>週</th>
-                                            <th className={styles.th} style={{ fontSize: '0.75rem', color: '#6b7280' }}>期間（当月）</th>
+                                            <th className={styles.th} style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>期間（当月）</th>
                                             <th className={styles.thNum}>ユーザー数</th>
                                             <th className={styles.thNum}>セッション</th>
                                             <th className={styles.thNum}>PV</th>
@@ -519,10 +519,10 @@ export default function InsightsPage() {
                                             return (
                                                 <tr key={week.label} className={styles.tr}>
                                                     <td className={styles.td} style={{ fontWeight: 600, color: '#a5b4fc' }}>{week.label}</td>
-                                                    <td className={styles.td} style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                                                    <td className={styles.td} style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>
                                                         {week.startDate.slice(5)} 〜 {week.endDate.slice(5)}
                                                     </td>
-                                                    <td className={styles.tdNum} style={{ color: '#f3f4f6', fontWeight: 600 }}>
+                                                    <td className={styles.tdNum} style={{ color: 'var(--gray-100)', fontWeight: 600 }}>
                                                         {week.activeUsers.toLocaleString()}
                                                         {prev && <span className={styles.prevVal}>（{prev.activeUsers.toLocaleString()}）</span>}
                                                     </td>
@@ -542,7 +542,7 @@ export default function InsightsPage() {
                                                     <td className={styles.tdNum}>
                                                         {prev
                                                             ? <DeltaBadge a={week.activeUsers} b={prev.activeUsers} />
-                                                            : <span style={{ color: '#6b7280' }}>-</span>
+                                                            : <span style={{ color: 'var(--gray-500)' }}>-</span>
                                                         }
                                                     </td>
                                                 </tr>
@@ -585,7 +585,7 @@ export default function InsightsPage() {
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {
                                     const bold = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: '#e5e7eb', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
+                                    return line.trim() ? <p key={i} style={{ fontSize: '0.9rem', color: 'var(--gray-200)', lineHeight: 1.7, marginBottom: '0.5rem' }} dangerouslySetInnerHTML={{ __html: bold }} /> : null
                                 })}
                             </div>
                         )}

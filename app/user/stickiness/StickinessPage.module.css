@@ -14,19 +14,19 @@
 .title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 0.25rem;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 /* ── フォーム ── */
 .formSection {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -80,24 +80,24 @@
 
 .compareToggle {
     padding: 0.5rem 1rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
     background: transparent;
-    color: #9ca3af;
+    color: var(--gray-400);
     font-size: 0.875rem;
     cursor: pointer;
     transition: 0.2s;
 }
 
 .compareToggle:hover {
-    border-color: #6366f1;
-    color: #a5b4fc;
+    border-color: var(--indigo-500);
+    color: var(--indigo-300);
 }
 
 .compareToggleActive {
-    border-color: #6366f1 !important;
+    border-color: var(--indigo-500) !important;
     background: rgba(99,102,241,0.1) !important;
-    color: #818cf8 !important;
+    color: var(--indigo-400) !important;
 }
 
 .formField {
@@ -109,21 +109,21 @@
 .label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .input {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
     font-size: 0.875rem;
 }
 
 .input:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
@@ -165,8 +165,8 @@
 }
 
 .summaryCard {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1.25rem 1.5rem;
 }
@@ -174,7 +174,7 @@
 .summaryLabel {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #9ca3af;
+    color: var(--gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
@@ -183,14 +183,14 @@
 .summaryValue {
     font-size: 2rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     line-height: 1;
 }
 
 .summaryHighlight {
     font-size: 2rem;
     font-weight: 700;
-    color: #818cf8;
+    color: var(--indigo-400);
     line-height: 1;
 }
 
@@ -211,8 +211,8 @@
 }
 
 .compareCard {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1rem 1.25rem;
 }
@@ -241,19 +241,19 @@
 .deltaUp {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: #34d399;
+    color: var(--teal-400);
 }
 
 .deltaDown {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: #f87171;
+    color: var(--red-400);
 }
 
 /* ── グラフ ── */
 .chartSection {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -262,7 +262,7 @@
 .chartTitle {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 1rem;
 }
 
@@ -273,8 +273,8 @@
 
 /* ── 解説 ── */
 .infoBox {
-    background-color: #1f2937;
-    border: 1px solid #374151;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1.5rem;
@@ -283,7 +283,7 @@
 .infoBox h3 {
     font-size: 1rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 0.75rem;
 }
 
@@ -298,11 +298,11 @@
 
 .infoBox li {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .infoBox li strong {
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 /* ── ユーティリティ ── */
@@ -313,27 +313,27 @@
     justify-content: center;
     padding: 4rem 0;
     gap: 1rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .loaderText {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .error {
     background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
     margin-bottom: 1.5rem;
 }
 
 .notice {
     background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid #d97706;
+    border: 1px solid var(--amber-600);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fcd34d;
+    color: var(--amber-300);
 }

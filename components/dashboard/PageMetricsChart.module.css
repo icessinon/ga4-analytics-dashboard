@@ -11,12 +11,12 @@
 
 .chartEmpty {
     font-size: 0.9375rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin: 0;
     padding: 2rem;
 }
 
 .chartGrid {
-    stroke: #4b5563;
+    stroke: var(--gray-600);
 }
 

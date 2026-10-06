@@ -18,20 +18,20 @@
 }
 
 .placeholderCard {
-    background-color: #374151;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-700);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
 }
 
 .description {
     margin: 0;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .formCard {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -69,7 +69,7 @@
     flex: 1;
     min-width: 0;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--gray-300);
     border-radius: 0.375rem;
     font-size: 0.875rem;
 }
@@ -78,7 +78,7 @@
     flex: 1;
     min-width: 0;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--gray-300);
     border-radius: 0.375rem;
     font-size: 0.875rem;
 }
@@ -92,14 +92,14 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: white;
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     border: none;
     border-radius: 0.375rem;
     cursor: pointer;
 }
 
 .submitButton:hover:not(:disabled) {
-    background-color: #1d4ed8;
+    background-color: var(--blue-700);
 }
 
 .submitButton:disabled {
@@ -123,13 +123,13 @@
 
 .errorText {
     margin: 0;
-    color: #b91c1c;
+    color: var(--red-700);
     font-size: 0.875rem;
 }
 
 .resultCard {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
 }
@@ -142,7 +142,7 @@
 
 .emptyText {
     margin: 0;
-    color: #6b7280;
+    color: var(--gray-500);
     font-size: 0.875rem;
 }
 
@@ -164,8 +164,8 @@
 }
 
 .deviceChart {
-    background: #111827;
-    border: 1px solid #374151;
+    background: var(--gray-900);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
     padding: 1rem 1rem 1rem 0.5rem;
 }
@@ -181,7 +181,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     margin: 0;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .deviceBadge {
@@ -191,13 +191,13 @@
     background: rgba(99, 102, 241, 0.15);
     border: 1px solid rgba(99, 102, 241, 0.4);
     border-radius: 0.25rem;
-    color: #a5b4fc;
+    color: var(--indigo-300);
 }
 
 .deviceTotal {
     margin-left: auto;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 .chartWrap :global(.recharts-cartesian-axis-tick text),
@@ -211,8 +211,8 @@
 }
 
 .chartWrap :global(.recharts-default-tooltip) {
-    background-color: #1f2937 !important;
-    border: 1px solid #4b5563 !important;
+    background-color: var(--gray-800) !important;
+    border: 1px solid var(--gray-600) !important;
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
 }

@@ -14,13 +14,13 @@
 .title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 0.25rem;
 }
 
 .subtitle {
     font-size: 0.875rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 /* ── 凡例 ── */
@@ -30,8 +30,8 @@
     flex-wrap: wrap;
     margin-bottom: 1.25rem;
     padding: 0.875rem 1rem;
-    background: #1f2937;
-    border: 1px solid #374151;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     border-radius: 0.5rem;
 }
 
@@ -46,16 +46,16 @@
 
 .legendLabel {
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--gray-200);
     white-space: nowrap;
 }
 
-.legendDesc { color: #6b7280; }
+.legendDesc { color: var(--gray-500); }
 
 /* ── フォーム ── */
 .section {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -64,7 +64,7 @@
 .sectionTitle {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 1rem;
 }
 
@@ -83,22 +83,22 @@
 .formLabel {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #e5e7eb;
+    color: var(--gray-200);
 }
 
 .formSelect {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #4b5563;
+    border: 1px solid var(--gray-600);
     border-radius: 0.375rem;
-    background-color: #111827;
-    color: #f3f4f6;
+    background-color: var(--gray-900);
+    color: var(--gray-100);
     font-size: 0.875rem;
     min-width: 160px;
 }
 
 .formSelect:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--indigo-500);
 }
 
 .formActions { margin-top: 1rem; }
@@ -131,12 +131,12 @@
 .summaryCount {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
 }
 
 .summaryUsers {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-top: 0.25rem;
 }
 
@@ -151,9 +151,9 @@
 
 .table th {
     padding: 0.625rem 0.75rem;
-    background-color: #111827;
-    border-bottom: 1px solid #374151;
-    color: #9ca3af;
+    background-color: var(--gray-900);
+    border-bottom: 1px solid var(--gray-700);
+    color: var(--gray-400);
     font-weight: 600;
     white-space: nowrap;
 }
@@ -171,14 +171,14 @@
 
 .tdLabel {
     padding: 0.625rem 0.75rem;
-    color: #e5e7eb;
+    color: var(--gray-200);
     font-weight: 500;
 }
 
 .tdNum {
     padding: 0.625rem 0.75rem;
     text-align: right;
-    color: #d1d5db;
+    color: var(--gray-300);
     font-variant-numeric: tabular-nums;
 }
 
@@ -205,15 +205,15 @@
 
 .scoreMax {
     font-size: 0.6875rem;
-    color: #6b7280;
+    color: var(--gray-500);
     margin-left: 2px;
 }
 
 .expandBtn {
     background: none;
-    border: 1px solid #374151;
+    border: 1px solid var(--gray-700);
     border-radius: 4px;
-    color: #6b7280;
+    color: var(--gray-500);
     cursor: pointer;
     padding: 0.125rem 0.5rem;
     font-size: 0.6875rem;
@@ -221,12 +221,12 @@
 }
 
 .expandBtn:hover {
-    border-color: #6366f1;
-    color: #a5b4fc;
+    border-color: var(--indigo-500);
+    color: var(--indigo-300);
 }
 
 /* ── 詳細展開行 ── */
-.detailRow { background: #111827; }
+.detailRow { background: var(--gray-900); }
 
 .detailCell { padding: 1rem 1.25rem; }
 
@@ -245,13 +245,13 @@
 .detailLabel {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #9ca3af;
+    color: var(--gray-400);
     margin-bottom: 0.375rem;
 }
 
 .scoreBar {
     height: 6px;
-    background: #1f2937;
+    background: var(--gray-800);
     border-radius: 3px;
     overflow: hidden;
     margin-bottom: 0.25rem;
@@ -266,35 +266,35 @@
 .detailScore {
     font-size: 0.875rem;
     font-weight: 700;
-    color: #f3f4f6;
+    color: var(--gray-100);
     margin-bottom: 0.125rem;
 }
 
 .detailNote {
     font-size: 0.6875rem;
-    color: #6b7280;
+    color: var(--gray-500);
 }
 
 /* ── その他 ── */
 .note {
     margin-top: 1rem;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--gray-500);
     line-height: 1.6;
 }
 
 .empty {
-    color: #6b7280;
+    color: var(--gray-500);
     text-align: center;
     padding: 2rem;
 }
 
 .errorBox {
     background-color: rgba(185, 28, 28, 0.15);
-    border: 1px solid #b91c1c;
+    border: 1px solid var(--red-700);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fca5a5;
+    color: var(--red-300);
     margin-bottom: 1.5rem;
 }
 
@@ -307,13 +307,13 @@
     justify-content: center;
     padding: 4rem 0;
     gap: 1rem;
-    color: #9ca3af;
+    color: var(--gray-400);
 }
 
 .warningBox {
     background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid #d97706;
+    border: 1px solid var(--amber-600);
     border-radius: 0.5rem;
     padding: 1rem;
-    color: #fcd34d;
+    color: var(--amber-300);
 }

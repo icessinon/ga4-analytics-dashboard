@@ -1,6 +1,6 @@
 .container {
-    background-color: #1f2937;
-    border: 1px solid #4b5563;
+    background-color: var(--gray-800);
+    border: 1px solid var(--gray-600);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
@@ -21,17 +21,17 @@
 }
 
 .buttonActive {
-    background-color: #2563eb;
+    background-color: var(--blue-600);
     color: #fff;
 }
 
 .buttonInactive {
-    background-color: #374151;
-    color: #d1d5db;
+    background-color: var(--gray-700);
+    color: var(--gray-300);
 }
 
 .buttonInactive:hover {
-    background-color: #4b5563;
-    color: #e5e7eb;
+    background-color: var(--gray-600);
+    color: var(--gray-200);
 }
 

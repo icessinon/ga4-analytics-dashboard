@@ -13,6 +13,50 @@
 :root[data-theme="dark"] {
     color-scheme: dark;
 
+    /* プリミティブ。既存CSSに直書きされていた値をそのまま置いてある。
+       ライトでは明暗を反転させるので、意味（面か文字か）を変えずに機械置換できる。 */
+    --gray-950: #0d131f;
+    --gray-900: #111827;
+    --gray-800: #1f2937;
+    --gray-700: #374151;
+    --gray-600: #4b5563;
+    --gray-500: #6b7280;
+    --gray-400: #9ca3af;
+    --gray-300: #d1d5db;
+    --gray-200: #e5e7eb;
+    --gray-100: #f3f4f6;
+    --gray-50: #f9fafb;
+
+    --blue-300: #93c5fd;
+    --blue-400: #60a5fa;
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --blue-700: #1d4ed8;
+    --indigo-300: #a5b4fc;
+    --indigo-500: #6366f1;
+    --red-300: #fca5a5;
+    --red-400: #f87171;
+    --red-700: #b91c1c;
+    --amber-300: #fcd34d;
+    --amber-400: #fbbf24;
+    --green-400: #4ade80;
+    --green-500: #22c55e;
+    --green-600: #16a34a;
+    --teal-400: #34d399;
+    --emerald-500: #10b981;
+    --green-300: #86efac;
+    --orange-400: #fb923c;
+    --orange-500: #f97316;
+    --amber-500: #f59e0b;
+    --amber-600: #d97706;
+    --violet-400: #a78bfa;
+    --indigo-400: #818cf8;
+    --red-500: #ef4444;
+    --red-600: #dc2626;
+    --cyan-400: #22d3ee;
+    --pink-400: #f472b6;
+    --blue-900: #1e3a8a;
+
     /* サーフェス（奥→手前） */
     --bg-base: #111827;
     --bg-surface: #1f2937;
@@ -60,6 +104,49 @@
  */
 :root[data-theme="light"] {
     color-scheme: light;
+
+    /* 反転。面は白側へ、文字として使われていた薄いグレーは AA を満たす濃さへ。 */
+    --gray-950: #ffffff;
+    --gray-900: #f5f7fb;
+    --gray-800: #ffffff;
+    --gray-700: #e4e9f2;
+    --gray-600: #ccd3e0;
+    --gray-500: #5a6578;
+    --gray-400: #5a6578;
+    --gray-300: #3f4a5f;
+    --gray-200: #1f2937;
+    --gray-100: #1f2937;
+    --gray-50: #0f1726;
+
+    --blue-300: #1d4ed8;
+    --blue-400: #1d4ed8;
+    --blue-500: #2563eb;
+    --blue-600: #1d4ed8;
+    --blue-700: #1e3a8a;
+    --indigo-300: #4338ca;
+    --indigo-500: #4f46e5;
+    --red-300: #b91c1c;
+    --red-400: #dc2626;
+    --red-700: #991b1b;
+    --amber-300: #b45309;
+    --amber-400: #b45309;
+    --green-400: #146c34;
+    --green-500: #16a34a;
+    --green-600: #15803d;
+    --teal-400: #0f766e;
+    --emerald-500: #047857;
+    --green-300: #15803d;
+    --orange-400: #c2410c;
+    --orange-500: #c2410c;
+    --amber-500: #b45309;
+    --amber-600: #92400e;
+    --violet-400: #6d28d9;
+    --indigo-400: #4338ca;
+    --red-500: #dc2626;
+    --red-600: #b91c1c;
+    --cyan-400: #0e7490;
+    --pink-400: #be185d;
+    --blue-900: #1e3a8a;
 
     --bg-base: #e9edf4;
     --bg-surface: #ffffff;
