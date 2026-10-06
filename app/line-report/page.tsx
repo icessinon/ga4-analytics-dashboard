@@ -230,10 +230,10 @@ export default function LineReportPage() {
                                 // 表示人数を100%とした段階表示。基準を混ぜないため表示を取れる導線だけを並べる
                                 const base = c.viewUsers ?? 0
                                 const rows: { stage: string; value: number; color: string }[] = [
-                                    { stage: '表示', value: base, color: '#6b7280' },
+                                    { stage: '表示', value: base, color: 'var(--text-muted)' },
                                     { stage: '連携', value: c.users, color: '#06c755' },
                                     // 閉じるボタンが無い導線（会員登録ブロック）は0になるので段を出さない
-                                    ...(c.declineUsers ? [{ stage: '見送り', value: c.declineUsers, color: '#9ca3af' }] : []),
+                                    ...(c.declineUsers ? [{ stage: '見送り', value: c.declineUsers, color: 'var(--text-muted)' }] : []),
                                 ]
                                 return (
                                     <div key={c.key} className={styles.funnelItem}>
@@ -293,7 +293,7 @@ export default function LineReportPage() {
                                         <tr key={c.key}>
                                             <td>
                                                 {c.label}
-                                                <span style={{ display: 'block', color: '#6b7280', fontSize: '0.8em' }}>{c.hint}</span>
+                                                <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8em' }}>{c.hint}</span>
                                             </td>
                                             <td className={styles.num}>{c.viewUsers != null ? c.viewUsers.toLocaleString() : '－'}</td>
                                             <td className={`${styles.num} ${styles.strong}`}>{c.users.toLocaleString()}</td>
@@ -380,8 +380,8 @@ export default function LineReportPage() {
                                     {assoc.untracked.map((u) => (
                                         <tr key={u.source}>
                                             <td>{u.place}</td>
-                                            <td style={{ color: '#6b7280', fontSize: '0.85em' }}>{u.source}</td>
-                                            <td style={{ color: '#6b7280' }}>{u.destination}</td>
+                                            <td style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>{u.source}</td>
+                                            <td style={{ color: 'var(--text-muted)' }}>{u.destination}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -436,7 +436,7 @@ export default function LineReportPage() {
                                                 <td className={styles.num}>{delta != null ? `+${delta.toLocaleString()}` : '－'}</td>
                                                 <td className={`${styles.num} ${styles.strong}`}>{perDay != null ? perDay.toFixed(1) : '－'}</td>
                                                 <td className={styles.num}>{d.success.toLocaleString()}</td>
-                                                <td className={styles.num}>{d.optOut.toLocaleString()}<span style={{ color: '#6b7280' }}>{d.linked > 0 ? ` (${((d.optOut / d.linked) * 100).toFixed(1)}%)` : ''}</span></td>
+                                                <td className={styles.num}>{d.optOut.toLocaleString()}<span style={{ color: 'var(--text-muted)' }}>{d.linked > 0 ? ` (${((d.optOut / d.linked) * 100).toFixed(1)}%)` : ''}</span></td>
                                                 <td className={styles.num}>{d.noJobs.toLocaleString()}</td>
                                                 <td className={styles.num}>{d.error.toLocaleString()}</td>
                                             </tr>

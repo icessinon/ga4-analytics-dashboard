@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import styles from './LinkedGrowthChart.module.css'
 
@@ -13,12 +13,37 @@ export interface DeliveryPoint {
 
 type Granularity = 'total' | 'delivery' | 'month'
 
-const LINE_GREEN = '#06c755'
-/** 集計途中の月。確定値と並べても誤読しないよう沈ませる */
-const LINE_GREEN_MUTED = '#0a5c2e'
-const TEXT_COLOR = '#9ca3af'
-const GRID_COLOR = '#374151'
-const SURFACE = '#1f2937'
+/** recharts は色を属性で受け取るので、CSS変数を実値に解決してから渡す */
+const FALLBACK = {
+    green: '#06c755',
+    greenDim: '#0a5c2e',
+    text: '#9ca3af',
+    grid: '#374151',
+    surface: '#1f2937',
+}
+
+function useChartColors() {
+    const [colors, setColors] = useState(FALLBACK)
+    useEffect(() => {
+        const read = () => {
+            const s = getComputedStyle(document.documentElement)
+            const pick = (name: string, fb: string) => s.getPropertyValue(name).trim() || fb
+            setColors({
+                green: pick('--line-green', FALLBACK.green),
+                greenDim: pick('--line-green-dim', FALLBACK.greenDim),
+                text: pick('--text-muted', FALLBACK.text),
+                grid: pick('--border-subtle', FALLBACK.grid),
+                surface: pick('--bg-surface', FALLBACK.surface),
+            })
+        }
+        read()
+        // テーマは data-theme の差し替えで切り替わる
+        const mo = new MutationObserver(read)
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+        return () => mo.disconnect()
+    }, [])
+    return colors
+}
 
 /** 直近の変化を読めるようにする上限。全期間を描くと点が潰れて施策前後が見えない */
 const MAX_DELIVERY_POINTS = 26
@@ -39,6 +64,7 @@ function daysBetween(newer: string, older: string): number {
  */
 export default function LinkedGrowthChart({ deliveries }: { deliveries: DeliveryPoint[] }) {
     const [granularity, setGranularity] = useState<Granularity>('total')
+    const C = useChartColors()
 
     // 受け取りは新しい順。推移は古い→新しいで見る
     const asc = useMemo(
@@ -94,8 +120,8 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
     const isDelivery = granularity === 'delivery'
     const hasData = isTotal ? totals.length > 0 : isDelivery ? perDelivery.length > 0 : perMonth.length > 0
 
-    const tooltipStyle = { backgroundColor: SURFACE, border: `1px solid ${GRID_COLOR}`, color: '#e5e7eb' }
-    const axis = { stroke: TEXT_COLOR, tick: { fill: TEXT_COLOR, fontSize: 12 } }
+    const tooltipStyle = { backgroundColor: C.surface, border: `1px solid ${C.grid}`, color: 'var(--text-primary)' }
+    const axis = { stroke: C.text, tick: { fill: C.text, fontSize: 12 } }
 
     const TABS: { key: Granularity; label: string }[] = [
         { key: 'total', label: '累計（連携者数）' },
@@ -124,7 +150,7 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                 <ResponsiveContainer width="100%" height={260}>
                     {isTotal ? (
                         <LineChart data={totals} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
                             <XAxis dataKey="label" {...axis} />
                             {/* 累計は6千台から動く。autoだと0側に引っ張られて傾きが潰れるのでデータ範囲に張り付ける */}
                             <YAxis
@@ -143,7 +169,7 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             <Line
                                 type="monotone"
                                 dataKey="linked"
-                                stroke={LINE_GREEN}
+                                stroke={C.green}
                                 strokeWidth={2}
                                 dot={false}
                                 activeDot={{ r: 5 }}
@@ -152,7 +178,7 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                         </LineChart>
                     ) : isDelivery ? (
                         <LineChart data={perDelivery} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
                             <XAxis dataKey="label" {...axis} />
                             <YAxis {...axis} width={44} />
                             <Tooltip
@@ -165,16 +191,16 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             <Line
                                 type="monotone"
                                 dataKey="perDay"
-                                stroke={LINE_GREEN}
+                                stroke={C.green}
                                 strokeWidth={2}
-                                dot={{ fill: LINE_GREEN, r: 3 }}
+                                dot={{ fill: C.green, r: 3 }}
                                 activeDot={{ r: 5 }}
                                 name="増加ペース"
                             />
                         </LineChart>
                     ) : (
                         <BarChart data={perMonth} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={C.grid} vertical={false} />
                             <XAxis dataKey="label" {...axis} />
                             <YAxis {...axis} width={44} />
                             <Tooltip
@@ -187,7 +213,7 @@ export default function LinkedGrowthChart({ deliveries }: { deliveries: Delivery
                             />
                             <Bar dataKey="delta" radius={[4, 4, 0, 0]} name="月間純増">
                                 {perMonth.map((m) => (
-                                    <Cell key={m.label} fill={m.inProgress ? LINE_GREEN_MUTED : LINE_GREEN} />
+                                    <Cell key={m.label} fill={m.inProgress ? C.greenDim : C.green} />
                                 ))}
                             </Bar>
                         </BarChart>
