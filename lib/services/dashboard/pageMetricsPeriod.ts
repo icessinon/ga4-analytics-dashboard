@@ -1,9 +1,6 @@
 /**
  * ページ別指標の期間計算。サーバー（route）とクライアント（app/dashboard/utils.ts）で同じ式を使う。
- *
- * 注意: 日付文字列は `toISOString().slice(0, 10)`（UTC）で作っている。ローカル日時で作った
- * Date を UTC で切るので、JST で動かすと 1 日前にずれる（本番コンテナは UTC）。
- * 直すとレスポンスの startDate / endDate が変わるので、本リファクタでは従来どおりにしてある。
+ * 日付文字列はローカル日時の年月日で作る（以前は toISOString で UTC に切っており、JST では 1 日前にずれていた）。
  */
 
 import type { Granularity } from './pageMetricsTypes'
@@ -13,7 +10,7 @@ export interface IsoDateRange {
     endDate: string
 }
 
-const fmt = (d: Date) => d.toISOString().slice(0, 10)
+const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 /** 'YYYY-MM' → その月の 1 日〜末日 */
 export function monthToRange(month: string): IsoDateRange {

@@ -224,10 +224,11 @@ export async function runPageMetricsSeries(reporter: Ga4Reporter, pagePath: stri
         agg.sessions += sessions
         if (newUsersIdx >= 0) agg.newUsers += Math.round(metricFloat(row, newUsersIdx))
         if (sessions > 0) {
-            // 比率はセッション加重で合算し、最後にセッション数で割る
-            if (bounceRateIdx >= 0) agg.bounceRateSessionSum += (metricFloat(row, bounceRateIdx) / 100) * sessions
+            // 比率はセッション加重で合算し、最後にセッション数で割る。GA4 は 0〜1 で返すので toPct で百分率に揃えてから
+            // （以前は 0〜1 の値をさらに 100 で割っており、週別・月別の直帰率・エンゲージメント率が 1/100 になっていた）
+            if (bounceRateIdx >= 0) agg.bounceRateSessionSum += (toPct(metricFloat(row, bounceRateIdx)) / 100) * sessions
             if (avgDurIdx >= 0) agg.avgDurSessionSum += metricFloat(row, avgDurIdx) * sessions
-            if (engagementIdx >= 0) agg.engagementSessionSum += (metricFloat(row, engagementIdx) / 100) * sessions
+            if (engagementIdx >= 0) agg.engagementSessionSum += (toPct(metricFloat(row, engagementIdx)) / 100) * sessions
         }
     }
 
