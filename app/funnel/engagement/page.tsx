@@ -1,18 +1,22 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useRef } from 'react'
-import DateInput from '@/components/DateInput'
-import Link from '@/components/Link'
-import BackLink from '@/components/BackLink'
-import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import NeonCheckbox from '@/components/NeonCheckbox'
+import PageShell from '@/components/PageShell'
+import PeriodSelect from '@/components/PeriodSelect'
+import LoadState from '@/components/LoadState'
+import { ui, cx } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { fetchJson } from '@/lib/utils/fetch'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import {
-    ENGAGEMENT_MILESTONES,
-    type EngagementFunnelData,
-} from '@/lib/services/funnel/engagementFunnelTypes'
+import { ENGAGEMENT_MILESTONES, type EngagementFunnelData } from '@/lib/services/funnel/engagementFunnelTypes'
 import styles from './EngagementFunnelPage.module.css'
+
+interface EngagementResponse {
+    success: true
+    data: EngagementFunnelData
+}
 
 function getMonthsInRange(startDate: string, endDate: string): string[] {
     const start = new Date(startDate)
@@ -27,15 +31,21 @@ function getMonthsInRange(startDate: string, endDate: string): string[] {
     return months
 }
 
+function monthToRange(month: string): { startDate: string; endDate: string } {
+    const [y, m] = month.split('-').map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    return { startDate: `${month}-01`, endDate: `${month}-${String(lastDay).padStart(2, '0')}` }
+}
+
+const PAGE_SIZE = 200
+
 export default function EngagementFunnelPage() {
     const { currentProduct } = useProduct()
-    const [loading, setLoading] = useState(false)
-    const [data, setData] = useState<EngagementFunnelData | null>(null)
-    const [dataFullRange, setDataFullRange] = useState<EngagementFunnelData | null>(null)
+    const propertyId = currentProduct?.ga4PropertyId ?? ''
+    // 旧実装の既定は今月（1日〜今日）
+    const periodState = usePeriodRange('thisMonth')
+    const { range } = periodState
     const [selectedViewMonth, setSelectedViewMonth] = useState<string>('all')
-    const [error, setError] = useState<string | null>(null)
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const searchInputRef = useRef<HTMLInputElement>(null)
@@ -43,344 +53,173 @@ export default function EngagementFunnelPage() {
     const [aiSummary, setAiSummary] = useState<string | null>(null)
     const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
 
+    // 期間を変えると即再取得（旧実装は「エンゲージメントファネルを実行」ボタン）
+    const full = useReport<EngagementResponse>('/api/funnel/engagement', {
+        body: { propertyId, startDate: range?.startDate, endDate: range?.endDate },
+        enabled: !!propertyId && !!range,
+    })
+    // 表示月を選んだときはその月だけ取り直す（全期間の結果は残す）
+    const monthRange = selectedViewMonth !== 'all' ? monthToRange(selectedViewMonth) : null
+    const month = useReport<EngagementResponse>('/api/funnel/engagement', {
+        body: { propertyId, startDate: monthRange?.startDate, endDate: monthRange?.endDate },
+        enabled: !!propertyId && !!monthRange,
+    })
+    const dataFullRange = full.data?.data ?? null
+    const data = monthRange ? (month.data?.data ?? null) : dataFullRange
+
+    // 期間を変えたら表示月・検索・AI 結果をリセット
     useEffect(() => {
-        const today = new Date()
-        const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        setStartDate(fmt(firstOfMonth))
-        setEndDate(fmt(today))
-    }, [])
+        setSelectedViewMonth('all')
+        setDebouncedSearch('')
+        if (searchInputRef.current) searchInputRef.current.value = ''
+    }, [full.data])
+    useEffect(() => { setAiSummary(null) }, [data])
 
     const handlePagePathSearchChange = (value: string) => {
         if (debounceTimer.current) clearTimeout(debounceTimer.current)
         debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 300)
     }
 
-    const PAGE_SIZE = 200
-
-    const filteredRows = useMemo(
-        () => (data?.rows.filter((row) => !debouncedSearch || row.pagePath.includes(debouncedSearch)) ?? []).slice(0, PAGE_SIZE),
-        [data?.rows, debouncedSearch]
+    const matchedRows = useMemo(
+        () => data?.rows.filter((row) => !debouncedSearch || row.pagePath.includes(debouncedSearch)) ?? [],
+        [data?.rows, debouncedSearch],
     )
+    const filteredRows = matchedRows.slice(0, PAGE_SIZE)
 
-    const totalFilteredCount = useMemo(
-        () => data?.rows.filter((row) => !debouncedSearch || row.pagePath.includes(debouncedSearch)).length ?? 0,
-        [data?.rows, debouncedSearch]
-    )
-
-    const propertyId = currentProduct?.ga4PropertyId ?? ''
-
-    const fetchForMonth = async (month: string) => {
-        const [y, m] = month.split('-').map(Number)
-        const start = `${month}-01`
-        const lastDay = new Date(y, m, 0).getDate()
-        const end = `${month}-${String(lastDay).padStart(2, '0')}`
-        setLoading(true)
-        setError(null)
-        try {
-            const res = await fetch('/api/funnel/engagement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId,
-                    startDate: start,
-                    endDate: end,
-                }),
-            })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error || json.message || '取得に失敗しました')
-            if (json.success && json.data) {
-                setData({
-                    startDate: json.data.startDate,
-                    endDate: json.data.endDate,
-                    rows: json.data.rows,
-                })
-                setAiSummary(null)
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!propertyId?.trim()) {
-            setError('プロダクトのGA4プロパティIDが設定されていません')
-            return
-        }
-        setLoading(true)
-        setError(null)
-        setData(null)
-        setDataFullRange(null)
-        try {
-            const res = await fetch('/api/funnel/engagement', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId,
-                    startDate,
-                    endDate,
-                }),
-            })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error || json.message || '取得に失敗しました')
-            if (json.success && json.data) {
-                const result = {
-                    startDate: json.data.startDate,
-                    endDate: json.data.endDate,
-                    rows: json.data.rows,
-                }
-                setData(result)
-                setDataFullRange(result)
-                setSelectedViewMonth('all')
-                setDebouncedSearch('')
-                if (searchInputRef.current) searchInputRef.current.value = ''
-                setAiSummary(null)
-                if (showAiAnalysis) runAiAnalysis(result)
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handleViewMonthChange = (value: string) => {
-        setSelectedViewMonth(value)
-        if (value === 'all' && dataFullRange) {
-            setData(dataFullRange)
-            setAiSummary(null)
-        } else if (value !== 'all') {
-            fetchForMonth(value)
-        }
-    }
-
-    const runAiAnalysis = async (targetData: typeof data) => {
+    const runAiAnalysis = async (targetData: EngagementFunnelData | null) => {
         if (!targetData || targetData.rows.length === 0) return
         setAiSummaryLoading(true)
         setAiSummary(null)
         try {
-            const res = await fetch('/api/funnel/engagement/summary', {
+            const res = await fetchJson<{ success?: boolean; summary?: string; error?: string }>('/api/funnel/engagement/summary', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    engagementData: { startDate: targetData.startDate, endDate: targetData.endDate, rows: targetData.rows },
-                }),
+                body: JSON.stringify({ engagementData: { startDate: targetData.startDate, endDate: targetData.endDate, rows: targetData.rows } }),
             })
-            const resData = await res.json()
-            if (resData.success && resData.summary) setAiSummary(resData.summary)
-            else setAiSummary(resData.error || 'AI分析の取得に失敗しました')
-        } catch {
-            setAiSummary('AI分析の取得に失敗しました')
+            setAiSummary(res.success && res.summary ? res.summary : res.error || 'AI分析の取得に失敗しました')
+        } catch (e) {
+            setAiSummary(e instanceof Error ? e.message : 'AI分析の取得に失敗しました')
         } finally {
             setAiSummaryLoading(false)
         }
     }
 
-    if (!currentProduct) {
-        return (
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>エンゲージメントファネル</h1>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
-                </div>
-                <div className={styles.warningBox}>
-                    <p>プロダクトを選択してください。ダッシュボードから選択できます。</p>
-                </div>
-            </div>
-        )
-    }
+    const months = dataFullRange ? getMonthsInRange(dataFullRange.startDate, dataFullRange.endDate) : []
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>エンゲージメントファネル</h1>
-                    <p className={styles.subtitle}>
-                        ページごと・滞在時間（time_on_page）のファネル。10秒〜180秒の到達ユーザー・到達率を表示します。
-                    </p>
-                    {currentProduct && (
-                        <div className={styles.infoBox}>
-                            <p><strong>プロダクト:</strong> {currentProduct.name}</p>
-                            {currentProduct.ga4PropertyId && (
-                                <p><strong>GA4プロパティID:</strong> {currentProduct.ga4PropertyId}</p>
-                            )}
-                        </div>
-                    )}
-                </div>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>集計期間</h2>
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.formRow}>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>開始日</label>
-                                                            <DateInput
-                                                            value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className={styles.input}
-                                required
-                            />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>終了日</label>
-                                                            <DateInput
-                                                            value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className={styles.input}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className={styles.formField}>
-                        <NeonCheckbox
-                            checked={showAiAnalysis}
-                            onChange={setShowAiAnalysis}
-                        >
-                            <span>AI分析を表示する</span>
-                        </NeonCheckbox>
-                        <p className={styles.helpText}>
-                            チェックを付けたときだけ、ファネル結果に対するAI分析が表示されます
-                        </p>
-                    </div>
-                    <button type="submit" className="executionButton" disabled={loading}>
-                        <span>{loading ? '集計中...' : 'エンゲージメントファネルを実行'}</span>
-                    </button>
-                </form>
-            </div>
-
-            {error && (
-                <div className={styles.errorBox}>
-                    <p>{error}</p>
-                </div>
+        <PageShell
+            pageId="funnelEngagement"
+            requireProduct
+            width="wide"
+            status={{ loading: full.loading, error: full.error, source: 'ga4', loadingText: 'ファネルデータを集計中...', onRetry: full.run }}
+            controls={
+                <>
+                    <PeriodSelect state={periodState} resolved={dataFullRange} />
+                    <NeonCheckbox checked={showAiAnalysis} onChange={setShowAiAnalysis}>
+                        <span>AI分析を表示する</span>
+                    </NeonCheckbox>
+                </>
+            }
+        >
+            {currentProduct && !currentProduct.ga4PropertyId && (
+                <p className={ui.note}>プロダクトのGA4プロパティIDが設定されていません</p>
             )}
 
-            {loading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <p className={styles.loaderText}>ファネルデータを集計中...</p>
-                </div>
-            )}
-
-            {data && data.rows.length > 0 && (
-                <div className={styles.resultSection}>
+            {dataFullRange && (
+                <div className={ui.card}>
                     <div className={styles.resultsHeader}>
-                        <div className={styles.resultsHeaderTop}>
-                            <h2 className={styles.sectionTitle}>
-                                {data.startDate} 〜 {data.endDate} の結果
-                            </h2>
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                defaultValue=""
-                                onChange={(e) => handlePagePathSearchChange(e.target.value)}
-                                placeholder="ページパスで絞り込み"
-                                className={styles.searchInput}
-                            />
-                        </div>
-                        {(() => {
-                            const months = getMonthsInRange(dataFullRange?.startDate ?? data.startDate, dataFullRange?.endDate ?? data.endDate)
-                            if (months.length <= 1) return null
-                            return (
-                                <div className={styles.monthSwitcher}>
-                                    <label htmlFor="viewMonth" className={styles.monthSwitcherLabel}>表示月:</label>
-                                    <CustomSelect
-                                        value={selectedViewMonth}
-                                        onChange={handleViewMonthChange}
-                                        options={[{ value: 'all', label: 'すべて' }, ...months.map((m) => ({ value: m, label: m }))]}
-                                        triggerClassName={styles.monthSwitcherSelect}
-                                        aria-label="表示月"
-                                    />
-                                </div>
-                            )
-                        })()}
+                        <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>
+                            {(data ?? dataFullRange).startDate} 〜 {(data ?? dataFullRange).endDate} の結果
+                        </h2>
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            defaultValue=""
+                            onChange={(e) => handlePagePathSearchChange(e.target.value)}
+                            placeholder="ページパスで絞り込み"
+                            className={styles.searchInput}
+                        />
+                        {months.length > 1 && (
+                            <label className={styles.monthSwitcher}>
+                                <span className={ui.controlLabel}>表示月:</span>
+                                <select className={ui.select} value={selectedViewMonth} onChange={(e) => setSelectedViewMonth(e.target.value)}>
+                                    <option value="all">すべて</option>
+                                    {months.map((m) => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            </label>
+                        )}
                     </div>
+
                     {showAiAnalysis && (
                         <div className={styles.aiSummarySection}>
                             <div className={styles.aiSummaryHeader}>
                                 <h3 className={styles.aiSummaryTitle}>AI分析</h3>
                                 {!aiSummaryLoading && (
-                                    <button
-                                        onClick={() => runAiAnalysis(data)}
-                                        className={styles.aiRerunButton}
-                                    >
+                                    <button type="button" onClick={() => runAiAnalysis(data)} className={ui.btn} disabled={!data || data.rows.length === 0}>
                                         {aiSummary ? '再実行' : 'AI分析を実行'}
                                     </button>
                                 )}
                             </div>
-                            {aiSummaryLoading ? (
-                                <div className={styles.aiSummaryLoading}>
-                                    <Loader />
-                                    <span>AI分析を取得中...</span>
-                                </div>
-                            ) : aiSummary ? (
-                                <div className={styles.aiSummaryBox}>{aiSummary}</div>
-                            ) : (
-                                <p className={styles.aiSummaryEmpty}>「AI分析を実行」ボタンを押すと分析結果が表示されます。</p>
-                            )}
+                            <LoadState variant="inline" loading={aiSummaryLoading} source="ai">
+                                {aiSummary ? <div className={styles.aiSummaryBox}>{aiSummary}</div> : <p className={ui.note}>「AI分析を実行」ボタンを押すと分析結果が表示されます。</p>}
+                            </LoadState>
                         </div>
                     )}
 
-                    {totalFilteredCount > PAGE_SIZE && (
-                        <p className={styles.rowLimitNote}>
-                            {totalFilteredCount.toLocaleString()} 件中 {PAGE_SIZE} 件を表示しています。絞り込みで件数を絞ってください。
-                        </p>
-                    )}
-                    <div className={styles.tableWrap}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th className={styles.th}>ページパス</th>
-                                    <th className={styles.thRight}>10秒到達ユーザー</th>
-                                    <th className={styles.thRight}>10秒イベント数</th>
-                                    {ENGAGEMENT_MILESTONES.slice(1).map((m) => {
-                                        const short = m.replace('以上滞在', '')
-                                        return (
-                                            <React.Fragment key={m}>
-                                                <th className={styles.thRight}>{short}到達ユーザー</th>
-                                                <th className={styles.thRight}>{short}イベント数</th>
-                                                <th className={styles.thRight}>{short}到達率</th>
-                                            </React.Fragment>
-                                        )
-                                    })}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredRows.map((row, i) => (
-                                    <tr key={i}>
-                                        <td className={styles.tdPagePath}>{row.pagePath}</td>
-                                        <td className={styles.tdRight}>{row.baseUsers.toLocaleString()}</td>
-                                        <td className={styles.tdRight}>{row.baseEvents.toLocaleString()}</td>
-                                        {ENGAGEMENT_MILESTONES.slice(1).map((m) => {
-                                            const d = row.milestones[m]
-                                            const short = m.replace('以上滞在', '')
-                                            const rate = row.rates[short] ?? 0
-                                            const rateClass = rate >= 0.5 ? styles.rateHigh : rate >= 0.2 ? styles.rateMid : styles.rateLow
-                                            return (
-                                                <React.Fragment key={m}>
-                                                    <td className={styles.tdRight}>{d.users.toLocaleString()}</td>
-                                                    <td className={styles.tdRight}>{d.events.toLocaleString()}</td>
-                                                    <td className={`${styles.tdRight} ${styles.tdRate} ${rateClass}`}>{(rate * 100).toFixed(2)}%</td>
-                                                </React.Fragment>
-                                            )
-                                        })}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <LoadState variant="inline" loading={!!monthRange && month.loading} error={monthRange ? month.error : null} source="ga4" onRetry={month.run}>
+                        {data && data.rows.length === 0 && <p className={ui.empty}>指定期間に time_on_page イベントのデータがありません。</p>}
+                        {data && data.rows.length > 0 && (
+                            <>
+                                {matchedRows.length > PAGE_SIZE && (
+                                    <p className={ui.note}>{matchedRows.length.toLocaleString()} 件中 {PAGE_SIZE} 件を表示しています。絞り込みで件数を絞ってください。</p>
+                                )}
+                                <div className={ui.tableWrap}>
+                                    <table className={ui.dataTable}>
+                                        <thead>
+                                            <tr>
+                                                <th>ページパス</th>
+                                                <th className={ui.num}>10秒到達ユーザー</th>
+                                                <th className={ui.num}>10秒イベント数</th>
+                                                {ENGAGEMENT_MILESTONES.slice(1).map((m) => {
+                                                    const short = m.replace('以上滞在', '')
+                                                    return (
+                                                        <React.Fragment key={m}>
+                                                            <th className={ui.num}>{short}到達ユーザー</th>
+                                                            <th className={ui.num}>{short}イベント数</th>
+                                                            <th className={ui.num}>{short}到達率</th>
+                                                        </React.Fragment>
+                                                    )
+                                                })}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredRows.map((row, i) => (
+                                                <tr key={i}>
+                                                    <td className={styles.tdPagePath} title={row.pagePath}>{row.pagePath}</td>
+                                                    <td className={ui.num}>{row.baseUsers.toLocaleString()}</td>
+                                                    <td className={ui.num}>{row.baseEvents.toLocaleString()}</td>
+                                                    {ENGAGEMENT_MILESTONES.slice(1).map((m) => {
+                                                        const d = row.milestones[m]
+                                                        const short = m.replace('以上滞在', '')
+                                                        const rate = row.rates[short] ?? 0
+                                                        const rateClass = rate >= 0.5 ? styles.rateHigh : rate >= 0.2 ? styles.rateMid : styles.rateLow
+                                                        return (
+                                                            <React.Fragment key={m}>
+                                                                <td className={ui.num}>{d.users.toLocaleString()}</td>
+                                                                <td className={ui.num}>{d.events.toLocaleString()}</td>
+                                                                <td className={cx(ui.num, styles.tdRate, rateClass)}>{(rate * 100).toFixed(2)}%</td>
+                                                            </React.Fragment>
+                                                        )
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </LoadState>
                 </div>
             )}
-
-            {data && data.rows.length === 0 && !loading && (
-                <div className={styles.emptyBox}>
-                    <p>指定期間に time_on_page イベントのデータがありません。</p>
-                </div>
-            )}
-        </div>
+        </PageShell>
     )
 }
