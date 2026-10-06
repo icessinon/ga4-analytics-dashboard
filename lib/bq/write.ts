@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/db/client'
 import { bqInsertAll, ensureBQTable } from './client'
 import {
   BQ_TABLES,
@@ -67,38 +66,38 @@ async function insertWithoutTracking(
 
 // ============================================================
 //  各テーブルへの insert
-//  bqSyncedAt を持つ 3 テーブル: BQ 成功時に Postgres の bqSyncedAt を更新
+//  bqSyncedAt を持つ 3 テーブル（report_execution / ab_test_result / funnel_execution）は
+//  ここでは BQ に書くだけ。Postgres 側の bqSyncedAt 更新は
+//  lib/services/logging/activityLogService.ts が担う（この層から DB を触らない）。
 // ============================================================
 
-export async function insertReportExecutionLog(row: ReportExecutionLogRow): Promise<void> {
+/** report_execution_log に 1 行。成功したら true（呼び出し元が bqSyncedAt を更新する） */
+export async function insertReportExecutionLogRow(row: ReportExecutionLogRow): Promise<boolean> {
   try {
     await ensureAllTablesOnce()
     await bqInsertAll('report_execution_log', [{
       insertId: `report_execution:${row.execution_id}`,
       json: row,
     }])
-    await prisma.reportExecution.update({
-      where: { id: row.execution_id },
-      data: { bqSyncedAt: new Date() },
-    })
+    return true
   } catch (err) {
     console.error('[bq] report_execution_log insert failed:', err instanceof Error ? err.message : err)
+    return false
   }
 }
 
-export async function insertAbTestResultLog(row: AbTestResultLogRow): Promise<void> {
+/** ab_test_result_log に 1 行。成功したら true（呼び出し元が bqSyncedAt を更新する） */
+export async function insertAbTestResultLogRow(row: AbTestResultLogRow): Promise<boolean> {
   try {
     await ensureAllTablesOnce()
     await bqInsertAll('ab_test_result_log', [{
       insertId: `ab_test_result:${row.result_id}`,
       json: row,
     }])
-    await prisma.abTestResult.update({
-      where: { id: row.result_id },
-      data: { bqSyncedAt: new Date() },
-    })
+    return true
   } catch (err) {
     console.error('[bq] ab_test_result_log insert failed:', err instanceof Error ? err.message : err)
+    return false
   }
 }
 
@@ -109,19 +108,18 @@ export async function insertAbTestFinalReportLog(row: AbTestFinalReportLogRow): 
   }])
 }
 
-export async function insertFunnelExecutionLog(row: FunnelExecutionLogRow): Promise<void> {
+/** funnel_execution_log に 1 行。成功したら true（呼び出し元が bqSyncedAt を更新する） */
+export async function insertFunnelExecutionLogRow(row: FunnelExecutionLogRow): Promise<boolean> {
   try {
     await ensureAllTablesOnce()
     await bqInsertAll('funnel_execution_log', [{
       insertId: `funnel_execution:${row.execution_id}`,
       json: row,
     }])
-    await prisma.funnelExecution.update({
-      where: { id: row.execution_id },
-      data: { bqSyncedAt: new Date() },
-    })
+    return true
   } catch (err) {
     console.error('[bq] funnel_execution_log insert failed:', err instanceof Error ? err.message : err)
+    return false
   }
 }
 

@@ -9,7 +9,7 @@ import { parseDateString } from '@/lib/utils/date'
 import { prisma } from '@/lib/db/client'
 import { getGA4AccessToken } from '@/lib/api/ga4/client'
 import { evaluateFunnelWithGemini } from '@/lib/api/gemini/funnelEvaluation'
-import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/services/logging/activityLogService'
 
 export async function POST(request: Request) {
     try {

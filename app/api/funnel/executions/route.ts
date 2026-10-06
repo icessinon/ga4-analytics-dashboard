@@ -4,7 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
-import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { insertFunnelExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/services/logging/activityLogService'
 
 export async function GET(request: Request) {
     try {

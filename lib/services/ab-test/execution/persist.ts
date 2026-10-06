@@ -7,7 +7,7 @@
 
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/client'
-import { insertAbTestResultLog, insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { insertAbTestResultLog, insertReportExecutionLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/services/logging/activityLogService'
 import type { GA4Config } from '@/lib/services/ab-test/ga4ConfigTypes'
 import type { AbTestEvaluationOutcome, ExecutableAbTest } from './types'
 

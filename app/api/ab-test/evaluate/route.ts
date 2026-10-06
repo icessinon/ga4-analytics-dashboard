@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
 import { evaluateAbTestResult } from '@/lib/services/ab-test/abTestService'
 import { evaluateWithGemini } from '@/lib/api/gemini/client'
 import { prisma } from '@/lib/db/client'
-import { insertAbTestResultLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
+import { insertAbTestResultLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/services/logging/activityLogService'
 
 export async function POST(request: Request) {
     try {

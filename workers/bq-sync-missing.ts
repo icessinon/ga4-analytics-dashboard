@@ -9,15 +9,12 @@
  */
 
 import { prisma } from '@/lib/db/client'
+import { insertSyncRunLog, jstReportDate, jstReportMonth, nowIso } from '@/lib/bq/write'
 import {
   insertAbTestResultLog,
   insertFunnelExecutionLog,
   insertReportExecutionLog,
-  insertSyncRunLog,
-  jstReportDate,
-  jstReportMonth,
-  nowIso,
-} from '@/lib/bq/write'
+} from '@/lib/services/logging/activityLogService'
 
 interface SyncArgs { days: number; trigger: 'cron' | 'manual' }
 
