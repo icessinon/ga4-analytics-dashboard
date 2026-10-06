@@ -3,13 +3,15 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from '@/components/Link'
-import BackLink from '@/components/BackLink'
 import CustomSelect from '@/components/CustomSelect'
-import Loader from '@/components/Loader'
+import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { ui } from '@/components/ui'
+import { useReport } from '@/hooks/useReport'
 import AbTestCalendar from '@/components/ab-test/AbTestCalendar'
 import AbTestFormModal from '@/components/ab-test/AbTestFormModal'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import { parseJsonResponse } from '@/lib/utils/fetch'
+import { fetchJson } from '@/lib/utils/fetch'
 import type { AbTest } from './types'
 import { resolveIssueLink } from '@/lib/utils/issueUrl'
 import styles from './AbTestPage.module.css'
@@ -18,21 +20,22 @@ function AbTestPageContent() {
     const { currentProduct, products, setCurrentProduct } = useProduct()
     const searchParams = useSearchParams()
     const router = useRouter()
-    const [abTests, setAbTests] = useState<AbTest[]>([])
-    const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [editingTest, setEditingTest] = useState<AbTest | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [selectedTests, setSelectedTests] = useState<AbTest[]>([])
     const [listPage, setListPage] = useState(1)
-    const [listTotal, setListTotal] = useState(0)
-    const [listTotalPages, setListTotalPages] = useState(0)
     const LIST_PAGE_SIZE = 5
 
-    useEffect(() => {
-        fetchAbTests(1)
-    }, [currentProduct])
+    const listUrl = `/api/ab-test?${currentProduct ? `productId=${currentProduct.id}&` : ''}page=${listPage}&limit=${LIST_PAGE_SIZE}`
+    const list = useReport<{ abTests?: AbTest[]; total?: number; totalPages?: number }>(listUrl)
+    const abTests = list.data?.abTests ?? []
+    const listTotal = list.data?.total ?? 0
+    const listTotalPages = list.data?.totalPages ?? 1
+
+    // プロダクトを切り替えたら 1 ページ目に戻す
+    useEffect(() => { setListPage(1) }, [currentProduct?.id])
 
     useEffect(() => {
         const editId = searchParams?.get('edit')
@@ -46,63 +49,17 @@ function AbTestPageContent() {
         }
     }, [searchParams, abTests])
 
-    async function fetchAbTests(page: number = listPage) {
-        try {
-            setLoading(true)
-            const base = currentProduct
-                ? `/api/ab-test?productId=${currentProduct.id}`
-                : '/api/ab-test'
-            const url = `${base}${base.includes('?') ? '&' : '?'}page=${page}&limit=${LIST_PAGE_SIZE}`
-            const response = await fetch(url)
-            const data = await parseJsonResponse<{ error?: string; message?: string; abTests?: AbTest[]; total?: number; totalPages?: number }>(response)
-
-            if (data.error) {
-                throw new Error(data.message || data.error)
-            }
-
-            setAbTests(data.abTests || [])
-            setListTotal(data.total ?? 0)
-            setListTotalPages(data.totalPages ?? 1)
-            setListPage(page)
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
-            console.error('AB Tests fetch error:', err)
-            setError(errorMessage)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     async function handleSubmit(data: any) {
         try {
             if (editingTest) {
-                const response = await fetch('/api/ab-test', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: editingTest.id,
-                        ...data,
-                    }),
-                })
-                const result = await response.json()
-                if (!response.ok || result.error) {
-                    throw new Error(result.message || result.error || '更新に失敗しました')
-                }
+                await fetchJson('/api/ab-test', { method: 'PUT', body: JSON.stringify({ id: editingTest.id, ...data }) })
             } else {
-                const response = await fetch('/api/ab-test', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                })
-                const result = await response.json()
-                if (!response.ok || result.error) {
-                    throw new Error(result.message || result.error || '作成に失敗しました')
-                }
+                await fetchJson('/api/ab-test', { method: 'POST', body: JSON.stringify(data) })
             }
             setEditingTest(null)
             setShowModal(false)
             clearEditParam()
-            await fetchAbTests(listPage)
+            await list.run()
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
             console.error('AB Test submit error:', err)
@@ -136,14 +93,8 @@ function AbTestPageContent() {
     async function handleDelete(id: number) {
         if (!confirm('このABテストを削除しますか？')) return
         try {
-            const response = await fetch(`/api/ab-test?id=${id}`, {
-                method: 'DELETE',
-            })
-            const data = await response.json()
-            if (data.error) {
-                throw new Error(data.message || data.error)
-            }
-            fetchAbTests(listPage)
+            await fetchJson(`/api/ab-test?id=${id}`, { method: 'DELETE' })
+            await list.run()
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました'
             setError(errorMessage)
@@ -160,43 +111,28 @@ function AbTestPageContent() {
         setShowModal(true)
     }
 
-    if (loading) {
-        return (
-            <div className={styles.container}>
-                <h1 className={styles.title}>ABテスト管理</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        )
-    }
-
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <h1 className={styles.title}>ABテスト管理</h1>
-                <div className={styles.headerActions}>
-                    <BackLink href="/">ダッシュボードに戻る</BackLink>
+        <PageShell
+            pageId="abTest"
+            status={{ loading: list.loading, error: list.error, source: 'db', onRetry: list.run }}
+            actions={
+                <>
                     <Link
                         href={currentProduct ? `/ab-test/completed?productId=${currentProduct.id}` : '/ab-test/completed'}
-                        className={styles.button + ' ' + styles.buttonSecondary}
+                        className={ui.btn}
                     >
                         完了一覧
                     </Link>
-                    <button
-                        onClick={handleNewTest}
-                        className={`${styles.button} ${styles.buttonPrimary}`}
-                    >
+                    <button type="button" onClick={handleNewTest} className={ui.btnPrimary}>
                         + 新しいテストを追加
                     </button>
-                </div>
-            </div>
-
+                </>
+            }
+        >
             {error && (
-                <div className={styles.errorContainer}>
-                    <p className={styles.errorTitle}>エラー</p>
-                    <p>{error}</p>
-                </div>
+                <Alert tone="error" action={<button type="button" className={ui.btn} onClick={() => setError(null)}>閉じる</button>}>
+                    {error}
+                </Alert>
             )}
 
             {products.length > 1 && (
@@ -222,8 +158,8 @@ function AbTestPageContent() {
             </div>
 
             {selectedDate && selectedTests.length > 0 && (
-                <div className={styles.selectedDateSection}>
-                    <h2 className={styles.sectionTitle}>
+                <div className={ui.card}>
+                    <h2 className={ui.sectionTitle}>
                         {selectedDate.toLocaleDateString('ja-JP', {
                             year: 'numeric',
                             month: 'long',
@@ -300,10 +236,10 @@ function AbTestPageContent() {
 
             <div className={styles.tableContainer}>
                 <div className={styles.tableHeader}>
-                    <h2 className={styles.tableTitle}>ABテスト一覧</h2>
+                    <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>ABテスト一覧</h2>
                 </div>
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
+                <div className={ui.tableWrap}>
+                    <table className={ui.dataTable}>
                         <thead className={styles.tableHead}>
                             <tr>
                                 <th className={styles.tableHeaderCell}>テスト名</th>
@@ -416,7 +352,7 @@ function AbTestPageContent() {
                         <button
                             type="button"
                             className={styles.paginationButton}
-                            onClick={() => fetchAbTests(listPage - 1)}
+                            onClick={() => setListPage((p) => p - 1)}
                             disabled={listPage <= 1}
                             aria-label="前のページ"
                         >
@@ -428,7 +364,7 @@ function AbTestPageContent() {
                         <button
                             type="button"
                             className={styles.paginationButton}
-                            onClick={() => fetchAbTests(listPage + 1)}
+                            onClick={() => setListPage((p) => p + 1)}
                             disabled={listPage >= listTotalPages}
                             aria-label="次のページ"
                         >
@@ -437,20 +373,13 @@ function AbTestPageContent() {
                     </div>
                 )}
             </div>
-        </div>
+        </PageShell>
     )
 }
 
 export default function AbTestPage() {
     return (
-        <Suspense fallback={
-            <div className={styles.container}>
-                <h1 className={styles.title}>ABテスト管理</h1>
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                </div>
-            </div>
-        }>
+        <Suspense fallback={<PageShell pageId="abTest" status={{ loading: true, source: 'db' }}>{null}</PageShell>}>
             <AbTestPageContent />
         </Suspense>
     )
