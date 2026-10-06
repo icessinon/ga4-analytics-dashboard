@@ -89,15 +89,18 @@
     color: var(--text-primary);
 }
 
-/* source / medium・campaign・content を 3 行に積む。スカウト配信の campaign は 60 文字超なので折り返し、
-   表が横に溢れて数値列が画面外に出ないようにする */
+/* UTM の値と意味を 1 セルに縦積み。長い campaign はどこでも折り返す（横に 2 列で並べると説明に食い込んでいた） */
 .utmCell {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
-    min-width: 14rem;
-    max-width: 18rem;
+    min-width: 22rem;
+    max-width: 36rem;
     white-space: normal;
+}
+
+.utmCell .mono {
+    overflow-wrap: anywhere;
 }
 
 .campaign {
@@ -139,7 +142,9 @@
     font-size: 0.8125rem;
     line-height: 1.5;
     white-space: normal;
-    max-width: 20rem;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--border-subtle);
 }
 
 .timing {
@@ -147,7 +152,6 @@
     font-size: 0.75rem;
     line-height: 1.5;
     margin-top: 0.15rem;
-    max-width: 20rem;
     white-space: normal;
 }
 
@@ -156,7 +160,6 @@
     font-size: 0.72rem;
     margin-top: 0.15rem;
     white-space: normal;
-    max-width: 20rem;
 }
 
 /* CV セルは合計の下に内訳（応/LP/登）を小さく。1 行に伸ばすと列が 160px 近く取るので折り返す */
@@ -172,7 +175,3 @@
     white-space: nowrap;
 }
 
-.meaningCell {
-    max-width: 16rem;
-    white-space: normal;
-}

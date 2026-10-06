@@ -208,8 +208,7 @@ export default function UtmReportPage() {
                                 <thead>
                                     <tr>
                                         {sortTh('category', '区分')}
-                                        {sortTh('utm', `source / medium / campaign${splitByContent ? ' / content' : ''}`)}
-                                        <th>意味・発行タイミング</th>
+                                        {sortTh('utm', `UTM（source / medium / campaign${splitByContent ? ' / content' : ''}）と意味・発行タイミング`)}
                                         {sortTh('sessions', 'セッション', true)}
                                         {sortTh('users', 'ユーザー', true)}
                                         {sortTh('cv', 'CV', true)}
@@ -226,15 +225,14 @@ export default function UtmReportPage() {
                                             <tr key={`${r.source}|${r.medium}|${r.campaign}|${r.content}|${i}`}>
                                                 <td><Badge category={d.category} /></td>
                                                 <td className={styles.utmCell}>
+                                                    {/* UTM の値（等幅）→ 意味 → 発行タイミングの順に縦に積む。横に並べると長い campaign が説明に食い込む */}
                                                     <span className={styles.mono}>{r.source} / {r.medium}</span>
                                                     <span className={cx(styles.mono, styles.campaign)} title={r.campaign}>{r.campaign}</span>
                                                     {hasContent && <span className={cx(styles.mono, styles.content)} title={r.content}>content: {r.content}</span>}
-                                                </td>
-                                                <td className={styles.meaningCell}>
-                                                    <div className={styles.meaning}>{d.label}</div>
-                                                    <div className={styles.timing}>{d.timing}</div>
-                                                    {contentNote && <div className={styles.timing}>content: {contentNote}</div>}
-                                                    {d.warning && <div className={styles.warn}>⚠️ {d.warning}</div>}
+                                                    <span className={styles.meaning}>{d.label}</span>
+                                                    <span className={styles.timing}>{d.timing}</span>
+                                                    {contentNote && <span className={styles.timing}>content: {contentNote}</span>}
+                                                    {d.warning && <span className={styles.warn}>⚠️ {d.warning}</span>}
                                                 </td>
                                                 <td className={cx(ui.num, ui.strong)}>{r.sessions.toLocaleString()}</td>
                                                 <td className={ui.num}>{r.users.toLocaleString()}</td>
@@ -243,7 +241,7 @@ export default function UtmReportPage() {
                                             </tr>
                                         )
                                     })}
-                                    {rows.length === 0 && <tr><td colSpan={7} className={ui.empty}>該当するUTMがありません</td></tr>}
+                                    {rows.length === 0 && <tr><td colSpan={6} className={ui.empty}>該当するUTMがありません</td></tr>}
                                 </tbody>
                             </table>
                         </div>
