@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from '@/components/Link'
 import { usePathname } from 'next/navigation'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import { navGroups } from '@/lib/registry'
+import { PAGES, matchPage, navGroups } from '@/lib/registry'
 import styles from './Sidebar.module.css'
 
 const STORAGE_KEY = 'sidebar-collapsed'
@@ -17,6 +17,9 @@ export default function Sidebar() {
     // グループの開閉状態。項目が増えたため、現在ページを含むグループ以外は初期状態で閉じる
     const [openGroups, setOpenGroups] = useState<Record<string, boolean> | null>(null)
     const groups = navGroups(currentProduct?.id)
+    // 動的ページ（/ab-test/123 など）もレジストリで解決し、所属グループを開く
+    const activePage = matchPage(pathname)
+    const activeCategory = activePage ? PAGES[activePage].category : null
 
     useEffect(() => {
         try {
@@ -42,7 +45,7 @@ export default function Sidebar() {
         }
         const next: Record<string, boolean> = {}
         for (const group of groups) {
-            const containsActive = group.items.some((item) => isActive(item.href))
+            const containsActive = group.items.some((item) => isActive(item.href)) || group.id === activeCategory
             next[group.id] = containsActive || stored[group.id] === true
         }
         setOpenGroups(next)
@@ -115,6 +118,7 @@ export default function Sidebar() {
                                             <li key={item.id}>
                                                 <Link
                                                     href={item.href}
+                                                    title={item.subtitle}
                                                     className={`${styles.link} ${active ? styles.active : ''}`}
                                                 >
                                                     {item.title}

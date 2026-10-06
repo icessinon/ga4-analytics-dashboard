@@ -10,55 +10,54 @@ import { CATEGORY_IDS, CATEGORIES, type CategoryId } from './categories'
  */
 
 export const PAGE_IDS = [
-    // settings
-    'products',
-    'alerts',
     // kpi
     'trend',
     'insights',
     'cvValue',
-    // cv
+    // apply
     'cvTypes',
-    'occupation',
+    'funnel',
     'applyFields',
+    // signup
+    'signupFunnel',
+    'occupation',
+    'signupStepMails',
+    'persona',
     // channel
     'seoReport',
-    'lineReport',
     'utmReport',
-    'signupStepMails',
-    // abtest
-    'abTest',
-    'abTestAdvisor',
-    'abTestCompleted',
-    // funnel
-    'signupFunnel',
-    'funnel',
+    'lineReport',
     'scout',
-    'funnelEngagement',
-    'funnelPath',
-    // visual
-    'heatmap',
+    // behavior
     'journey',
-    'exit',
     'pageflow',
+    'exit',
+    'funnelPath',
     'listPerformance',
-    // users
-    'persona',
     'userFlow',
+    'heatmap',
+    // users
     'user',
     'userCohort',
-    'userSegmentBuilder',
-    'userScoring',
     'userStickiness',
+    'userScoring',
+    'userSegmentBuilder',
+    'funnelEngagement',
+    // abtest
+    'abTest',
+    'abTestCompleted',
+    'abTestAdvisor',
     // tools
     'analytics',
     'data',
     'ga4Metadata',
     'history',
+    // settings
+    'products',
+    'alerts',
     'aiUsage',
-    // docs
-    'docsApi',
     'docsFeatures',
+    'docsApi',
     'docsGlossary',
     // ナビ非表示（詳細・動的）
     'dashboard',
@@ -124,47 +123,6 @@ interface HiddenPageDef extends PageDefBase {
 export type PageDef = NavPageDef | HiddenPageDef
 
 export const PAGES: Record<PageId, PageDef> = {
-
-    // ── settings ──
-    products: {
-        href: '/products',
-        title: 'プロダクト管理',
-        subtitle: 'プロダクトの設定と管理',
-        category: 'settings',
-        doc: {
-            description: 'ダッシュボードが扱うプロダクト（GA4プロパティ）の登録・編集。各ページの「プロダクト」セレクタの選択肢になる。',
-            capabilities: [
-                'プロダクト名・GA4プロパティIDの登録・編集',
-                'サイドバー上部のプロダクト切替の元データ',
-            ],
-        },
-    },
-    alerts: {
-        href: '/alerts',
-        title: 'アラート設定',
-        subtitle: 'CV急落アラートのしきい値・監視対象指標の設定',
-        category: 'settings',
-        tags: ['cv'],
-        doc: {
-            description: '毎日 09:30 JST に前日の指標を過去8週の同一曜日の中央値と比較してSlack通知します。全体指標（セッション・CV・CVR）の急落に加え、セグメント別（ページカテゴリ別の閲覧、CV種別×チャネル別）は急増（スパイク）も検知します。SEO順位変動・キャンペーン・bot流入・タグ事故は全体値に埋もれてセグメント単位で先に現れるため。',
-            capabilities: [
-                '曜日変動対策（過去8週の同一曜日と比較）・スパイク対策（平均でなく中央値）',
-                '全体指標の急落検知: セッション数 / 応募CV / LP応募CV / 会員登録CV / 全体CVR（しきい値デフォルト-30%）',
-                'ページカテゴリ別の急増・急落検知: 求人詳細 / 検索・一覧 / TOP / コラム / 会員登録フォーム / 応募フォーム の閲覧ユーザー（急増はデフォルト+50%、CV_SPIKE_ALERT_THRESHOLDで変更可）。発火時は変動に効いた個別ページ上位5件を添付',
-                'CV種別×チャネル別の急増・急落検知: 応募CV/LP応募CV/会員登録CV × sessionDefaultChannelGroup（例: 会員登録CV×Organic Searchの急増）',
-                'しきい値未満のノイズ除去（ベースラインが小さすぎるセグメントは判定しない。急増側はベースラインほぼ0からの出現も拾う）',
-                '統計ガード: %しきい値に加えて中央値からポアソン3σ以上の乖離を必須化。中央値が小さい指標・セグメントが日次ゆらぎ（±√n）で発火し続けるのを防ぐ（バックテスト実測で誤報75%削減: 2.8件/日→0.7件/日。全体指標側にも適用、CVRは期待CV数との乖離で判定）',
-                '発火時の原因ドリルダウン（チャネル別・デバイス別・ページ別の下落幅内訳を自動集計）',
-                'AI 原因仮説（内訳データと整合する原因候補と確認ポイントを生成）',
-                'Slack 通知（📊セグメント変動は急増/急落をまとめて1メッセージ、🚨全体CV急落は従来どおり）',
-                'プロダクト別設定画面（有効/無効・下落しきい値・最小ベースライン・監視対象の指標/セグメントのトグル）',
-            ],
-            metrics: ['sessions', 'totalUsers', 'sessionDefaultChannelGroup', 'deviceCategory'],
-            ai: true,
-            apiRoute: 'POST /api/alerts/cv-drop',
-        },
-    },
-
     // ── kpi ──
     trend: {
         href: '/trend',
@@ -225,12 +183,12 @@ export const PAGES: Record<PageId, PageDef> = {
         },
     },
 
-    // ── cv ──
+    // ── apply ──
     cvTypes: {
         href: '/cv-types',
         title: '求人種別CV分析',
         subtitle: '応募CVを人材紹介/求人広告/ハローワークに分解し会員登録と比較。チャネル構成比も',
-        category: 'cv',
+        category: 'apply',
         productScoped: true,
         tags: ['cv', 'apply', 'channel'],
         doc: {
@@ -253,11 +211,78 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/cv-types',
         },
     },
+    funnel: {
+        href: '/funnel',
+        title: 'エントリーフォームファネル',
+        subtitle: 'フォーム完了までの導線分析',
+        category: 'apply',
+        productScoped: true,
+        productIdInHref: true,
+        tags: ['apply', 'form'],
+        doc: {
+            description: 'フォームの各ステップ（表示→入力→確認→完了）の通過率と離脱率を測定します。期間比較で施策前後の CVR 変化を定量評価できます。',
+            capabilities: [
+                'ステップ別ユーザー数・CVR・離脱率',
+                '期間比較ファネル（A/B 期間の並列表示）',
+                'ステップ間の落ち込み可視化',
+                '期間比較時のチャネル別内訳（チャネルごとのセッション・CV・CVR の期間差分）',
+                'AI によるファネル評価・期間比較インサイト（チャネル別変化を含む）',
+            ],
+            metrics: ['activeUsers', 'eventCount'],
+            ai: true,
+            apiRoute: 'GET /api/funnel/entry-form',
+        },
+    },
+    applyFields: {
+        href: '/apply-fields',
+        title: '応募フォーム項目別タップ',
+        subtitle: '応募種別ごとに各入力項目がどれだけタップ（着手）されているかの発火数',
+        category: 'apply',
+        productScoped: true,
+        tags: ['apply', 'form'],
+        doc: {
+            description: '応募フォームの各入力項目が、応募種別（人材紹介/求人広告/ハローワーク）ごとにどれだけタップ（着手）されたかを data-click-label の発火数で集計する。どの項目で手が止まるかを見る。',
+            capabilities: [
+                '応募種別 × 入力項目のタップ数マトリクス',
+                '項目別の着手率（フォーム表示に対する比率）',
+                '期間切替',
+            ],
+            notes: [
+                'JobR/ハローワークは3項目固定、JobA のみ最大8項目。項目数が違うので種別間で単純比較しない',
+            ],
+        },
+    },
+
+    // ── signup ──
+    signupFunnel: {
+        href: '/signup-funnel',
+        title: '会員登録フォームファネル',
+        subtitle: '職種選択→各質問→登録完了の通過状況（ラベル変更に自動追従）',
+        category: 'signup',
+        productScoped: true,
+        tags: ['signup', 'form'],
+        doc: {
+            description: '会員登録フォーム（職種選択→各質問→登録完了）の質問別通過状況を view（画面を見た人）と click（回答して進んだ人）の両方で常設表示します。期間内に実際に発火した SU__ ラベルから質問構造を自動復元するため、ABテストのサフィックス（__B-xxxx）やステップ番号の振り直し・質問文変更があってもコード変更なしで追従します。',
+            capabilities: [
+                '職種フォーム別のタブ切り替え（Driver / Soko など、期間内にデータがあるフォームを自動検出）',
+                '質問ごとの view / click / 起点比 / ステップ離脱率（職種選択クリック起点）',
+                'ABテスト変種を質問文ベースで自動統合（変種間でステップ番号がズレていても正しく合算）',
+                '離脱率の色分け（15%以上=赤 / 10%以上=黄）と残存バー',
+                '完走率サマリー（職種選択→登録完了）',
+                '期間切り替え（7 / 14 / 30 / 90日・今月・前月・カスタム日付指定）',
+                '職種別×全体の推移チャート（流入=職種選択クリック / 登録完了=thanks到達を?occ=で職種分解 / 完走率の3指標切替、35日超は週次集約）と職種別合計テーブル',
+                '前期間比較（直前の同じ長さの期間）: 全体サマリーカードと職種別テーブルに流入・完了の変化率（%）と完走率のポイント差（pt）を色付き表示',
+                '推移セクションは上の質問別ファネルとは独立した期間セレクタ（プリセット＋カスタム日付）を持つ',
+            ],
+            metrics: ['totalUsers', 'customEvent:view_label', 'customEvent:click_label', 'pagePathPlusQueryString'],
+            apiRoute: 'POST /api/signup-funnel（推移は POST /api/signup-funnel/trend）',
+        },
+    },
     occupation: {
         href: '/occupation',
         title: '職種別CV分析',
         subtitle: '職種（occ）別の会員登録CV・登録率と事業領域別LP応募CV',
-        category: 'cv',
+        category: 'signup',
         productScoped: true,
         tags: ['signup', 'occupation', 'cv'],
         doc: {
@@ -275,22 +300,44 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/occupation',
         },
     },
-    applyFields: {
-        href: '/apply-fields',
-        title: '応募フォーム項目別タップ',
-        subtitle: '応募種別ごとに各入力項目がどれだけタップ（着手）されているかの発火数',
-        category: 'cv',
-        productScoped: true,
-        tags: ['apply', 'form'],
+    signupStepMails: {
+        href: '/signup-step-mails',
+        title: '会員登録後ステップメール',
+        subtitle: '登録から1/3/7/14/30日後に送る5通の送信数・開封率・クリック率。送達記録＋SESイベントが出典',
+        category: 'signup',
+        tags: ['signup', 'utm'],
         doc: {
-            description: '応募フォームの各入力項目が、応募種別（人材紹介/求人広告/ハローワーク）ごとにどれだけタップ（着手）されたかを data-click-label の発火数で集計する。どの項目で手が止まるかを見る。',
+            description: '会員登録から1/3/7/14/30日後に自動送信される5通のステップメール（drm-front PR#3659、2026-09-24稼働）の実績。送信数は通知基盤の送達記録 DeliveryRecords-prd（DynamoDB、topic=signup_step_mail）、開封・クリック・バウンスは SES イベントを BigQuery に落とした xmile-drm.xwork.ses_event_records が出典で、providerMessageId = message_id で突合します。',
             capabilities: [
-                '応募種別 × 入力項目のタップ数マトリクス',
-                '項目別の着手率（フォーム表示に対する比率）',
-                '期間切替',
+                'ステップ別の送信数・配信成功・開封・クリック・バウンスと開封率／クリック率。未送信ステップは到達待ちの人数を表示',
+                '配信スケジュール（SignupStepMails-prd）の状態別会員数: 配信中 / 完了 / 退会打ち切り / 猶予超過打ち切り',
+                '日別の送信・開封推移',
             ],
             notes: [
-                'JobR/ハローワークは3項目固定、JobA のみ最大8項目。項目数が違うので種別間で単純比較しない',
+                'ステップの識別は件名ではなく sentIdempotencyKey（signup_step_mail:<userId>:<stepKey>）で行う。day7/day14 は氏名・エリアを差し込む可変件名のため件名マッチでは突合できない',
+                '開封率の分母は配信成功（Delivery）。同一メールで開封イベントが複数回立つため message_id で重複除去している',
+                'SESの開封計測は画像読み込み依存で、ブロック環境では低く、Appleのメールプライバシー保護では高く出る。絶対水準ではなくステップ間の差と時系列で見る',
+                'SESイベントのBigQuery連携に遅延があるため、直近の送信は開封が未反映になることがある（突合できなかった通数を画面に表示）',
+                'status=skipped（配信停止・アドレス無しなど、そもそも送る対象でなかった人）は送信失敗と分けて「対象外スキップ」として理由別に表示する。送信数・開封率の分母には含めない',
+            ],
+        },
+    },
+    persona: {
+        href: '/persona',
+        title: '求職者属性・ペルソナ',
+        subtitle: 'Salesforce登録者の年齢層・性別・事業領域(ドライバー等)・転職意欲。領域別にどんな人が来ているかをペルソナ設計用に把握',
+        category: 'signup',
+        tags: ['signup'],
+        doc: {
+            description: 'Salesforce に登録された求職者の属性分布。年齢層・性別・希望勤務地・雇用形態・転職意欲を、事業領域（ドライバー等）または希望職種の軸で切り、どんな人が来ているかをペルソナ設計用に把握する。データはスナップショット（再生成は scripts/regen-persona-snapshot）。',
+            capabilities: [
+                '年齢層（全体）・性別×年齢の分布',
+                '希望勤務地 上位15・希望雇用形態・転職意欲（現在の気持ち）',
+                '事業領域別 / 希望職種別（細分類）のペルソナ切替と横断サマリー',
+            ],
+            notes: [
+                '出典は Salesforce の求職者オブジェクト。GA4 の訪問者ではなく「登録まで至った人」の属性',
+                'スナップショットのため最新ではない。更新日は画面に表示',
             ],
         },
     },
@@ -319,6 +366,27 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/seo-report',
         },
     },
+    utmReport: {
+        href: '/utm-report',
+        title: 'UTM別レポート',
+        subtitle: 'utm_source×medium×campaign別のセッション・CV・円換算。各UTMの意味と発行タイミング注記つき',
+        category: 'channel',
+        productScoped: true,
+        tags: ['utm', 'channel', 'money'],
+        doc: {
+            description: 'utm_source × utm_medium × utm_campaign × utm_content 別に、セッション・ユーザー・CV（応募/LP応募/会員登録）・期待売上換算を集計する汎用ビュー。各UTMが「どの施策のリンクで・いつ発行されるか」を lib/constants/utmCatalog.ts の辞書で注記する。完全な命名規則は docs/utm-naming-convention.md（用語集のUTM節と同期）。',
+            capabilities: [
+                'source×medium×campaign×content別のセッション・ユーザー・CV・CVR・期待売上換算（CV単価係数）',
+                '各行に施策名・発行タイミング・区分バッジ（自社通知/LINE公式/CA配信/スカウト配信/広告/インフルエンサー等）を注記',
+                'utm_content が何を分けているかも注記（自社メール=配信内のリンク位置、スカウトSMS=文面AB featured_a/featured_b、広告=クリエイティブID）。「utm_contentで分ける」トグルでcampaign粒度に畳める',
+                'medium別フィルタ（email/line/social/sms/cpc/referral…）とサマリー（対象セッション・CV・円換算・UTM種類数）',
+                'keep_remider（keep_reminderのタイポ）等のコード側既知の不具合を⚠️注記',
+                '注: GA4はUTMをセッション開始時のみ読むため、サイト内リンクUTM（フッター等 utm_source=xwork/thanks）は表示されない（流入UTMのみが対象）',
+            ],
+            metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium', 'sessionCampaignName', 'sessionManualAdContent'],
+            apiRoute: 'POST /api/utm-report',
+        },
+    },
     lineReport: {
         href: '/line-report',
         title: 'LINEレポート',
@@ -343,172 +411,11 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/line-report, POST /api/line-report/associations',
         },
     },
-    utmReport: {
-        href: '/utm-report',
-        title: 'UTM別レポート',
-        subtitle: 'utm_source×medium×campaign別のセッション・CV・円換算。各UTMの意味と発行タイミング注記つき',
-        category: 'channel',
-        productScoped: true,
-        tags: ['utm', 'channel', 'money'],
-        doc: {
-            description: 'utm_source × utm_medium × utm_campaign × utm_content 別に、セッション・ユーザー・CV（応募/LP応募/会員登録）・期待売上換算を集計する汎用ビュー。各UTMが「どの施策のリンクで・いつ発行されるか」を lib/constants/utmCatalog.ts の辞書で注記する。完全な命名規則は docs/utm-naming-convention.md（用語集のUTM節と同期）。',
-            capabilities: [
-                'source×medium×campaign×content別のセッション・ユーザー・CV・CVR・期待売上換算（CV単価係数）',
-                '各行に施策名・発行タイミング・区分バッジ（自社通知/LINE公式/CA配信/スカウト配信/広告/インフルエンサー等）を注記',
-                'utm_content が何を分けているかも注記（自社メール=配信内のリンク位置、スカウトSMS=文面AB featured_a/featured_b、広告=クリエイティブID）。「utm_contentで分ける」トグルでcampaign粒度に畳める',
-                'medium別フィルタ（email/line/social/sms/cpc/referral…）とサマリー（対象セッション・CV・円換算・UTM種類数）',
-                'keep_remider（keep_reminderのタイポ）等のコード側既知の不具合を⚠️注記',
-                '注: GA4はUTMをセッション開始時のみ読むため、サイト内リンクUTM（フッター等 utm_source=xwork/thanks）は表示されない（流入UTMのみが対象）',
-            ],
-            metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium', 'sessionCampaignName', 'sessionManualAdContent'],
-            apiRoute: 'POST /api/utm-report',
-        },
-    },
-    signupStepMails: {
-        href: '/signup-step-mails',
-        title: '会員登録後ステップメール',
-        subtitle: '登録から1/3/7/14/30日後に送る5通の送信数・開封率・クリック率。送達記録＋SESイベントが出典',
-        category: 'channel',
-        tags: ['signup', 'utm'],
-        doc: {
-            description: '会員登録から1/3/7/14/30日後に自動送信される5通のステップメール（drm-front PR#3659、2026-09-24稼働）の実績。送信数は通知基盤の送達記録 DeliveryRecords-prd（DynamoDB、topic=signup_step_mail）、開封・クリック・バウンスは SES イベントを BigQuery に落とした xmile-drm.xwork.ses_event_records が出典で、providerMessageId = message_id で突合します。',
-            capabilities: [
-                'ステップ別の送信数・配信成功・開封・クリック・バウンスと開封率／クリック率。未送信ステップは到達待ちの人数を表示',
-                '配信スケジュール（SignupStepMails-prd）の状態別会員数: 配信中 / 完了 / 退会打ち切り / 猶予超過打ち切り',
-                '日別の送信・開封推移',
-            ],
-            notes: [
-                'ステップの識別は件名ではなく sentIdempotencyKey（signup_step_mail:<userId>:<stepKey>）で行う。day7/day14 は氏名・エリアを差し込む可変件名のため件名マッチでは突合できない',
-                '開封率の分母は配信成功（Delivery）。同一メールで開封イベントが複数回立つため message_id で重複除去している',
-                'SESの開封計測は画像読み込み依存で、ブロック環境では低く、Appleのメールプライバシー保護では高く出る。絶対水準ではなくステップ間の差と時系列で見る',
-                'SESイベントのBigQuery連携に遅延があるため、直近の送信は開封が未反映になることがある（突合できなかった通数を画面に表示）',
-                'status=skipped（配信停止・アドレス無しなど、そもそも送る対象でなかった人）は送信失敗と分けて「対象外スキップ」として理由別に表示する。送信数・開封率の分母には含めない',
-            ],
-        },
-    },
-
-    // ── abtest ──
-    abTest: {
-        href: '/ab-test',
-        title: 'ABテスト',
-        subtitle: 'ABテスト結果の分析と評価',
-        category: 'abtest',
-        productScoped: true,
-        productIdInHref: true,
-        tags: ['abtest'],
-        doc: {
-            description: 'GA4 データをソースとした A/B テストの管理・実行・評価を行います。統計的有意差検定（Z検定）・サンプルサイズ・改善率の判定基準を設定し、AI が勝者の推奨を補足します。',
-            capabilities: [
-                'テスト作成・編集・ステータス管理（running / paused / completed）',
-                'CVR設定のGTMラベルは1行=1ラベルで複数指定（実ラベルのオートコンプリート付き）。複数指定時は途中経過・テスト実行結果にラベル別内訳（件数・構成比）を表示',
-                'Backlog Issue欄（番号・課題キー・URLのいずれか）。一覧・詳細にリンク表示',
-                'GA4フィルタ・除外フィルタ（例: pageLocation に userId= を含むイベントを除外し、LP経由ユーザーを除いた直接流入のみでCVR比較）',
-                'フィルタ式を複数指定（カンマ区切りOR）した場合、途中経過・最終結果で「全体⇔フィルタ式別」を切り替えて内訳（PV/CV/CVR・有意差）を表示',
-                'Z検定による統計的有意差判定',
-                'サンプルサイズ・テスト期間・改善率の合否チェック',
-                'スケジュール実行・Webhook 通知',
-                '勝者判定後の AI 評価コメント',
-                'セグメント別（デバイス / チャネルなど）の内訳確認',
-                '途中経過ファネルのビュー基準 / クリック基準 切り替え（ビュー計測の取りこぼしをクリック実数と比較検証できる）',
-                '途中経過ファネルの「LP経由を除く」トグル（テストの除外フィルタ設定を全ステップ集計に適用し、直接流入のみのファネルを表示）',
-                'テスト終了時の AI 最終レポート自動生成（結果サマリー・仮説検証・勝因敗因・学び・次のアクション。クリック基準ファネルを判断材料に含め、どのステップで差がついたかを分析）',
-                '最終レポートの BigQuery 蓄積（ab_test_final_report_log）',
-            ],
-            ai: true,
-            apiRoute: 'GET /api/ab-test, POST /api/ab-test/evaluate',
-        },
-    },
-    abTestAdvisor: {
-        href: '/ab-test/advisor',
-        title: '施策提案AI壁打ち',
-        subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価',
-        category: 'abtest',
-        productScoped: true,
-        tags: ['abtest', 'ai'],
-        doc: {
-            description: '検討中の施策・ABテスト案を入力すると、過去 AB テストの勝因・敗因に加えて事業の実測データ（CV単価・直近30日のファネル/チャネル/主要面の規模）をコンテキストに、AI が成功確度・金額換算インパクト・推奨テスト設計を回答します。',
-            capabilities: [
-                '過去 AB テスト実績（勝者・改善率・有意差・勝因敗因メモ・最終レポート）との照合',
-                '類似する過去施策の提示と成功確度評価（高 / 中 / 低）',
-                '事業コンテキスト注入: CV単価係数（cvUnitValue.ts）＋GA4直近30日実測（種別ファネル・会員登録・一覧UU・チャネル構成）を毎回自動取得してプロンプトに同梱（GA4障害時は単価のみで続行）',
-                '想定インパクトの金額換算（対象規模×リフトシナリオ×CV単価で「+◯万円/月」を提示、不明数値は捏造せず要実測と明示）',
-                'リスク・落とし穴の指摘と成功確度を上げる修正案',
-                '推奨テスト設計（仮説文・主要KPI・期間・検出力の概算式つき）',
-                '参照した過去 AB テストへのリンク表示',
-            ],
-            ai: true,
-            apiRoute: 'POST /api/ab-test/advisor',
-        },
-    },
-    abTestCompleted: {
-        href: '/ab-test/completed',
-        title: 'ABテスト完了一覧',
-        subtitle: '完了したABテストの勝利・負けと改善率',
-        category: 'abtest',
-        productScoped: true,
-        productIdInHref: true,
-        tags: ['abtest'],
-        doc: {
-            description: '完了した AB テストの一覧。勝利/敗北の判定と A 比の改善率を一覧で振り返り、施策提案AI壁打ちの材料にもなる。',
-            capabilities: [
-                '完了テストの一覧（勝者バリアント・改善率・期間）',
-                '詳細ページへの導線',
-            ],
-        },
-    },
-
-    // ── funnel ──
-    signupFunnel: {
-        href: '/signup-funnel',
-        title: '会員登録フォームファネル',
-        subtitle: '職種選択→各質問→登録完了の通過状況（ラベル変更に自動追従）',
-        category: 'funnel',
-        productScoped: true,
-        tags: ['signup', 'form'],
-        doc: {
-            description: '会員登録フォーム（職種選択→各質問→登録完了）の質問別通過状況を view（画面を見た人）と click（回答して進んだ人）の両方で常設表示します。期間内に実際に発火した SU__ ラベルから質問構造を自動復元するため、ABテストのサフィックス（__B-xxxx）やステップ番号の振り直し・質問文変更があってもコード変更なしで追従します。',
-            capabilities: [
-                '職種フォーム別のタブ切り替え（Driver / Soko など、期間内にデータがあるフォームを自動検出）',
-                '質問ごとの view / click / 起点比 / ステップ離脱率（職種選択クリック起点）',
-                'ABテスト変種を質問文ベースで自動統合（変種間でステップ番号がズレていても正しく合算）',
-                '離脱率の色分け（15%以上=赤 / 10%以上=黄）と残存バー',
-                '完走率サマリー（職種選択→登録完了）',
-                '期間切り替え（7 / 14 / 30 / 90日・今月・前月・カスタム日付指定）',
-                '職種別×全体の推移チャート（流入=職種選択クリック / 登録完了=thanks到達を?occ=で職種分解 / 完走率の3指標切替、35日超は週次集約）と職種別合計テーブル',
-                '前期間比較（直前の同じ長さの期間）: 全体サマリーカードと職種別テーブルに流入・完了の変化率（%）と完走率のポイント差（pt）を色付き表示',
-                '推移セクションは上の質問別ファネルとは独立した期間セレクタ（プリセット＋カスタム日付）を持つ',
-            ],
-            metrics: ['totalUsers', 'customEvent:view_label', 'customEvent:click_label', 'pagePathPlusQueryString'],
-            apiRoute: 'POST /api/signup-funnel（推移は POST /api/signup-funnel/trend）',
-        },
-    },
-    funnel: {
-        href: '/funnel',
-        title: 'エントリーフォームファネル',
-        subtitle: 'フォーム完了までの導線分析',
-        category: 'funnel',
-        productScoped: true,
-        productIdInHref: true,
-        tags: ['apply', 'form'],
-        doc: {
-            description: 'フォームの各ステップ（表示→入力→確認→完了）の通過率と離脱率を測定します。期間比較で施策前後の CVR 変化を定量評価できます。',
-            capabilities: [
-                'ステップ別ユーザー数・CVR・離脱率',
-                '期間比較ファネル（A/B 期間の並列表示）',
-                'ステップ間の落ち込み可視化',
-                '期間比較時のチャネル別内訳（チャネルごとのセッション・CV・CVR の期間差分）',
-                'AI によるファネル評価・期間比較インサイト（チャネル別変化を含む）',
-            ],
-            metrics: ['activeUsers', 'eventCount'],
-            ai: true,
-            apiRoute: 'GET /api/funnel/entry-form',
-        },
-    },
     scout: {
         href: '/scout',
         title: 'スカウト効果ファネル',
         subtitle: 'スカウト送信→閲覧→応募のファネルと企業別内訳',
-        category: 'funnel',
+        category: 'channel',
         productScoped: true,
         tags: ['scout', 'channel', 'apply'],
         doc: {
@@ -524,72 +431,13 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/scout/funnel',
         },
     },
-    funnelEngagement: {
-        href: '/funnel/engagement',
-        title: 'エンゲージメント',
-        subtitle: 'エンゲージメントファネル分析',
-        category: 'funnel',
-        productScoped: true,
-        productIdInHref: true,
-        tags: ['engagement'],
-        doc: {
-            description: 'ページ滞在時間の長さ（10秒 / 30秒 / 60秒 / 3分以上）をファネル形式で可視化し、コンテンツへの深いエンゲージメントを測定します。',
-            capabilities: [
-                '滞在時間しきい値別の到達率（10s / 30s / 60s / 180s）',
-                '複数ページの比較',
-                'AI によるエンゲージメント傾向分析',
-            ],
-            metrics: ['userEngagementDuration', 'activeUsers'],
-            ai: true,
-            apiRoute: 'GET /api/funnel/engagement',
-        },
-    },
-    funnelPath: {
-        href: '/funnel/path',
-        title: '経路ファネルビルダー',
-        subtitle: 'ページ・クリックタグを組み合わせた順序付きファネルを自由に作成',
-        category: 'funnel',
-        productScoped: true,
-        tags: ['path'],
-        doc: {
-            description: 'ページ閲覧とクリックタグ（GTMラベル）を自由に組み合わせて、同一ユーザーの順序付きクローズドファネルを作成します。「トップ→検索モーダル→検索結果→求人詳細→応募」のような導線別の通過率比較に使えます。',
-            capabilities: [
-                'ステップをUIで自由に構築（2〜10個、ページ / クリックタグ混在可、並べ替え対応）',
-                'GA4 の順序付きクローズドファネル（Data API v1alpha runFunnelReport）で同一ユーザーの通過を集計',
-                'ステップ別ユーザー数・通過率・離脱数・起点比の可視化',
-                'プリセット2種（王道経路 / 職種直リンク導線）とブラウザ内保存',
-                '複数ファネル比較（プリセット・保存済みから2〜4個選んで通過率を横並び比較、全体通過率つき）',
-                '期間切り替え（7 / 14 / 30 / 90日）',
-            ],
-            metrics: ['activeUsers', 'unifiedPagePathScreen', 'customEvent:click_label'],
-            apiRoute: 'POST /api/funnel/path',
-        },
-    },
 
-    // ── visual ──
-    heatmap: {
-        href: '/heatmap',
-        title: 'ヒートマップ',
-        subtitle: 'クリック位置とスクロール深度の可視化',
-        category: 'visual',
-        productScoped: true,
-        productIdInHref: true,
-        tags: ['form', 'engagement'],
-        doc: {
-            description: 'GTM 経由で収集したクリック座標・スクロール深度をヒートマップとして可視化します。ページのどの要素が注目されているかを視覚的に把握できます。',
-            capabilities: [
-                'クリックヒートマップ（座標密度表示）',
-                'スクロール深度マップ',
-                'ビュー別ラベル管理',
-            ],
-            apiRoute: 'GET /api/heatmap/view-labels',
-        },
-    },
+    // ── behavior ──
     journey: {
         href: '/journey',
         title: 'ユーザー経路分析',
         subtitle: '来訪から会員登録完了までのフロー可視化',
-        category: 'visual',
+        category: 'behavior',
         productScoped: true,
         tags: ['path', 'exit'],
         doc: {
@@ -607,32 +455,11 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/journey',
         },
     },
-    exit: {
-        href: '/exit',
-        title: '離脱分析',
-        subtitle: 'ファネルの各ステップの離脱数・離脱率の高いページを特定',
-        category: 'visual',
-        productScoped: true,
-        tags: ['exit'],
-        doc: {
-            description: 'ファネル各ステップの離脱数・離脱率と、離脱率の高いページを特定します。行動シグナル（平均滞在時間・スクロール到達率）を組み合わせ、AI が離脱の質（即離脱か読了後離脱か）を判定します。',
-            capabilities: [
-                'ファネルステップ別の離脱数・離脱率',
-                '離脱率ランキング',
-                'ページ別の詳細離脱指標',
-                '行動シグナル表示（平均滞在時間・スクロール到達率90%）',
-                'AI による離脱の質の分析（即離脱＝第一印象の問題 / 読了後離脱＝訴求・導線の問題）と改善提案',
-            ],
-            metrics: ['screenPageViews', 'bounceRate', 'engagementRate', 'scrolledUsers', 'userEngagementDuration'],
-            ai: true,
-            apiRoute: 'POST /api/exit, POST /api/exit/gemini',
-        },
-    },
     pageflow: {
         href: '/pageflow',
         title: 'ページフロー分析',
         subtitle: '指定ページの直前・直後の遷移ページを両方向で集計',
-        category: 'visual',
+        category: 'behavior',
         productScoped: true,
         tags: ['path'],
         doc: {
@@ -649,11 +476,53 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/pageflow',
         },
     },
+    exit: {
+        href: '/exit',
+        title: '離脱分析',
+        subtitle: 'ファネルの各ステップの離脱数・離脱率の高いページを特定',
+        category: 'behavior',
+        productScoped: true,
+        tags: ['exit'],
+        doc: {
+            description: 'ファネル各ステップの離脱数・離脱率と、離脱率の高いページを特定します。行動シグナル（平均滞在時間・スクロール到達率）を組み合わせ、AI が離脱の質（即離脱か読了後離脱か）を判定します。',
+            capabilities: [
+                'ファネルステップ別の離脱数・離脱率',
+                '離脱率ランキング',
+                'ページ別の詳細離脱指標',
+                '行動シグナル表示（平均滞在時間・スクロール到達率90%）',
+                'AI による離脱の質の分析（即離脱＝第一印象の問題 / 読了後離脱＝訴求・導線の問題）と改善提案',
+            ],
+            metrics: ['screenPageViews', 'bounceRate', 'engagementRate', 'scrolledUsers', 'userEngagementDuration'],
+            ai: true,
+            apiRoute: 'POST /api/exit, POST /api/exit/gemini',
+        },
+    },
+    funnelPath: {
+        href: '/funnel/path',
+        title: '経路ファネルビルダー',
+        subtitle: 'ページ・クリックタグを組み合わせた順序付きファネルを自由に作成',
+        category: 'behavior',
+        productScoped: true,
+        tags: ['path'],
+        doc: {
+            description: 'ページ閲覧とクリックタグ（GTMラベル）を自由に組み合わせて、同一ユーザーの順序付きクローズドファネルを作成します。「トップ→検索モーダル→検索結果→求人詳細→応募」のような導線別の通過率比較に使えます。',
+            capabilities: [
+                'ステップをUIで自由に構築（2〜10個、ページ / クリックタグ混在可、並べ替え対応）',
+                'GA4 の順序付きクローズドファネル（Data API v1alpha runFunnelReport）で同一ユーザーの通過を集計',
+                'ステップ別ユーザー数・通過率・離脱数・起点比の可視化',
+                'プリセット2種（王道経路 / 職種直リンク導線）とブラウザ内保存',
+                '複数ファネル比較（プリセット・保存済みから2〜4個選んで通過率を横並び比較、全体通過率つき）',
+                '期間切り替え（7 / 14 / 30 / 90日）',
+            ],
+            metrics: ['activeUsers', 'unifiedPagePathScreen', 'customEvent:click_label'],
+            apiRoute: 'POST /api/funnel/path',
+        },
+    },
     listPerformance: {
         href: '/list-performance',
         title: '求人一覧パフォーマンス',
         subtitle: '職種一覧と/searchのPV・求人詳細への遷移率を比較（BQセッション集計）',
-        category: 'visual',
+        category: 'behavior',
         productScoped: true,
         tags: ['path', 'bq'],
         doc: {
@@ -667,32 +536,11 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/list-performance',
         },
     },
-
-    // ── users ──
-    persona: {
-        href: '/persona',
-        title: '求職者属性・ペルソナ',
-        subtitle: 'Salesforce登録者の年齢層・性別・事業領域(ドライバー等)・転職意欲。領域別にどんな人が来ているかをペルソナ設計用に把握',
-        category: 'users',
-        tags: ['signup'],
-        doc: {
-            description: 'Salesforce に登録された求職者の属性分布。年齢層・性別・希望勤務地・雇用形態・転職意欲を、事業領域（ドライバー等）または希望職種の軸で切り、どんな人が来ているかをペルソナ設計用に把握する。データはスナップショット（再生成は scripts/regen-persona-snapshot）。',
-            capabilities: [
-                '年齢層（全体）・性別×年齢の分布',
-                '希望勤務地 上位15・希望雇用形態・転職意欲（現在の気持ち）',
-                '事業領域別 / 希望職種別（細分類）のペルソナ切替と横断サマリー',
-            ],
-            notes: [
-                '出典は Salesforce の求職者オブジェクト。GA4 の訪問者ではなく「登録まで至った人」の属性',
-                'スナップショットのため最新ではない。更新日は画面に表示',
-            ],
-        },
-    },
     userFlow: {
         href: '/user/flow',
         title: 'CVセッション解剖（BQ）',
         subtitle: '応募・登録セッションの行動量と求人詳細後の次アクション（BigQuery生イベント）',
-        category: 'users',
+        category: 'behavior',
         productScoped: true,
         tags: ['bq', 'path', 'cv'],
         doc: {
@@ -709,6 +557,26 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/user-flow',
         },
     },
+    heatmap: {
+        href: '/heatmap',
+        title: 'ヒートマップ',
+        subtitle: 'クリック位置とスクロール深度の可視化',
+        category: 'behavior',
+        productScoped: true,
+        productIdInHref: true,
+        tags: ['form', 'engagement'],
+        doc: {
+            description: 'GTM 経由で収集したクリック座標・スクロール深度をヒートマップとして可視化します。ページのどの要素が注目されているかを視覚的に把握できます。',
+            capabilities: [
+                'クリックヒートマップ（座標密度表示）',
+                'スクロール深度マップ',
+                'ビュー別ラベル管理',
+            ],
+            apiRoute: 'GET /api/heatmap/view-labels',
+        },
+    },
+
+    // ── users ──
     user: {
         href: '/user',
         title: 'セグメント行動分析',
@@ -748,23 +616,25 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/user/cohort',
         },
     },
-    userSegmentBuilder: {
-        href: '/user/segment-builder',
-        title: 'ユーザーリスト抽出',
-        subtitle: '条件を組み合わせてセグメントのユーザー数・行動傾向を確認',
+    userStickiness: {
+        href: '/user/stickiness',
+        title: 'スティッキネス分析',
+        subtitle: 'DAU/WAU/MAUの推移とエンゲージメント深度',
         category: 'users',
         productScoped: true,
-        tags: ['engagement'],
+        tags: ['retention', 'engagement'],
         doc: {
-            description: 'デバイス・流入元・PV数などの条件を組み合わせてユーザーをフィルタリングし、該当ユーザー数と行動傾向を確認します。CRM 連携やリターゲティング施策の対象絞り込みに使います。',
+            description: 'DAU / WAU / MAU の推移を可視化し、DAU/MAU 比（スティッキネス）でユーザーエンゲージメントの深さを測定します。2期間比較モードで施策前後の変化を定量評価できます。',
             capabilities: [
-                '複数条件の AND 絞り込み',
-                'デバイス / OS / ブラウザ / 流入元 / 国 での絞り込み',
-                'セッション数・PV数 の範囲指定',
-                '該当ユーザー数と行動サマリの確認',
+                'DAU / WAU / MAU の日次推移グラフ',
+                'DAU/MAU スティッキネス（20%以上: 高、10-20%: 中、10%未満: 低）',
+                '期間比較モード（期間A vs 期間B の指標比較と変化率）',
+                '相対日数での DAU / MAU オーバーレイグラフ',
+                'AI によるエンゲージメント評価と改善提案',
             ],
-            metrics: ['activeUsers', 'sessions', 'screenPageViews', 'deviceCategory', 'sessionSource'],
-            apiRoute: 'POST /api/user/segment-builder',
+            metrics: ['activeUsers', 'active7DayUsers', 'active28DayUsers', 'sessions'],
+            ai: true,
+            apiRoute: 'POST /api/user/stickiness',
         },
     },
     userScoring: {
@@ -788,25 +658,113 @@ export const PAGES: Record<PageId, PageDef> = {
             apiRoute: 'POST /api/user/scoring',
         },
     },
-    userStickiness: {
-        href: '/user/stickiness',
-        title: 'スティッキネス分析',
-        subtitle: 'DAU/WAU/MAUの推移とエンゲージメント深度',
+    userSegmentBuilder: {
+        href: '/user/segment-builder',
+        title: 'ユーザーリスト抽出',
+        subtitle: '条件を組み合わせてセグメントのユーザー数・行動傾向を確認',
         category: 'users',
         productScoped: true,
-        tags: ['retention', 'engagement'],
+        tags: ['engagement'],
         doc: {
-            description: 'DAU / WAU / MAU の推移を可視化し、DAU/MAU 比（スティッキネス）でユーザーエンゲージメントの深さを測定します。2期間比較モードで施策前後の変化を定量評価できます。',
+            description: 'デバイス・流入元・PV数などの条件を組み合わせてユーザーをフィルタリングし、該当ユーザー数と行動傾向を確認します。CRM 連携やリターゲティング施策の対象絞り込みに使います。',
             capabilities: [
-                'DAU / WAU / MAU の日次推移グラフ',
-                'DAU/MAU スティッキネス（20%以上: 高、10-20%: 中、10%未満: 低）',
-                '期間比較モード（期間A vs 期間B の指標比較と変化率）',
-                '相対日数での DAU / MAU オーバーレイグラフ',
-                'AI によるエンゲージメント評価と改善提案',
+                '複数条件の AND 絞り込み',
+                'デバイス / OS / ブラウザ / 流入元 / 国 での絞り込み',
+                'セッション数・PV数 の範囲指定',
+                '該当ユーザー数と行動サマリの確認',
             ],
-            metrics: ['activeUsers', 'active7DayUsers', 'active28DayUsers', 'sessions'],
+            metrics: ['activeUsers', 'sessions', 'screenPageViews', 'deviceCategory', 'sessionSource'],
+            apiRoute: 'POST /api/user/segment-builder',
+        },
+    },
+    funnelEngagement: {
+        href: '/funnel/engagement',
+        title: 'エンゲージメント',
+        subtitle: 'エンゲージメントファネル分析',
+        category: 'users',
+        productScoped: true,
+        productIdInHref: true,
+        tags: ['engagement'],
+        doc: {
+            description: 'ページ滞在時間の長さ（10秒 / 30秒 / 60秒 / 3分以上）をファネル形式で可視化し、コンテンツへの深いエンゲージメントを測定します。',
+            capabilities: [
+                '滞在時間しきい値別の到達率（10s / 30s / 60s / 180s）',
+                '複数ページの比較',
+                'AI によるエンゲージメント傾向分析',
+            ],
+            metrics: ['userEngagementDuration', 'activeUsers'],
             ai: true,
-            apiRoute: 'POST /api/user/stickiness',
+            apiRoute: 'GET /api/funnel/engagement',
+        },
+    },
+
+    // ── abtest ──
+    abTest: {
+        href: '/ab-test',
+        title: 'ABテスト',
+        subtitle: 'ABテスト結果の分析と評価',
+        category: 'abtest',
+        productScoped: true,
+        productIdInHref: true,
+        tags: ['abtest'],
+        doc: {
+            description: 'GA4 データをソースとした A/B テストの管理・実行・評価を行います。統計的有意差検定（Z検定）・サンプルサイズ・改善率の判定基準を設定し、AI が勝者の推奨を補足します。',
+            capabilities: [
+                'テスト作成・編集・ステータス管理（running / paused / completed）',
+                'CVR設定のGTMラベルは1行=1ラベルで複数指定（実ラベルのオートコンプリート付き）。複数指定時は途中経過・テスト実行結果にラベル別内訳（件数・構成比）を表示',
+                'Backlog Issue欄（番号・課題キー・URLのいずれか）。一覧・詳細にリンク表示',
+                'GA4フィルタ・除外フィルタ（例: pageLocation に userId= を含むイベントを除外し、LP経由ユーザーを除いた直接流入のみでCVR比較）',
+                'フィルタ式を複数指定（カンマ区切りOR）した場合、途中経過・最終結果で「全体⇔フィルタ式別」を切り替えて内訳（PV/CV/CVR・有意差）を表示',
+                'Z検定による統計的有意差判定',
+                'サンプルサイズ・テスト期間・改善率の合否チェック',
+                'スケジュール実行・Webhook 通知',
+                '勝者判定後の AI 評価コメント',
+                'セグメント別（デバイス / チャネルなど）の内訳確認',
+                '途中経過ファネルのビュー基準 / クリック基準 切り替え（ビュー計測の取りこぼしをクリック実数と比較検証できる）',
+                '途中経過ファネルの「LP経由を除く」トグル（テストの除外フィルタ設定を全ステップ集計に適用し、直接流入のみのファネルを表示）',
+                'テスト終了時の AI 最終レポート自動生成（結果サマリー・仮説検証・勝因敗因・学び・次のアクション。クリック基準ファネルを判断材料に含め、どのステップで差がついたかを分析）',
+                '最終レポートの BigQuery 蓄積（ab_test_final_report_log）',
+            ],
+            ai: true,
+            apiRoute: 'GET /api/ab-test, POST /api/ab-test/evaluate',
+        },
+    },
+    abTestCompleted: {
+        href: '/ab-test/completed',
+        title: 'ABテスト完了一覧',
+        subtitle: '完了したABテストの勝利・負けと改善率',
+        category: 'abtest',
+        productScoped: true,
+        productIdInHref: true,
+        tags: ['abtest'],
+        doc: {
+            description: '完了した AB テストの一覧。勝利/敗北の判定と A 比の改善率を一覧で振り返り、施策提案AI壁打ちの材料にもなる。',
+            capabilities: [
+                '完了テストの一覧（勝者バリアント・改善率・期間）',
+                '詳細ページへの導線',
+            ],
+        },
+    },
+    abTestAdvisor: {
+        href: '/ab-test/advisor',
+        title: '施策提案AI壁打ち',
+        subtitle: '過去ABテストの勝因・敗因をもとにAIが施策提案を評価',
+        category: 'abtest',
+        productScoped: true,
+        tags: ['abtest', 'ai'],
+        doc: {
+            description: '検討中の施策・ABテスト案を入力すると、過去 AB テストの勝因・敗因に加えて事業の実測データ（CV単価・直近30日のファネル/チャネル/主要面の規模）をコンテキストに、AI が成功確度・金額換算インパクト・推奨テスト設計を回答します。',
+            capabilities: [
+                '過去 AB テスト実績（勝者・改善率・有意差・勝因敗因メモ・最終レポート）との照合',
+                '類似する過去施策の提示と成功確度評価（高 / 中 / 低）',
+                '事業コンテキスト注入: CV単価係数（cvUnitValue.ts）＋GA4直近30日実測（種別ファネル・会員登録・一覧UU・チャネル構成）を毎回自動取得してプロンプトに同梱（GA4障害時は単価のみで続行）',
+                '想定インパクトの金額換算（対象規模×リフトシナリオ×CV単価で「+◯万円/月」を提示、不明数値は捏造せず要実測と明示）',
+                'リスク・落とし穴の指摘と成功確度を上げる修正案',
+                '推奨テスト設計（仮説文・主要KPI・期間・検出力の概算式つき）',
+                '参照した過去 AB テストへのリンク表示',
+            ],
+            ai: true,
+            apiRoute: 'POST /api/ab-test/advisor',
         },
     },
 
@@ -877,11 +835,51 @@ export const PAGES: Record<PageId, PageDef> = {
             ],
         },
     },
+
+    // ── settings ──
+    products: {
+        href: '/products',
+        title: 'プロダクト管理',
+        subtitle: 'プロダクトの設定と管理',
+        category: 'settings',
+        doc: {
+            description: 'ダッシュボードが扱うプロダクト（GA4プロパティ）の登録・編集。各ページの「プロダクト」セレクタの選択肢になる。',
+            capabilities: [
+                'プロダクト名・GA4プロパティIDの登録・編集',
+                'サイドバー上部のプロダクト切替の元データ',
+            ],
+        },
+    },
+    alerts: {
+        href: '/alerts',
+        title: 'アラート設定',
+        subtitle: 'CV急落アラートのしきい値・監視対象指標の設定',
+        category: 'settings',
+        tags: ['cv'],
+        doc: {
+            description: '毎日 09:30 JST に前日の指標を過去8週の同一曜日の中央値と比較してSlack通知します。全体指標（セッション・CV・CVR）の急落に加え、セグメント別（ページカテゴリ別の閲覧、CV種別×チャネル別）は急増（スパイク）も検知します。SEO順位変動・キャンペーン・bot流入・タグ事故は全体値に埋もれてセグメント単位で先に現れるため。',
+            capabilities: [
+                '曜日変動対策（過去8週の同一曜日と比較）・スパイク対策（平均でなく中央値）',
+                '全体指標の急落検知: セッション数 / 応募CV / LP応募CV / 会員登録CV / 全体CVR（しきい値デフォルト-30%）',
+                'ページカテゴリ別の急増・急落検知: 求人詳細 / 検索・一覧 / TOP / コラム / 会員登録フォーム / 応募フォーム の閲覧ユーザー（急増はデフォルト+50%、CV_SPIKE_ALERT_THRESHOLDで変更可）。発火時は変動に効いた個別ページ上位5件を添付',
+                'CV種別×チャネル別の急増・急落検知: 応募CV/LP応募CV/会員登録CV × sessionDefaultChannelGroup（例: 会員登録CV×Organic Searchの急増）',
+                'しきい値未満のノイズ除去（ベースラインが小さすぎるセグメントは判定しない。急増側はベースラインほぼ0からの出現も拾う）',
+                '統計ガード: %しきい値に加えて中央値からポアソン3σ以上の乖離を必須化。中央値が小さい指標・セグメントが日次ゆらぎ（±√n）で発火し続けるのを防ぐ（バックテスト実測で誤報75%削減: 2.8件/日→0.7件/日。全体指標側にも適用、CVRは期待CV数との乖離で判定）',
+                '発火時の原因ドリルダウン（チャネル別・デバイス別・ページ別の下落幅内訳を自動集計）',
+                'AI 原因仮説（内訳データと整合する原因候補と確認ポイントを生成）',
+                'Slack 通知（📊セグメント変動は急増/急落をまとめて1メッセージ、🚨全体CV急落は従来どおり）',
+                'プロダクト別設定画面（有効/無効・下落しきい値・最小ベースライン・監視対象の指標/セグメントのトグル）',
+            ],
+            metrics: ['sessions', 'totalUsers', 'sessionDefaultChannelGroup', 'deviceCategory'],
+            ai: true,
+            apiRoute: 'POST /api/alerts/cv-drop',
+        },
+    },
     aiUsage: {
         href: '/ai-usage',
         title: 'AI利用状況',
         subtitle: 'AI API使用量・コスト確認',
-        category: 'tools',
+        category: 'settings',
         tags: ['ai'],
         doc: {
             description: 'Gemini API の呼び出し回数・トークン・概算コストを機能別に集計する。AI分析機能のコスト監視用。',
@@ -892,26 +890,11 @@ export const PAGES: Record<PageId, PageDef> = {
             ],
         },
     },
-
-    // ── docs ──
-    docsApi: {
-        href: '/docs/api',
-        title: 'API ドキュメント',
-        subtitle: 'API エンドポイント一覧と説明',
-        category: 'docs',
-        doc: {
-            description: 'ダッシュボードの API エンドポイント一覧。メソッド・パス・パラメータ・レスポンスの説明をカテゴリ別に掲載する。',
-            capabilities: [
-                'カテゴリ別エンドポイント一覧',
-                'パラメータ・レスポンス注記',
-            ],
-        },
-    },
     docsFeatures: {
         href: '/docs/features',
         title: '機能ドキュメント',
         subtitle: '全機能の概要・使い方・GA4メトリクス一覧',
-        category: 'docs',
+        category: 'settings',
         doc: {
             description: '全機能の概要・できること・使用メトリクス・読むときの注意をまとめた機能ドキュメント。このページ自身もここから生成されている。',
             capabilities: [
@@ -920,11 +903,24 @@ export const PAGES: Record<PageId, PageDef> = {
             ],
         },
     },
+    docsApi: {
+        href: '/docs/api',
+        title: 'API ドキュメント',
+        subtitle: 'API エンドポイント一覧と説明',
+        category: 'settings',
+        doc: {
+            description: 'ダッシュボードの API エンドポイント一覧。メソッド・パス・パラメータ・レスポンスの説明をカテゴリ別に掲載する。',
+            capabilities: [
+                'カテゴリ別エンドポイント一覧',
+                'パラメータ・レスポンス注記',
+            ],
+        },
+    },
     docsGlossary: {
         href: '/docs/glossary',
         title: '用語・ドメイン知識',
         subtitle: '事業用語・CV定義・GTM/GA4計測仕様・データ基盤のリファレンス',
-        category: 'docs',
+        category: 'settings',
         doc: {
             description: '事業用語・契約種別・CV定義・CV単価・応募ソース・URL構造・GTM/GA4計測仕様・UTM命名規則・データ基盤・過去インシデントのリファレンス。',
             capabilities: [
@@ -970,7 +966,7 @@ export const PAGES: Record<PageId, PageDef> = {
         href: '/funnel/history',
         title: 'ファネル実行履歴',
         subtitle: 'エントリーフォームファネルの実行履歴',
-        category: 'funnel',
+        category: 'tools',
         nav: false,
         parent: 'funnel',
     },
@@ -978,7 +974,7 @@ export const PAGES: Record<PageId, PageDef> = {
         href: '/funnel/[executionId]',
         title: 'ファネル実行結果',
         subtitle: '1回のファネル実行の詳細',
-        category: 'funnel',
+        category: 'tools',
         nav: false,
         parent: 'funnelHistory',
     },

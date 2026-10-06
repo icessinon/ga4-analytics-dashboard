@@ -600,6 +600,7 @@ export default function DashboardPage() {
                 {navGroups(currentProduct?.id).map((group) => (
                     <div key={group.id} className={styles.quickAccessGroup}>
                         <h3 className={styles.quickAccessGroupTitle}>{group.label}</h3>
+                        {group.hint && <p className={styles.quickAccessGroupHint}>{group.hint}</p>}
                         <div className={styles.quickAccessGrid}>
                             {group.items.map((item) => {
                                 const subtitle = item.productScoped && currentProduct ? `${currentProduct.name}の${item.subtitle}` : item.subtitle
