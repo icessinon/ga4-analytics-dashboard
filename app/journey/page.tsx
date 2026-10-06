@@ -1,11 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useProduct } from '@/lib/contexts/ProductContext'
-import DateInput from '@/components/DateInput'
-import Loader from '@/components/Loader'
-import BackLink from '@/components/BackLink'
 import AISpinner from '@/components/AISpinner'
+import PageShell from '@/components/PageShell'
+import FilterBar, { FilterField } from '@/components/FilterBar'
+import PeriodSelect from '@/components/PeriodSelect'
+import Alert from '@/components/Alert'
+import { ui } from '@/components/ui'
+import { usePeriodRange } from '@/hooks/usePeriodRange'
+import { useReport } from '@/hooks/useReport'
+import { fetchJson } from '@/lib/utils/fetch'
 import JourneySankey from '@/components/journey/JourneySankey'
 import { nodeColor, exitRateColor } from '@/components/journey/journeyColors'
 import styles from './JourneyPage.module.css'
@@ -119,8 +124,10 @@ const DEVICE_OPTIONS = [
 
 export default function JourneyPage() {
     const { currentProduct } = useProduct()
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
+    // 旧実装は日付が空のとき API 既定（30daysAgo〜today）に任せていた。同じ既定で始める
+    const periodState = usePeriodRange('30daysAgo')
+    const startDate = periodState.range?.startDate
+    const endDate = periodState.range?.endDate
     const [goalPath, setGoalPath] = useState('/members/signup')
     const [goalLabel, setGoalLabel] = useState('会員登録フォーム')
     const [presetIdx, setPresetIdx] = useState(0)
@@ -130,9 +137,6 @@ export default function JourneyPage() {
     const [pathDataMode, setPathDataMode] = useState<'category' | 'url'>('category')
     const [dropoutView, setDropoutView] = useState<'table' | 'path'>('table')
     const [dropoutDataMode, setDropoutDataMode] = useState<'category' | 'url'>('category')
-    const [loading, setLoading] = useState(false)
-    const [data, setData] = useState<JourneyData | null>(null)
-    const [error, setError] = useState<string | null>(null)
     const [geminiLoading, setGeminiLoading] = useState(false)
     const [geminiResult, setGeminiResult] = useState<string | null>(null)
     const [geminiError, setGeminiError] = useState<string | null>(null)
@@ -146,43 +150,37 @@ export default function JourneyPage() {
         }
     }
 
-    async function doFetch(overrides: { deviceFilter?: string } = {}) {
-        if (!currentProduct?.ga4PropertyId) {
-            setError('プロダクトを選択してください')
-            return
-        }
-        setLoading(true)
-        setError(null)
-        setChannelFilter(null)
-        try {
-            const res = await fetch('/api/journey', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    propertyId: currentProduct.ga4PropertyId,
-                    goalPath,
-                    goalLabel,
-                    startDate: startDate || undefined,
-                    endDate: endDate || undefined,
-                    domain: currentProduct.domain,
-                    deviceFilter: (overrides.deviceFilter ?? deviceFilter) || undefined,
-                }),
-            })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error || 'エラーが発生しました')
-            setData(json)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'エラーが発生しました')
-        } finally {
-            setLoading(false)
-        }
-    }
+    // 分析実行ボタン型なので manual。前回結果は新しい結果が来るまで残す（旧実装と同じ）
+    const report = useReport<JourneyData>('/api/journey', {
+        body: {
+            propertyId: currentProduct?.ga4PropertyId,
+            goalPath,
+            goalLabel,
+            startDate,
+            endDate,
+            domain: currentProduct?.domain,
+            deviceFilter: deviceFilter || undefined,
+        },
+        manual: true,
+        keepPreviousData: true,
+    })
+    const { data, loading } = report
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
+    // デバイス切替は、結果が出ている間だけ即再取得する。
+    // body が state 由来なので、state 反映後の run() を effect で呼ぶ
+    const [refetchAfterDevice, setRefetchAfterDevice] = useState(false)
+    useEffect(() => {
+        if (!refetchAfterDevice) return
+        setRefetchAfterDevice(false)
+        report.run()
+    }, [refetchAfterDevice, report.run])
+
+    async function handleSubmit() {
+        if (!periodState.range) return
         setGeminiResult(null)
         setGeminiError(null)
-        await doFetch()
+        setChannelFilter(null)
+        await report.run()
     }
 
     async function handleGeminiAnalysis() {
@@ -201,9 +199,8 @@ export default function JourneyPage() {
                     ...(sig ? { avgEngagementSec: sig.avgEngagementSec, scrollRate: sig.scrollRate, engagementRate: sig.engagementRate } : {}),
                 }
             })
-            const res = await fetch('/api/journey/gemini', {
+            const json = await fetchJson<{ analysis: string }>('/api/journey/gemini', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     paths: topPaths,
                     totalUsers: data.totalUsers,
@@ -212,8 +209,6 @@ export default function JourneyPage() {
                     endDate,
                 }),
             })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json.error || '分析に失敗しました')
             setGeminiResult(json.analysis)
         } catch (e) {
             setGeminiError(e instanceof Error ? e.message : 'エラーが発生しました')
@@ -222,9 +217,12 @@ export default function JourneyPage() {
         }
     }
 
-    async function handleDeviceChange(device: string) {
+    function handleDeviceChange(device: string) {
         setDeviceFilter(device)
-        if (data) await doFetch({ deviceFilter: device })
+        if (data) {
+            setChannelFilter(null)
+            setRefetchAfterDevice(true)
+        }
     }
 
     const channels = data
@@ -255,78 +253,53 @@ export default function JourneyPage() {
     const totalPathCount = displayedPaths.reduce((s, p) => s + p.count, 0)
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <div>
-                    <h1 className={styles.title}>ユーザー経路分析</h1>
-                    <p className={styles.subtitle}>
-                        フォームに到達したユーザーが、どのチャネル・どのページを経由してきたかを可視化します
-                    </p>
-                </div>
-                <BackLink href="/">ダッシュボードに戻る</BackLink>
-            </div>
-
-            <div className={styles.formSection}>
-                <div className={styles.presetRow}>
-                    <span className={styles.presetLabel}>ゴール：</span>
-                    {GOAL_PRESETS.map((p, i) => (
-                        <button key={i} type="button"
-                            className={`${styles.presetBtn} ${presetIdx === i ? styles.presetBtnActive : ''}`}
-                            onClick={() => handlePreset(i)}>
-                            {p.label}
-                        </button>
-                    ))}
-                </div>
-
-                <form onSubmit={handleSubmit}>
-                    <div className={styles.formRow}>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>ゴールURLパス</label>
-                            <input type="text" value={goalPath} onChange={(e) => setGoalPath(e.target.value)}
-                                className={styles.input} placeholder="/members/signup" required />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>ゴール名（表示用）</label>
-                            <input type="text" value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)}
-                                className={styles.input} placeholder="会員登録フォーム" />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>開始日</label>
-                            <DateInput value={startDate} onChange={(e) => setStartDate(e.target.value)} className={styles.input} />
-                        </div>
-                        <div className={styles.formField}>
-                            <label className={styles.label}>終了日</label>
-                            <DateInput value={endDate} onChange={(e) => setEndDate(e.target.value)} className={styles.input} />
-                        </div>
-                        <button type="submit" className={styles.button} disabled={loading || !currentProduct}>
-                            {loading ? '取得中...' : '分析実行'}
-                        </button>
+        <PageShell
+            pageId="journey"
+            requireProduct
+            status={{ loading, error: report.error, source: 'ga4', onRetry: report.run }}
+            keepChildrenWhileLoading
+            controls={
+                <div className={ui.card}>
+                    <div className={styles.presetRow}>
+                        <span className={styles.presetLabel}>ゴール：</span>
+                        {GOAL_PRESETS.map((p, i) => (
+                            <button key={i} type="button"
+                                className={`${styles.presetBtn} ${presetIdx === i ? styles.presetBtnActive : ''}`}
+                                onClick={() => handlePreset(i)}>
+                                {p.label}
+                            </button>
+                        ))}
                     </div>
-                </form>
 
-                {/* デバイスフィルター */}
-                <div className={styles.deviceRow}>
-                    <span className={styles.presetLabel}>デバイス：</span>
-                    {DEVICE_OPTIONS.map(opt => (
-                        <button key={opt.value} type="button"
-                            className={`${styles.deviceBtn} ${deviceFilter === opt.value ? styles.deviceBtnActive : ''}`}
-                            onClick={() => handleDeviceChange(opt.value)}
-                            disabled={loading}>
-                            {opt.label}
-                        </button>
-                    ))}
+                    <FilterBar onSubmit={handleSubmit} submitting={loading} disabled={!currentProduct || !periodState.range}>
+                        <FilterField label="ゴールURLパス">
+                            <input type="text" value={goalPath} onChange={(e) => setGoalPath(e.target.value)}
+                                className={styles.goalInput} placeholder="/members/signup" required />
+                        </FilterField>
+                        <FilterField label="ゴール名（表示用）">
+                            <input type="text" value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)}
+                                className={styles.goalInput} placeholder="会員登録フォーム" />
+                        </FilterField>
+                        <FilterField label="期間">
+                            <PeriodSelect state={periodState} />
+                        </FilterField>
+                    </FilterBar>
+
+                    {/* デバイスフィルター */}
+                    <div className={styles.deviceRow}>
+                        <span className={styles.presetLabel}>デバイス：</span>
+                        {DEVICE_OPTIONS.map(opt => (
+                            <button key={opt.value} type="button"
+                                className={`${styles.deviceBtn} ${deviceFilter === opt.value ? styles.deviceBtnActive : ''}`}
+                                onClick={() => handleDeviceChange(opt.value)}
+                                disabled={loading}>
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
-
-            {!currentProduct && <div className={styles.notice}>プロダクトを選択してください</div>}
-            {loading && (
-                <div className={styles.loaderContainer}>
-                    <Loader />
-                    <p className={styles.loaderText}>GA4からデータを取得中...</p>
-                </div>
-            )}
-            {error && <div className={styles.error}>{error}</div>}
-
+            }
+        >
             {data && (
                 <>
                     {/* フォーム別到達率比較 */}
@@ -819,7 +792,7 @@ export default function JourneyPage() {
                             <button
                                 onClick={handleGeminiAnalysis}
                                 disabled={geminiLoading}
-                                className={styles.button}
+                                className={ui.btnPrimary}
                                 style={{ whiteSpace: 'nowrap' }}
                             >
                                 {geminiLoading ? (
@@ -829,7 +802,7 @@ export default function JourneyPage() {
                                 ) : 'AIで分析'}
                             </button>
                         </div>
-                        {geminiError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: '0.5rem' }}>{geminiError}</p>}
+                        {geminiError && <Alert tone="error">{geminiError}</Alert>}
                         {geminiResult && (
                             <div style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '0.5rem', padding: '1.25rem' }}>
                                 {geminiResult.split('\n').map((line, i) => {
@@ -841,6 +814,6 @@ export default function JourneyPage() {
                     </div>
                 </>
             )}
-        </div>
+        </PageShell>
     )
 }

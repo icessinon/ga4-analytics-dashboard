@@ -1,36 +1,6 @@
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-}
-
-.title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: var(--gray-100);
-    margin-bottom: 0.25rem;
-}
-
-.subtitle {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
-
 /* ── フォーム ── */
-.formSection {
-    background: var(--gray-800);
-    border: 1px solid var(--gray-600);
-    border-radius: 0.5rem;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
+.goalInput {
+    width: 15rem;
 }
 
 .presetRow {
@@ -43,7 +13,7 @@
 
 .presetLabel {
     font-size: 0.8125rem;
-    color: var(--gray-500);
+    color: var(--text-muted);
 }
 
 .presetBtn {
@@ -67,58 +37,6 @@
     background: rgba(249, 115, 22, 0.15) !important;
     color: var(--orange-400) !important;
 }
-
-.formRow {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: flex-end;
-}
-
-.formField {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-    min-width: 160px;
-}
-
-.label {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--gray-200);
-}
-
-.input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-600);
-    border-radius: 0.375rem;
-    background: var(--gray-900);
-    color: var(--gray-100);
-    font-size: 0.875rem;
-}
-
-.input:focus {
-    outline: none;
-    border-color: var(--orange-500);
-}
-
-.button {
-    padding: 0.5rem 1.5rem;
-    background: var(--orange-500);
-    color: #fff;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    height: 38px;
-    transition: 0.2s;
-}
-
-.button:hover:not(:disabled) { background: #ea580c; }
-.button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── サマリー ── */
 .summaryRow {
@@ -265,7 +183,7 @@
     flex-wrap: wrap;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--gray-700);
+    border-top: 1px solid var(--border-subtle);
 }
 
 .deviceBtn {
@@ -535,33 +453,3 @@
 }
 
 /* ── 共通 ── */
-.notice {
-    background: rgba(245,158,11,0.1);
-    border: 1px solid var(--amber-600);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--amber-300);
-    margin-bottom: 1rem;
-}
-
-.error {
-    background: rgba(185,28,28,0.15);
-    border: 1px solid var(--red-700);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    color: var(--red-300);
-    margin-bottom: 1rem;
-}
-
-.loaderContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 3rem 0;
-    gap: 1rem;
-}
-
-.loaderText {
-    font-size: 0.875rem;
-    color: var(--gray-400);
-}
