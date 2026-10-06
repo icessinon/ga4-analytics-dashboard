@@ -15,6 +15,20 @@ export const GA4_EXPORT_DATASET = 'analytics_534098180'
 /** BQエクスポート開始日。これより前のイベントはBQに存在しない（GA4 APIのみ） */
 export const GA4_EXPORT_START = '20260807'
 
+/**
+ * 全イベントクエリに付ける既定の除外条件。
+ *
+ * - `geo.country = 'Japan'`: 海外botの除外。2026-09-25以降、US/FRから1日最大450ユーザー規模の
+ *   ヘッドレスChrome（desktop/Windows/direct・1Cookie=1セッション=1PV・再訪ゼロ）が流入しており、
+ *   GA4標準のbot自動除外では落ちない。Data API側は lib/api/ga4/client.ts が同じ条件をANDしている。
+ * - `device.web_info.hostname = 'x-work.jp'`: ステージング環境での社内検証を除外。
+ *
+ * WHERE句の先頭以外に差し込むため、先頭に AND を含める。
+ */
+export const GA4_EXPORT_DEFAULT_FILTER = `
+    AND geo.country = 'Japan'
+    AND device.web_info.hostname = 'x-work.jp'`
+
 // 事故ガード: 誤って全期間・全カラムをスキャンするクエリを弾く（現状1日≈50MB）
 const MAX_SCAN_BYTES = 5 * 1024 ** 3
 
