@@ -178,7 +178,7 @@ UTM値は既存の流儀に合わせて `utm_campaign` は配信の識別、`utm
 - GA4 Data API のディメンション名: `sessionSource` / `sessionMedium` / `sessionCampaignName` / `sessionManualAdContent`(=utm_content) / `sessionManualTerm`(=utm_term)。BQ Export では `collected_traffic_source.manual_content` / `.manual_term`。
 - **utm_content を軸に足すと、使っている配信だけ行が割れる**（使っていない配信は `(not set)` 1行のまま）。campaignまでの粒度で見たいときは content を畳む。
 - 全GA4集計はデフォルトで国=日本フィルタ適用（bot対策、bot-traffic-analysis-2026-07-13.md）。
-- 2026-08-11〜のUnassignedインシデント中はsource欠落セッションが増えており、チャネル別の絶対数は割り引いて見る（project_unassigned_incident）。
+- 2026-08-11〜8月下旬のUnassignedインシデント期間（source欠落セッションが急増・収束済み）を含む集計では、チャネル別の絶対数は割り引いて見る（project_unassigned_incident）。
 
 ---
 
