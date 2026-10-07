@@ -64,5 +64,5 @@ x-work.jp（クロスワーク）向け GA4 分析ダッシュボード。Next.j
 - GA4 は二重構成。このダッシュボードは分析用プロパティ **534098180**（GTM-TG9PR444）。マーケ用 351088797 とは定義が違い数字は一致しない
 - CV はキーイベントではなくページ / ラベルで計測。応募 = `/entry/thanks`、会員登録 = `/members/signup/thanks`、種別分解は GTM ラベル JobA（求人広告）/ JobR（人材紹介）/ JobH（ハローワーク）
 - ラベル規則 `{Area}__{Section}__{Element}__{Label}`。AB テストの B/C/D は末尾 `__B-{issue}`。CVR ラベルは `*` ワイルドカード可
-- 全 GA4 集計は既定で国=日本フィルタ（2026-06 の bot）。2026-08-11〜 Unassigned インシデントでチャネル別数値は信頼不可
+- 全 GA4 集計は既定で国=日本フィルタ（2026-06 の bot）。2026-08-11〜8 月下旬は Unassigned インシデント（収束済み）でチャネル別数値は信頼不可
 - 詳細は `/docs/glossary`（`lib/docs/domainKnowledge.ts`）。データソース別の当たり方は `.claude/skills/xwork-data-sources`、本番 API の操作は `.claude/skills/prod-dashboard-api`

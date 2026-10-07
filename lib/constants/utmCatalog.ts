@@ -269,7 +269,7 @@ const RULES: Rule[] = [
     {
         // source/medium/campaign が全て取得不能（計測欠落・未割当）
         test: (s, m, c) => [s, m, c].every((v) => eq(v, '(not set)') || eq(v, '(data not available)') || v === ''),
-        describe: () => ({ label: '計測欠落/未割当', timing: 'source/medium/campaignが全て取得できないセッション。2026-08-11〜のUnassignedインシデントやアプリ内ブラウザのリファラ欠落など。絶対数は割り引いて見る', category: 'direct' }),
+        describe: () => ({ label: '計測欠落/未割当', timing: 'source/medium/campaignが全て取得できないセッション。2026-08-11〜8月下旬のUnassignedインシデント（収束済み）やアプリ内ブラウザのリファラ欠落など。絶対数は割り引いて見る', category: 'direct' }),
     },
 ]
 

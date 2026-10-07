@@ -271,7 +271,7 @@ export default function UtmReportPage() {
                         )}
                         <p className={ui.tableNote}>
                             ※ CV = 応募(/entry/thanks) + LP応募(/lp-thanks) + 会員登録(/members/signup/thanks) 到達ユーザー。スカウトSMS等は送客が目的のため会員登録CVはほぼ0（scoutId経由の応募に効く）。<br />
-                            ※ 2026-08-11〜のUnassignedインシデント中はsource欠落セッションが増えており、チャネル別の絶対数は割り引いて見てください。全GA4集計はデフォルトで国=日本フィルタ適用。
+                            ※ 2026-08-11〜8月下旬のUnassignedインシデント期間（source欠落セッションが急増・収束済み）を含む場合、チャネル別の絶対数は割り引いて見てください。全GA4集計はデフォルトで国=日本フィルタ適用。
                         </p>
                     </div>
                 </>

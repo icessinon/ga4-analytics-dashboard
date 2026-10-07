@@ -39,7 +39,7 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
                     ['HRS（人材紹介事業）', 'キャリアアドバイザー（CA）が間に入る紹介事業の総称。成約時に企業から紹介手数料を得る'],
                     ['DRS / CRS / MRS / SRS', '人材紹介の領域別ブランド: DRS=ドライバー、CRS=建設、MRS=製造、SRS=警備系。LP応募サンクス（/lp-thanks/drs 等）のslugに対応'],
                     ['Featured', 'CRM（スカウトSMS・メール・LINE）経由の既存ユーザー向け特設ページ（/featured）。**配信対象は人材紹介求人のみ**（求人広告・ハロワのfeatured応募は実データ上ゼロ）'],
-                    ['スカウト', '企業管理画面から送信リクエスト → ScoutHistories(DynamoDB)にattempt(status=requested)記録 → DDB Streams → Lambda → Accrete SMS API でSMS送信（リンクは /scout/{scoutId}）。送信結果のDB書き戻しは未実装で全件requested（2026-07時点）。/scout/{scoutId} → /entry/{id}?scoutId= → source=scout_apply(求人広告)/scout_inquiry(人材紹介・HW)。送信→閲覧→応募は[スカウト効果ファネル](/scout)で確認'],
+                    ['スカウト', '企業管理画面から送信リクエスト → ScoutHistories(DynamoDB)にattempt(status=requested)記録 → DDB Streams → Lambda → Accrete SMS API でSMS送信（リンクは /scout/{scoutId}）。送信結果は sent / failed として DynamoDB に書き戻される（2026-10時点: requested 約1.7万件のうち failed 54件＝0.3%）。/scout/{scoutId} → /entry/{id}?scoutId= → source=scout_apply(求人広告)/scout_inquiry(人材紹介・HW)。送信→閲覧→応募は[スカウト効果ファネル](/scout)で確認'],
                     ['Matching', 'Salesforce上のオブジェクト（Matching__c）。人材紹介の応募1件ごとに1レコード作成される。種別フィールドに「自然応募」等の経路区分あり'],
                     ['CA', 'キャリアアドバイザー。求職者との面談・求人提案・選考支援を行う'],
                 ],
@@ -86,7 +86,7 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
             },
             {
                 type: 'paragraph',
-                text: '応募の全体像はレイヤー構造: ①サイト内フォーム（ダッシュボードで計測）②featured/スカウト配信経由（別フォーム・ラベル未実装のため計測外）③CA代理登録・電話応募（Web外）。②③はDynamoDB/Salesforceにのみ存在する。',
+                text: '応募の全体像はレイヤー構造: ①サイト内フォーム（ダッシュボードで計測）②featured配信経由（別フォーム・GTMラベル未実装のため計測外。スカウトSMS経由の応募は scoutId で追えるため[スカウト効果ファネル](/scout)で計測可）③CA代理登録・電話応募（Web外）。②③はDynamoDB/Salesforceにのみ存在する。',
             },
         ],
     },
@@ -109,7 +109,7 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
             },
             {
                 type: 'paragraph',
-                text: '**参考: 事業全体の平均手数料は約100万円/件**（直近12ヶ月の入社済、月400〜600件。95万→105万円と緩やかな上昇傾向。2026-08時点）。Web経由CVコホートの平均（81万〜98万円）が全体よりやや低いのは、DRスカウト・エージェント経由など高単価領域の成約が全体には含まれるため。単価を再算出するときは**成約率とこの手数料相場の両方**が動いていないかを確認する。',
+                text: '**参考: 事業全体の平均手数料は約103万円/件**（2025-10〜2026-09 の入社済 5,495件・受注額約56億円。月400〜600件、月次平均は96万〜115万円で緩やかな上昇傾向。2026-10-07 時点）。Web経由CVコホートの平均（81万〜94万円）が全体よりやや低いのは、DRスカウト・エージェント経由など高単価領域の成約が全体には含まれるため。単価を再算出するときは**成約率とこの手数料相場の両方**が動いていないかを確認する。',
             },
             {
                 type: 'paragraph',
@@ -140,15 +140,15 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
         blocks: [
             {
                 type: 'paragraph',
-                text: 'Salesforce CustomObject1__c（求職者、約130万件）の属性分布。可視化は[求職者属性・ペルソナ](/persona)、スナップショットは lib/constants/personaSnapshot.ts（再生成は scripts/snapshots/regen-persona-snapshot.ts）。これは**登録者（人材紹介リード）**の姿で、サイト訪問者全体ではない。',
+                text: 'Salesforce CustomObject1__c（求職者、約134万件・2026-10-07時点）の属性分布。可視化は[求職者属性・ペルソナ](/persona)、スナップショットは lib/constants/personaSnapshot.ts（再生成は scripts/snapshots/regen-persona-snapshot.ts）。これは**登録者（人材紹介リード）**の姿で、サイト訪問者全体ではない。',
             },
             {
                 type: 'list',
                 items: [
-                    '職種軸は**登録サービス（Field5__c＝事業領域）**を使う。全件に付与され、ドライバーが最大（約83万人）。次いで建設・施工管理17万、タクシー12万、製造・メーカー6万',
+                    '職種軸は**登録サービス（Field5__c＝事業領域）**を使う。全件に付与され、ドライバーが最大（約85万人）。次いで建設・施工管理18万、タクシー12万、製造・メーカー6万',
                     '希望職種（DesiredOccupation__c）は約2万件のみで施工・製造系に偏り、**ドライバー系の値が構造的に存在しない**。これで全体像を見るとドライバーが丸ごと消える',
-                    '付与率: 事業領域100% / 年齢99.9% / 気持ち89% / 転職時期88% / 勤務地87% / 仕事状況85% / 雇用形態84% / **性別63%**（ドライバーは約56%）。女性比は性別回答者の部分集合上の値',
-                    '全体像: 40〜60代が約7割・男性約89%と高年齢＆男性偏重。顕在層（転職時期3ヶ月以内）約34%・首都圏集中。事業領域で年齢構成は大きく異なる（タクシーは50代以上が過半、整備士は若手が多い）',
+                    '付与率: 事業領域100% / 年齢99.9% / 気持ち89% / 転職時期87% / 勤務地87% / 仕事状況85% / 雇用形態84% / **性別64%**（ドライバーは約57%）。女性比は性別回答者の部分集合上の値',
+                    '全体像: 40〜60代が約7割・男性約89%と高年齢＆男性偏重。顕在層（転職時期「なるべく早く」〜3ヶ月以内）約67%、うち「なるべく早く」約34%・首都圏集中。事業領域で年齢構成は大きく異なる（タクシーは50代以上が過半、整備士は若手が多い）',
                     'サイト訪問者全体の年齢・性別を見たい場合は GA4 のデモグラフィック（別母集団・匿名）を参照',
                 ],
             },
@@ -275,7 +275,7 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
                 columns: ['システム', '内容'],
                 rows: [
                     ['DynamoDB（本体AWS 662907192686・読み取り専用で参照）', 'JobApplication-prd（会員応募。source が featured_* / scout_* / ca_referral / null=自然、jobDescription に contractType 埋め込み）/ GuestJobApplication-prd（ゲスト応募。articleId で JobDescriptions-prd と突合）/ JobDescriptions-prd（求人マスタ。pk=media_ID, sk=\'info\'、contractType）/ MemberUsers-prd（会員。応募との時刻差10分以内で「応募と同時の登録」判定）/ ScoutHistories-prd（スカウト。pk=CANDIDATE#… の履歴と pk=SCOUT#{scoutId} のページ用データが同居）/ DeliveryRecords・SignupStepMails（通知基盤の送達記録・ステップメール予定）'],
-                    ['Salesforce', 'Matching__c（紹介の応募・成約管理。種別=Field65__c）/ Order__c（求人）/ CustomObject1__c（求職者。約130万件。属性: 年齢層Field90__c・性別Field13__c・**登録サービス=事業領域Field5__c**・希望職種DesiredOccupation__c・転職時期Field27__c・仕事の状況Field29__c）/ RegistHistory__c（登録履歴）/ AgentActivityHistory__c（CA活動履歴。CV単価の算出基準）。応募→SF連携はZapier経由（停止事故歴あり・死活監視推奨）'],
+                    ['Salesforce', 'Matching__c（紹介の応募・成約管理。種別=Field65__c）/ Order__c（求人）/ CustomObject1__c（求職者。約134万件。属性: 年齢層Field90__c・性別Field13__c・**登録サービス=事業領域Field5__c**・希望職種DesiredOccupation__c・転職時期Field27__c・仕事の状況Field29__c）/ RegistHistory__c（登録履歴）/ AgentActivityHistory__c（CA活動履歴。CV単価の算出基準）。応募→SF連携はZapier経由（停止事故歴あり・死活監視推奨）'],
                     ['BigQuery（xmile-drm に一元化・2026-09-25）', 'ga4_analytics_dashboard（このダッシュボードの実行履歴・AB結果・AI最終レポート蓄積。テーブル定義は lib/bq/schemas.ts）/ analytics_534098180（GA4 BigQuery Export の生イベント、2026-08-06〜。セッション単位の経路分析はこちら）/ xwork（プロダクトデータ。ses_event_records など）'],
                     ['x-work.jp本体', 'Amplify Hosting（appId d3egkdlj4m310n）。アクセスログは generate-access-logs で取得可能。ソースは drm-front リポジトリ'],
                 ],
@@ -291,7 +291,7 @@ export const DOMAIN_SECTIONS: KnowledgeSection[] = [
                 items: [
                     '**2026-06/16〜26 シンガポールbot**: Tencent Cloud SG（ACEVILLE PTE.LTD.）の分散スクレイパーが約28万セッション（日本とほぼ同規模）。CV影響ゼロ。対策として全GA4クエリに国=日本フィルタ導入済み（docs/archive/bot-traffic-analysis-2026-07-13.md）',
                     '**2026-07 応募→Salesforce連携（Zapier）の断続停止**: 新規応募者でOwner Id空→クラッシュ→自動停止が頻発し、「自然応募が急減」に見えるデータ欠落が発生。修正済み。SFの応募数を見るときは連携欠落の可能性を疑うこと',
-                    '**2026-08-11〜 Unassignedインシデント（調査中）**: セッションの40%超がsource欠落の孤児セッション化（session_startなしでカスタムイベントのみ到達）。GTM変更疑い。解決までチャネル別数値・セッション数は信頼不可',
+                    '**2026-08-11〜08下旬 Unassignedインシデント（収束済み）**: 一時セッションの40%超がsource欠落の孤児セッション化（session_startなしでカスタムイベントのみ到達、GTM変更疑い）。8月下旬以降は Unassigned 比率が週次0.8〜1.1%の平常水準に戻っている。**8/11〜8月下旬のチャネル別数値・セッション数は依然として信頼不可**（セッション分裂で過大計上・セッション分母CVRは過小）',
                     '**2026-08-13 社内IPの内部トラフィック除外を有効化**: 分析用プロパティ（534098180）にESS・LCD・中野坂上の5 IPを登録しデータフィルタを有効化（それまで社内アクセス＝ページ閲覧の約2%が計測に混入）。**この日以降PVは約2%減・CVRは微増して見える**（前後比較時は注意）',
                     '**2026-09-25〜 米仏の headless Chrome bot**: BigQuery 経路は GA4_EXPORT_DEFAULT_FILTER で除外。新しいBQクエリにも必ず付ける',
                 ],

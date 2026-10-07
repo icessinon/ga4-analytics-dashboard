@@ -119,7 +119,7 @@ async function ga4Section(propertyId: string): Promise<string> {
         `- 会員登録: フォーム${signupForm.toLocaleString()} → 完了${signupDone.toLocaleString()}（${signupForm > 0 ? ((signupDone / signupForm) * 100).toFixed(1) : '-'}%）`,
         `- 求人一覧（検索・職種一覧）の閲覧: ${listUsers.toLocaleString()}`,
         `- 流入チャネル構成（セッション）: ${channelLines}`,
-        '※2026-08-11以降Unassignedが膨らむ計測インシデントがあり、チャネル構成は参考値',
+        '※2026-08-11〜8月下旬にUnassignedが膨らむ計測インシデントがあり（収束済み）、その期間を含むチャネル構成は参考値',
     ].join('\n')
 }
 
