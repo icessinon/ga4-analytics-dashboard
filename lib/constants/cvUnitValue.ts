@@ -1,5 +1,5 @@
 /**
- * CV1件あたりの期待売上（円）。CA活動履歴基準（2026-08-27算出）。
+ * CV1件あたりの期待売上（円）。CA活動履歴基準（2026-10-07算出）。
  * 【自動生成】scripts/snapshots/regen-cv-unit-value.ts が scripts/snapshots/data/cv-unit/derivations.json から生成。手で編集しない。
  *
  * 算出: CV(RegistHistory__c) → そのCVのCA活動履歴(RH_AgentActivityHistory__c = AgentActivityHistory__c)
@@ -18,13 +18,13 @@
  *   背景はメモリ project_cv_unit_value.md 参照。
  */
 export const CV_UNIT_VALUE_YEN: Record<string, number> = {
-    JobR: 15851,
+    JobR: 15912,
     JobA: 18602,
-    JobH: 8726,
+    JobH: 9230,
     signup: 19760,
 }
 
-export const CV_UNIT_VALUE_ASOF = '2026-08-27'
+export const CV_UNIT_VALUE_ASOF = '2026-10-07'
 
 export interface CvUnitDerivation {
     key: string
@@ -51,7 +51,7 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         grossFeeYen: 81_560_469,
         refundYen: 3_745_883,
         unitYen: 19760,
-        note: 'サイト経由（オーガニック 求人詳細ページ(web)/Topページ）の純登録のみ。CVに紐づくCA活動履歴経由の入社を計上。応募との重複（87件中32件）は下流価値の指標として許容＝据え置き。内訳: 純登録のみ由来¥13,650＋下流価値(登録→後日応募→成約)¥6,110＝運用値¥19,760',
+        note: 'サイト経由（オーガニック 求人詳細ページ(web)/Topページ）の純登録のみ。CVに紐づくCA活動履歴経由の入社を計上。応募との重複（87件中32件）は下流価値の指標として許容＝据え置き。内訳: 純登録のみ由来¥13,650＋下流価値(登録→後日応募→成約)¥6,110＝運用値¥19,760。2026-10-07 再集計でも入社 87 で変化なし',
     },
     {
         key: 'JobR',
@@ -59,11 +59,11 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         cohort: '2025-01〜2025-12',
         events: 28353,
         uniq: 17741,
-        hires: 556,
-        grossFeeYen: 476_137_977,
+        hires: 557,
+        grossFeeYen: 477_885_807,
         refundYen: 26_724_040,
-        unitYen: 15851,
-        note: 'CVのCA活動履歴に紐づく入社（応募求人＋CAが後日組成した紹介成約を含む）。重複除去の最優先チャネルで全入社を保持',
+        unitYen: 15912,
+        note: 'CVのCA活動履歴に紐づく入社（応募求人＋CAが後日組成した紹介成約を含む）。重複除去の最優先チャネルで全入社を保持。2026-10-07 再集計で入社 +1（8/27 以降の入社）',
     },
     {
         key: 'JobA',
@@ -75,7 +75,7 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         grossFeeYen: 22_977_887,
         refundYen: 990_000,
         unitYen: 18602,
-        note: '入社の多くはCAが人材紹介案件へ再マッチした成約。人材紹介と重複する入社18件は除外済み。広告の掲載課金売上は含まない・小標本',
+        note: '入社の多くはCAが人材紹介案件へ再マッチした成約。人材紹介と重複する入社18件は除外済み。広告の掲載課金売上は含まない・小標本。2026-10-07 再集計でも入社 50 で変化なし',
     },
     {
         key: 'JobH',
@@ -83,11 +83,11 @@ export const CV_UNIT_DERIVATIONS: CvUnitDerivation[] = [
         cohort: '2025-01〜2025-12',
         events: 3375,
         uniq: 1927,
-        hires: 30,
-        grossFeeYen: 32_016_559,
+        hires: 33,
+        grossFeeYen: 33_716_559,
         refundYen: 2_565_516,
-        unitYen: 8726,
-        note: 'HW求人自体は成約手数料ゼロ。売上主体はCAの人材紹介案件への再マッチ。人材紹介・求人広告と重複する入社は除外済み',
+        unitYen: 9230,
+        note: 'HW求人自体は成約手数料ゼロ。売上主体はCAの人材紹介案件への再マッチ。人材紹介・求人広告と重複する入社は除外済み。2026-10-07 再集計で入社 +3（成約リードタイムの長いチャネル）',
     },
 ]
 

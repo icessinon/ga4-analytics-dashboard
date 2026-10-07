@@ -128,7 +128,7 @@ export default function CvValuePage() {
                             重要なのは、応募した求人そのものの成約ではなく<strong>CAが応募者を別求人（特に人材紹介案件）へ再マッチして生んだ成約</strong>が売上の主体という点です。
                             実際、ハローワーク応募者の入社はHW求人（成約手数料ゼロ）ではほぼ発生せず、<strong>大半が人材紹介案件への再マッチ成約</strong>。求人広告応募者も同様。
                             <br />※ 旧版は「応募求人の成約だけ」を見てこの再マッチ売上を取りこぼし、応募系を過小評価していました。CA活動履歴基準で是正した結果、
-                            種別間の単価差は大きく縮小（会員登録¥19,760／人材紹介¥15,850／求人広告¥18,602／ハローワーク¥8,726）しています。
+                            種別間の単価差は大きく縮小（会員登録¥{CV_UNIT_VALUE_YEN.signup.toLocaleString()}／人材紹介¥{CV_UNIT_VALUE_YEN.JobR.toLocaleString()}／求人広告¥{CV_UNIT_VALUE_YEN.JobA.toLocaleString()}／ハローワーク¥{CV_UNIT_VALUE_YEN.JobH.toLocaleString()}）しています。
                         </div>
                     </div>
                     <div>
