@@ -390,17 +390,54 @@ input.input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not(
     cursor: not-allowed;
 }
 
+/*
+ * 主ボタン。ベタ塗りの青ではなく他のボタンと同じ面（control-gradient）に、アクセント色の枠と文字で「主」を示す。
+ * hover で光が左から右へ走る（クイックアクセスの shine と同じ動き）＋わずかに浮く。
+ */
 .btnPrimary {
     composes: btn;
-    background-color: var(--accent-strong);
-    background-image: none;
-    border-color: var(--accent-strong);
-    color: var(--text-on-accent);
+    position: relative;
+    overflow: hidden;
+    border-color: var(--accent);
+    color: var(--accent-text);
+    box-shadow: var(--shadow-card), var(--shadow-inset), 0 0 0 1px var(--accent-soft);
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.15s;
+}
+
+.btnPrimary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0) 100%);
+    transform: skewX(-15deg);
+    pointer-events: none;
+    transition: left 0.6s ease-in-out;
 }
 
 .btnPrimary:hover:not(:disabled) {
-    background-color: var(--accent);
-    border-color: var(--accent);
+    background-color: var(--accent-soft);
+    border-color: var(--accent-text);
+    color: var(--text-strong);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card), var(--shadow-inset), 0 0 0 3px var(--accent-soft);
+}
+
+.btnPrimary:hover:not(:disabled)::after {
+    left: 125%;
+}
+
+.btnPrimary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btnPrimary,
+    .btnPrimary::after {
+        transition: none;
+    }
 }
 
 .btnGhost {
