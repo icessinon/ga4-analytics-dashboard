@@ -1,8 +1,8 @@
 /* PeriodSelect 自前のスタイル。以前は使う側が selectClassName を渡す必要があり、
    13 ページそれぞれが同じ .select を module に持っていた */
 .select {
+    /* 背景（矢印＋グラデーション）は globals.css の select ルール */
     background-color: var(--bg-surface);
-    background-image: var(--control-gradient);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     color: var(--text-strong);
@@ -13,6 +13,7 @@
 
 .dateInput {
     composes: select;
+    background-image: var(--control-gradient);
     width: 10.5rem;
 }
 

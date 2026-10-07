@@ -81,13 +81,17 @@
 .input,
 .select {
     background-color: var(--bg-surface);
-    background-image: var(--control-gradient);
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     color: var(--text-strong);
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
     box-shadow: var(--shadow-card), var(--shadow-inset);
+}
+
+/* select の背景（矢印＋グラデーション）は globals.css の select ルールに任せる。input だけ質感を足す */
+.input {
+    background-image: var(--control-gradient);
 }
 
 /*

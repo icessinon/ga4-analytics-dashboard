@@ -246,17 +246,24 @@ input[type="date"] {
     cursor: pointer;
 }
 
+/*
+ * select は矢印アイコン（SVG）と質感グラデーションの 2 層背景。
+ * 以前は 1 層しか持てず、各モジュールの .select がグラデーションで上書きすると矢印が消え、
+ * グローバルの「右寄せ・no-repeat」だけが残ってグラデーションが右端の小さな帯になっていた。
+ */
 select {
     color: var(--text-primary);
     background-color: var(--bg-surface);
-    background-image: var(--control-gradient);
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e5e7eb' d='M6 8L1 3h10z'/%3E%3C/svg%3E"),
+        var(--control-gradient);
+    background-repeat: no-repeat, no-repeat;
+    background-position: right 0.5rem center, 0 0;
+    background-size: 12px 12px, 100% 100%;
     box-shadow: var(--shadow-card), var(--shadow-inset);
     appearance: none;
-    background-repeat: no-repeat !important;
-    background-position: right 0.5rem center !important;
-    padding-right: 1.5rem !important;
+    padding-right: 1.75rem;
     box-sizing: border-box;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e5e7eb' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 }
 
 @media print {
