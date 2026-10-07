@@ -106,8 +106,8 @@ export default function ProductsPage() {
                         </label>
                     </div>
                     <div className={ui.controls}>
-                        <button type="submit" className="executionButton" disabled={saving}>
-                            <span>{saving ? '保存中...' : editingProduct ? '更新' : '追加'}</span>
+                        <button type="submit" className={ui.btnPrimary} disabled={saving}>
+                            {saving ? '保存中...' : editingProduct ? '更新' : '追加'}
                         </button>
                         {editingProduct && (
                             <button type="button" onClick={handleCancel} className={ui.btnGhost}>キャンセル</button>

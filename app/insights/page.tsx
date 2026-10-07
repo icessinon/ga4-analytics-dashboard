@@ -73,7 +73,7 @@ function DeltaBadge({ a, b }: { a: number; b: number }) {
 
 const AXIS_TICK = { fontSize: 11, fill: 'var(--text-muted)' }
 const CURRENT_COLOR = CHART_COLORS.violet
-const PREVIOUS_COLOR = 'var(--bg-raised)'
+const PREVIOUS_COLOR = '#64748b' // 前月は控えめな灰色。背景色（--bg-raised）を使うと暗い面に沈んで見えない
 
 export default function InsightsPage() {
     const { currentProduct } = useProduct()

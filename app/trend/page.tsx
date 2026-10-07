@@ -225,8 +225,8 @@ export default function TrendPage() {
                     <p className={ui.note}>チェックを付けたときだけ、セッション時間と月による傾向を中心にしたAI分析が表示されます</p>
                 </div>
                 <div>
-                    <button type="submit" className="executionButton" disabled={loading}>
-                        <span>{loading ? '生成中...' : '月次トレンドレポートを生成'}</span>
+                    <button type="submit" className={ui.btnPrimary} disabled={loading}>
+                        {loading ? '生成中...' : '月次トレンドレポートを生成'}
                     </button>
                 </div>
             </form>

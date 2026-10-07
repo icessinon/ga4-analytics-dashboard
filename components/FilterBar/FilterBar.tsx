@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { ui, cx } from '@/components/ui'
 import styles from './FilterBar.module.css'
 
 export interface FilterBarProps {
@@ -31,9 +32,9 @@ export default function FilterBar({ onSubmit, submitLabel = '分析実行', subm
             }}
         >
             {children}
-            {/* 「実行」の見た目は globals.css の executionButton（既存ページで使われている紫のボタン）に揃える */}
-            <button type="submit" className={`executionButton ${styles.submit}`} disabled={disabled || submitting}>
-                <span>{submitting ? '取得中...' : submitLabel}</span>
+            {/* 送信ボタンは他のボタンと同じ大きさ・質感（ui.btnPrimary）。以前の executionButton は 50px 高で他と釣り合わなかった */}
+            <button type="submit" className={cx(ui.btnPrimary, styles.submit)} disabled={disabled || submitting}>
+                {submitting ? '取得中...' : submitLabel}
             </button>
         </form>
     )

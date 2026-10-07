@@ -331,8 +331,8 @@ function AnalyticsPageContent() {
                     <FilterField label="実行">
                         <span className={ui.note}>生成が終わると結果ページ（履歴）へ移動します</span>
                     </FilterField>
-                    <button type="submit" className={cx('executionButton', styles.submit)} disabled={loading || !currentProduct}>
-                        <span>{loading ? '生成中...' : 'レポートを生成'}</span>
+                    <button type="submit" className={cx(ui.btnPrimary, styles.submit)} disabled={loading || !currentProduct}>
+                        {loading ? '生成中...' : 'レポートを生成'}
                     </button>
                 </FilterBar>
             </form>

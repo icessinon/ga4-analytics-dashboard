@@ -238,9 +238,11 @@ input[type="date"] {
     padding-right: 0.5rem;
 }
 
-:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.7;
+/* color-scheme: dark で Chrome はピッカーのアイコンを明色で描く。ここで invert すると二重反転で黒に戻ってしまう */
+:root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+:root[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator,
+:root[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 0.8;
     cursor: pointer;
 }
 
@@ -255,72 +257,6 @@ select {
     padding-right: 1.5rem !important;
     box-sizing: border-box;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e5e7eb' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-}
-
-button.executionButton {
-    display: inline-block;
-    min-width: 150px;
-    height: 50px;
-    padding: 0 1.5rem;
-    border-radius: 10px;
-    border: 1px solid #7c3aed;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.5s ease-in;
-    z-index: 1;
-    cursor: pointer;
-    background: transparent;
-    font-weight: 600;
-}
-
-button.executionButton::before,
-button.executionButton::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    width: 0;
-    height: 100%;
-    transform: skew(15deg);
-    transition: all 0.5s;
-    overflow: hidden;
-    z-index: -1;
-}
-
-button.executionButton::before {
-    left: -10px;
-    background: #240046;
-}
-
-button.executionButton::after {
-    right: -10px;
-    background: #5a189a;
-}
-
-button.executionButton:hover:not(:disabled)::before,
-button.executionButton:hover:not(:disabled)::after {
-    width: 58%;
-}
-
-button.executionButton:hover:not(:disabled) span {
-    color: #e0aaff;
-    transition: 0.3s;
-}
-
-button.executionButton span {
-    color: #e9d5ff;
-    font-size: 1.125rem;
-    transition: all 0.3s ease-in;
-    position: relative;
-    z-index: 1;
-}
-
-button.executionButton:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-button.executionButton:disabled span {
-    color: #9ca3af;
 }
 
 @media print {
@@ -346,4 +282,30 @@ button.executionButton:disabled span {
         padding: 0 !important;
         width: 100% !important;
     }
+}
+
+/* ── recharts の既定スタイルはライト前提（白背景・黒文字）。ダークテーマ全体で安全側に倒す ── */
+:root[data-theme="dark"] .recharts-default-tooltip {
+    background-color: var(--bg-raised) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+}
+
+:root[data-theme="dark"] .recharts-default-tooltip .recharts-tooltip-label {
+    color: var(--text-muted);
+}
+
+/* 項目の文字は系列色ではなく本文色。系列は横の色マークで示す（Cell 指定の棒だと色が未定義＝黒になる事故も防ぐ） */
+:root[data-theme="dark"] .recharts-default-tooltip .recharts-tooltip-item {
+    color: var(--text-strong) !important;
+}
+
+:root[data-theme="dark"] .recharts-legend-item-text {
+    color: var(--text-secondary) !important;
+}
+
+:root[data-theme="dark"] .recharts-cartesian-axis-tick-value,
+:root[data-theme="dark"] .recharts-polar-angle-axis-tick-value {
+    fill: var(--text-muted);
 }

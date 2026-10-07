@@ -495,8 +495,8 @@ function FunnelPageContent() {
                         onEnabledChange={(enabled) => setGeminiConfig({ ...geminiConfig, enabled })}
                     />
 
-                    <button type="submit" disabled={loading} className="executionButton">
-                        <span>{loading ? '分析中...' : mode === 'compare' ? '期間比較を実行' : 'ファネル分析を実行'}</span>
+                    <button type="submit" disabled={loading} className={ui.btnPrimary}>
+                        {loading ? '分析中...' : mode === 'compare' ? '期間比較を実行' : 'ファネル分析を実行'}
                     </button>
                 </form>
             </div>
