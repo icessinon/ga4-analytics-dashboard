@@ -68,7 +68,14 @@ function sql(from: string): string {
           WHEN JSON_VALUE(ja.utm,'$.medium_last') = 'cpc'                                      THEN 'others'
           WHEN TIMESTAMP_DIFF(ja.created_at, mb.user_created_at, SECOND) BETWEEN 0 AND 5       THEN 'apply_signup'
           ELSE 'product'
-        END AS cat
+        END AS cat,
+        -- 会員になってからの経過。M1 の「登録当日 / 1〜30日の再訪 / 既存会員」の分解に使う
+        CASE
+          WHEN mb.user_id IS NULL THEN 'unknown'
+          WHEN DATE(ja.created_at,'Asia/Tokyo') = DATE(mb.user_created_at,'Asia/Tokyo') THEN 'day0'
+          WHEN DATE_DIFF(DATE(ja.created_at,'Asia/Tokyo'), DATE(mb.user_created_at,'Asia/Tokyo'), DAY) <= 30 THEN 'd1_30'
+          ELSE 'd31' END AS tenure,
+        IFNULL(JSON_VALUE(ja.utm,'$.source_last') = 'product' AND JSON_VALUE(ja.utm,'$.medium_last') = 'line', FALSE) AS is_product_linepush
       FROM ${APPLICATIONS} ja
       JOIN ${JOB_DESCRIPTIONS_ALL} jd ON jd.id = ja.media_id
       LEFT JOIN members mb ON mb.user_id = ja.user_id
@@ -85,7 +92,16 @@ function sql(from: string): string {
         COUNTIF(contract_type='求人広告' AND cat='line')         AS ad_line,
         COUNTIF(contract_type='求人広告' AND cat='hrs')          AS ad_hrs,
         COUNTIF(contract_type='求人広告' AND cat='apply_signup') AS ad_apply_signup,
-        COUNTIF(contract_type='求人広告' AND cat='others')       AS ad_others
+        COUNTIF(contract_type='求人広告' AND cat='others')       AS ad_others,
+        -- プロダクト経由の内訳（LINEプッシュ経由か、会員になってからの経過か）
+        COUNTIF(contract_type='求人広告' AND cat='product' AND is_product_linepush) AS prod_linepush,
+        COUNTIF(contract_type='求人広告' AND cat='product' AND NOT is_product_linepush AND tenure='day0')  AS prod_day0,
+        COUNTIF(contract_type='求人広告' AND cat='product' AND NOT is_product_linepush AND tenure='d1_30') AS prod_d1_30,
+        COUNTIF(contract_type='求人広告' AND cat='product' AND NOT is_product_linepush AND tenure IN ('d31','unknown')) AS prod_d31,
+        -- LINE公式の内訳
+        COUNTIF(contract_type='求人広告' AND cat='line' AND tenure='day0')  AS line_day0,
+        COUNTIF(contract_type='求人広告' AND cat='line' AND tenure='d1_30') AS line_d1_30,
+        COUNTIF(contract_type='求人広告' AND cat='line' AND tenure IN ('d31','unknown')) AS line_d31
       FROM apps GROUP BY m
     ),
     reg AS (
@@ -116,6 +132,7 @@ function sql(from: string): string {
       IFNULL(reg.reg_plain, 0) AS reg_plain, IFNULL(reg.reg_apply_signup, 0) AS reg_apply_signup,
       IFNULL(snd.sends, 0) AS sends,
       (SELECT COUNT(*) FROM ${JOB_DESCRIPTIONS} WHERE contract_type='求人広告' AND is_public) AS inventory_jobad,
+      (SELECT COUNTIF(line_user_id IS NOT NULL) / COUNT(*) FROM ${MEMBER_USERS}) AS line_rate_all,
       CAST(DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY) AS STRING) AS data_to
     FROM agg LEFT JOIN reg USING (m) LEFT JOIN snd USING (m)
     ORDER BY month`
@@ -126,6 +143,7 @@ export async function runBusinessKpiReport(monthsInput: unknown): Promise<Busine
     const { rows, scannedBytes } = await runGa4EventsQuery(sql(startMonth(nMonths)))
 
     const inventoryJobAd = rows.length > 0 ? num(rows[0].inventory_jobad) : 0
+    const lineRateAll = rows.length > 0 && rows[0].line_rate_all != null ? Number(rows[0].line_rate_all) : null
     const dataTo = rows.length > 0 ? String(rows[0].data_to ?? '') : ''
 
     const months: BusinessKpiMonth[] = rows.map((r) => {
@@ -151,6 +169,15 @@ export async function runBusinessKpiReport(monthsInput: unknown): Promise<Busine
             appsAgent: num(r.apps_agent),
             appsHelloWork: num(r.apps_hw),
             jobAdBySource,
+            breakdown: {
+                prodLinePush: num(r.prod_linepush),
+                prodDay0: num(r.prod_day0),
+                prodD1_30: num(r.prod_d1_30),
+                prodD31: num(r.prod_d31),
+                lineDay0: num(r.line_day0),
+                lineD1_30: num(r.line_d1_30),
+                lineD31: num(r.line_d31),
+            },
             reg,
             regPlain: num(r.reg_plain),
             regApplySignup: num(r.reg_apply_signup),
@@ -162,5 +189,5 @@ export async function runBusinessKpiReport(monthsInput: unknown): Promise<Busine
         }
     })
 
-    return { months, inventoryJobAd, dataTo, scannedBytes, fetchedAt: new Date().toISOString() }
+    return { months, inventoryJobAd, lineRateAll, dataTo, scannedBytes, fetchedAt: new Date().toISOString() }
 }

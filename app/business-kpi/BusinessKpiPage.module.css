@@ -133,3 +133,134 @@
     color: var(--text-muted);
     margin-left: 0.25rem;
 }
+
+/* ── 成果目標 M1〜M3 ── */
+.goalGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 0.875rem;
+}
+
+.goalCard {
+    border: 1px solid var(--border-subtle);
+    border-top: 3px solid var(--goal-accent, var(--border));
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    background-color: var(--bg-surface);
+}
+
+.goalHead {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.goalNo {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--goal-accent, var(--text-muted));
+}
+
+.goalTitle {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+}
+
+.goalWeight {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.goalDef {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 0 0.625rem;
+}
+
+.goalNums {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.goalActual {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.goalPace {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.goalTrack {
+    height: 0.5rem;
+    border-radius: 999px;
+    background-color: rgba(127, 127, 127, 0.18);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 0.375rem;
+}
+
+.goalFillActual {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background-color: var(--goal-accent, #3b82f6);
+    border-radius: 999px;
+}
+
+.goalFillPace {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background-color: var(--goal-accent, #3b82f6);
+    opacity: 0.3;
+    border-radius: 999px;
+}
+
+.goalMark {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background-color: var(--text-muted);
+}
+
+.goalScale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.goalVerdict {
+    font-size: 0.8125rem;
+    margin-top: 0.5rem;
+    line-height: 1.6;
+}
+
+.goalNote {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0.5rem 0 0;
+}
+
+.subTable {
+    margin-top: 0.75rem;
+}

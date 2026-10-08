@@ -11,6 +11,8 @@ import {
     BUSINESS_KPI_METRICS, JOB_AD_SOURCES, formatKpi, isPartial, metricValue, paceOf,
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
+import { BUSINESS_GOALS, BUSINESS_GOALS_SOURCE } from '@/lib/constants/businessGoals'
+import { CHART_COLORS } from '@/lib/constants/chartColors'
 import type { BusinessKpiMonth, BusinessKpiResponse } from '@/lib/services/kpi/businessKpiTypes'
 import styles from './BusinessKpiPage.module.css'
 
@@ -30,6 +32,9 @@ const CHART_METRICS: readonly BusinessKpiMetric[] = [
 const PROJECTED: readonly BusinessKpiMetric[] = ['appsTotal', 'appsJobAd', 'reg', 'appsPerJob']
 
 const n = (v: number | null | undefined) => (v == null ? '—' : v.toLocaleString())
+const pct1 = (v: number | null) => (v == null ? '—' : `${(v * 100).toFixed(1)}%`)
+
+const GOAL_COLORS = [CHART_COLORS.blue, CHART_COLORS.violet, CHART_COLORS.cyan]
 
 function Delta({ cur, prev }: { cur: number | null; prev: number | null | undefined }) {
     if (cur == null || prev == null || prev === 0) return <>—</>
@@ -93,6 +98,110 @@ export default function BusinessKpiPage() {
                                 )
                             })}
                         </div>
+                    </div>
+
+                    <div className={ui.card}>
+                        <h2 className={ui.sectionTitle}>成果目標 M1〜M3（{BUSINESS_GOALS_SOURCE.period}）</h2>
+                        <p className={ui.sectionNote}>
+                            目標値は goal-tracker の {BUSINESS_GOALS_SOURCE.version}（{BUSINESS_GOALS_SOURCE.updatedAt} 確定）の写しです。
+                            <strong>ここを直すときは goal-tracker 側も直してください。</strong>
+                            対象は<strong>求人広告の応募だけ</strong>で、12 月の応募 300 件のうち M1 160 ＋ M2 30 ＝ 190 件がこの画面の範囲です
+                            （残り 110 件＝応募同時登録・人材紹介側の配信・広告は対象外）。
+                            10・11 月のマイルストーンは 9 月実績と 12 月目標を直線で結んだ仮値です。
+                        </p>
+                        <div className={styles.goalGrid}>
+                            {BUSINESS_GOALS.map((g, i) => {
+                                const color = GOAL_COLORS[i % GOAL_COLORS.length]
+                                const actual = g.actual(latest)
+                                const pace = paceOf(actual, latest) ?? actual
+                                const milestone = g.milestones[latest.month] ?? null
+                                // 進捗バーは期末目標を 100% とする。マイルストーンは目盛りとして線で出す
+                                const w = (v: number) => `${Math.min(100, (v / g.target) * 100)}%`
+                                const ok = milestone == null ? null : pace >= milestone
+                                return (
+                                    <div key={g.id} className={styles.goalCard} style={{ '--goal-accent': color } as CSSProperties}>
+                                        <div className={styles.goalHead}>
+                                            <span className={styles.goalNo}>{g.id}</span>
+                                            <h3 className={styles.goalTitle}>{g.title}</h3>
+                                            <span className={styles.goalWeight}>比重 {g.weight}%</span>
+                                        </div>
+                                        <p className={styles.goalDef}>{g.definition}</p>
+                                        <div className={styles.goalNums}>
+                                            <span className={styles.goalActual}>{n(actual)}</span>
+                                            <span className={styles.goalPace}>
+                                                件{partial && <> ／ 月末見込み <strong>{n(Math.round(pace))}</strong></>}
+                                            </span>
+                                        </div>
+                                        <div className={styles.goalTrack}>
+                                            {partial && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
+                                            <span className={styles.goalFillActual} style={{ width: w(actual) }} />
+                                            {milestone != null && milestone < g.target && (
+                                                <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} のマイルストーン ${milestone}`} />
+                                            )}
+                                        </div>
+                                        <div className={styles.goalScale}>
+                                            <span>0</span>
+                                            <span>{latest.month} 目安 {milestone ?? '—'}</span>
+                                            <span>12月 {g.target}</span>
+                                        </div>
+                                        <p className={styles.goalVerdict}>
+                                            {milestone == null
+                                                ? <>この月のマイルストーンは置かれていません。</>
+                                                : ok
+                                                    ? <>今月の目安 {milestone} 件に対し <span className={styles.up}>{partial ? '見込みで届いています' : '到達'}</span>（{partial ? Math.round(pace) : actual} 件）。</>
+                                                    : <>今月の目安 {milestone} 件に <span className={styles.dn}>{milestone - Math.round(partial ? pace : actual)} 件足りません</span>（{partial ? '見込み' : '実績'} {Math.round(partial ? pace : actual)} 件）。</>}
+                                        </p>
+                                        {g.note && <p className={styles.goalNote}>{g.note}</p>}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className={cx(ui.tableWrap, styles.subTable)}>
+                            <table className={ui.dataTable}>
+                                <thead>
+                                    <tr>
+                                        <th>月</th>
+                                        <th className={ui.num}>M1 計</th>
+                                        <th className={ui.num}>…LINEプッシュ</th>
+                                        <th className={ui.num}>…登録当日</th>
+                                        <th className={ui.num}>…1〜30日の再訪</th>
+                                        <th className={ui.num}>…既存会員</th>
+                                        <th className={ui.num}>M3（LINE公式）</th>
+                                        <th className={ui.num}>M2（スカウト）</th>
+                                        <th className={ui.num}>一斉送信の応募率</th>
+                                        <th className={ui.num}>新規のLINE連携率</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[...rows].reverse().map((m) => {
+                                        const b = m.breakdown
+                                        const m1 = m.jobAdBySource.product + m.jobAdBySource.line
+                                        return (
+                                            <tr key={m.month}>
+                                                <td>{m.month}{isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日経過</span>}</td>
+                                                <td className={cx(ui.num, ui.strong)}>{n(m1)}</td>
+                                                <td className={ui.num}>{n(b.prodLinePush)}</td>
+                                                <td className={ui.num}>{n(b.prodDay0 + b.lineDay0)}</td>
+                                                <td className={ui.num}>{n(b.prodD1_30 + b.lineD1_30)}</td>
+                                                <td className={ui.num}>{n(b.prodD31 + b.lineD31)}</td>
+                                                <td className={cx(ui.num, ui.strong)}>{n(m.jobAdBySource.line)}</td>
+                                                <td className={cx(ui.num, ui.strong)}>{n(m.jobAdBySource.scout)}</td>
+                                                <td className={ui.num}>{m.sends > 0 ? `${((m.jobAdBySource.scout / m.sends) * 100).toFixed(3)}%` : '—'}</td>
+                                                <td className={ui.num}>{m.reg > 0 ? pct1(m.regLine / m.reg) : '—'}</td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p className={ui.tableNote}>
+                            M1 の内訳は <strong>M1 全体</strong>（プロダクト経由＋LINE公式）を会員になってからの経過で分けたものです
+                            （LINEプッシュ＋登録当日＋1〜30日の再訪＋既存会員＝M1 計）。<strong>M3（LINE公式）は M1 の内数</strong>です。
+                            9 月は 11／87／15／11 で、目標資料の内訳と一致します。
+                            「一斉送信の応募率」はスカウト経由の応募 ÷ スカウト SMS 送信数で、目標は 0.057%→0.15%。
+                            会員全体の LINE 連携率は現在 <strong>{pct1(data.lineRateAll)}</strong>（目標 22%）。月次ではなく現在値です。
+                        </p>
                     </div>
 
                     <div className={ui.card}>
