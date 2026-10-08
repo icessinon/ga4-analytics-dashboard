@@ -7,8 +7,8 @@ import Alert from '@/components/Alert'
 import { ui, cx } from '@/components/ui'
 import { useReport } from '@/hooks/useReport'
 import {
-    CHANNEL_HAS_OPEN, CHANNEL_LABEL, SCOPE_HINT, SCOPE_LABEL, SOURCE_LABEL,
-    type DeliveryScope,
+    CHANNEL_HAS_OPEN, CHANNEL_LABEL, SCOPE_HINT, SCOPE_LABEL, SOURCE_FILTER_LABEL, SOURCE_LABEL,
+    type DeliveryScope, type SourceFilter,
 } from '@/lib/constants/delivery'
 import type { CampaignRow, DeliveryReportResponse, SubjectRow } from '@/lib/services/delivery/deliveryReportTypes'
 import styles from './DeliveryReportPage.module.css'
@@ -41,7 +41,9 @@ export default function DeliveryReportPage() {
     const [scope, setScope] = useState<DeliveryScope>('xwork')
     const [tab, setTab] = useState<Tab>('channel')
     const [campaignSort, setCampaignSort] = useState<CampaignSort>('tried')
-    const [minSent, setMinSent] = useState(1000)
+    // 本体通知基盤は 1 日十数通〜百数十通の規模なので、既定で足切りすると B-Dash しか出てこない
+    const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+    const [minSent, setMinSent] = useState(0)
 
     // 1 回 1〜2GB スキャンするので自動取得にしない（FilterBar の実行ボタンで取りに行く）
     const report = useReport<DeliveryReportResponse>('/api/delivery-report', {
@@ -53,15 +55,19 @@ export default function DeliveryReportPage() {
 
     const campaigns = useMemo(() => {
         if (!data) return []
-        const rows = data.campaigns.filter((c) => c.tried >= minSent)
+        const rows = data.campaigns.filter(
+            (c) => c.tried >= minSent && (sourceFilter === 'all' || c.source === sourceFilter),
+        )
         const by = (c: CampaignRow) => (campaignSort === 'tried' ? c.tried : (c[campaignSort] ?? -1))
         return [...rows].sort((a, b) => by(b) - by(a))
-    }, [data, campaignSort, minSent])
+    }, [data, campaignSort, minSent, sourceFilter])
 
     const subjects = useMemo(() => {
         if (!data) return []
-        return data.subjects.filter((s) => s.messages >= Math.min(minSent, 20))
-    }, [data, minSent])
+        return data.subjects.filter(
+            (s) => s.messages >= minSent && (sourceFilter === 'all' || s.source === sourceFilter),
+        )
+    }, [data, minSent, sourceFilter])
 
     const sortHead = (key: CampaignSort, label: string) => (
         <th className={cx(ui.num, styles.sortable)} onClick={() => setCampaignSort(key)}>
@@ -86,9 +92,16 @@ export default function DeliveryReportPage() {
                             {(Object.keys(SCOPE_LABEL) as DeliveryScope[]).map((s) => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}
                         </select>
                     </FilterField>
-                    <FilterField label="最小送信数" hint="これ未満の施策は隠す">
+                    <FilterField label="出典" hint="施策別・件名別の表を絞る">
+                        <select className={ui.select} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as SourceFilter)} aria-label="出典">
+                            {(Object.keys(SOURCE_FILTER_LABEL) as SourceFilter[])
+                                .filter((s) => s !== 'line_unit')
+                                .map((s) => <option key={s} value={s}>{SOURCE_FILTER_LABEL[s]}</option>)}
+                        </select>
+                    </FilterField>
+                    <FilterField label="最小送信数" hint="これ未満は隠す">
                         <select className={ui.select} value={minSent} onChange={(e) => setMinSent(Number(e.target.value))} aria-label="最小送信数">
-                            {[0, 100, 1000, 10000].map((v) => <option key={v} value={v}>{v.toLocaleString()}</option>)}
+                            {[0, 100, 1000, 10000].map((v) => <option key={v} value={v}>{v === 0 ? '絞らない' : v.toLocaleString()}</option>)}
                         </select>
                     </FilterField>
                 </FilterBar>
@@ -219,7 +232,7 @@ export default function DeliveryReportPage() {
 
                     {tab === 'campaign' && (
                         <div className={ui.card}>
-                            <h2 className={ui.sectionTitle}>施策別（{campaigns.length} 件）</h2>
+                            <h2 className={ui.sectionTitle}>施策別（{campaigns.length} 件 / 出典: {SOURCE_FILTER_LABEL[sourceFilter]}）</h2>
                             <div className={ui.tableWrap}>
                                 <table className={ui.dataTable}>
                                     <thead>
@@ -266,7 +279,7 @@ export default function DeliveryReportPage() {
 
                     {tab === 'subject' && (
                         <div className={ui.card}>
-                            <h2 className={ui.sectionTitle}>件名別（{subjects.length} 件）</h2>
+                            <h2 className={ui.sectionTitle}>件名別（{subjects.length} 件 / 出典: {SOURCE_FILTER_LABEL[sourceFilter]}）</h2>
                             <div className={ui.tableWrap}>
                                 <table className={ui.dataTable}>
                                     <thead>

@@ -43,11 +43,21 @@ export const SOURCE_LABEL: Record<DeliverySource, string> = {
 export type DeliveryScope = 'xwork' | 'all'
 
 export const SCOPE_LABEL: Record<DeliveryScope, string> = {
-    xwork: 'クロスワークの配信だけ',
-    all: 'グループ全社の配信',
+    xwork: 'クロスワークのみ',
+    all: 'グループ全社',
 }
 
 export const SCOPE_HINT: Record<DeliveryScope, string> = {
-    xwork: '出典の切り替えではなく絞り込み',
-    all: '車両SaaS・運送SaaS・DRS 等も混ぜる',
+    xwork: 'B-Dash 内の絞り込み',
+    all: '車両SaaS・運送SaaS 等も含む',
+}
+
+/** 施策別・件名別の表に出す出典の絞り込み。'all' は絞らない */
+export type SourceFilter = DeliverySource | 'all'
+
+export const SOURCE_FILTER_LABEL: Record<SourceFilter, string> = {
+    all: 'すべて',
+    bdash: 'B-Dash 一斉配信',
+    messaging: '本体通知基盤',
+    line_unit: 'LINEおすすめ求人配信',
 }

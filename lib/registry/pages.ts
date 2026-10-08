@@ -421,7 +421,7 @@ export const PAGES: Record<PageId, PageDef> = {
             description: 'SMS・メール・LINE の配信実績を 1 枚で比較します。出典は B-Dash 一斉配信ログ（xmile-drm.bdash.action_log）、本体通知基盤の送達記録（xwork.delivery_records_history）、本体メールの SES イベント（xwork.ses_event_records）、LINEおすすめ求人配信の実績（xwork.line_job_recommendation_unit_stats）、および GA4 エクスポートの着地セッションです。スカウト LINE のように通知基盤へ topic が増えた配信は、コード変更なしで施策別タブに並びます。',
             capabilities: [
                 'チャネル別（SMS / メール / LINE）の送信・送達・開封率・クリック率・GA4 着地セッション・1人あたり通数',
-                '施策別の送信/開封率/クリック率/配信停止。送信数・開封率・クリック率で並べ替え、開封率 5% 未満を警告表示',
+                '施策別の送信/開封率/クリック率/配信停止。送信数・開封率・クリック率で並べ替え、開封率 5% 未満を警告表示。出典（B-Dash 一斉配信 / 本体通知基盤）と最小送信数で絞り込める',
                 '件名別（メールのみ）の開封率・クリック率・クリック/開封。企業名や都道府県を差し込む可変件名は 1 行に正規化',
                 'GA4 の utm_medium = email / sms / line 別の着地セッション（全チャネル共通の唯一の成果指標）',
                 'LINEおすすめ求人配信のユニット別 配信対象・成功・失敗・受け取り拒否',
