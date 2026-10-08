@@ -61,8 +61,11 @@ model ProductGoal {
   /// 画面に出す名前。未入力なら指標名を使う
   label       String   @db.VarChar(120)
   note        String?  @db.Text
-  /// 期末の目標値
-  target      Float
+  /// 期末の目標値。未設定なら null（実績だけ見る指標）
+  target      Float?
+  /// 対象の期（半期など）。'YYYY-MM' の開始月と終了月。未設定なら直近 12 ヶ月で見る
+  periodStart String?  @db.VarChar(7)
+  periodEnd   String?  @db.VarChar(7)
   /// 比重（%）。使わないなら空
   weight      Int?
   /// 月別の目安 { "2026-10": 136, "2026-11": 148 }

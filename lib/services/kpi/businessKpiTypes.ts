@@ -50,6 +50,27 @@ export interface BusinessKpiMonth {
     /** 当月を同じペースで進んだ場合の月末着地（確定月は実績そのまま） */
     appsJobAdPace: number
     regPace: number
+
+    /**
+     * フォームの到達・完了（GA4）。プロダクトDBでは取れないのでここだけ出典が違う。
+     * GA4 プロパティが選ばれていない月・計測前の月は null。
+     */
+    forms: MonthlyFormCounts | null
+}
+
+export type JobTypeKey = 'JobR' | 'JobA' | 'JobH'
+
+export interface MonthlyFormCounts {
+    /** /members/signup のユーザー数 */
+    signupReach: number
+    /** /members/signup/thanks のユーザー数 */
+    signupComplete: number
+    /** 応募フォーム到達（EF__{key}__Area__Header のユーザー数） */
+    entryReach: Record<JobTypeKey, number>
+    /** 応募完了（送信ボタンのクリック） */
+    entryComplete: Record<JobTypeKey, number>
+    entryReachTotal: number
+    entryCompleteTotal: number
 }
 
 export interface BusinessKpiReport {
@@ -58,6 +79,8 @@ export interface BusinessKpiReport {
     inventoryJobAd: number
     /** 会員全体の LINE 連携率（現在値。月次ではない） */
     lineRateAll: number | null
+    /** GA4 を読めたか。false なら forms が全月 null */
+    hasGa4: boolean
     /** 集計に含めた最終日（JST の昨日） */
     dataTo: string
     scannedBytes: number

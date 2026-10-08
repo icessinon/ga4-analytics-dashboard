@@ -9,13 +9,14 @@
  */
 
 import { prisma } from '@/lib/db/client'
-import { INITIAL_GOAL_TEMPLATE, isGoalMetricKey } from '@/lib/constants/businessGoals'
+import { INITIAL_GOAL_PERIOD, INITIAL_GOAL_TEMPLATE, isGoalMetricKey } from '@/lib/constants/businessGoals'
 import { HttpError } from '@/lib/http/errorResponse'
 import type { ProductGoal, ProductGoalInput } from './productGoalsTypes'
 
 type Row = {
     id: number; productId: number; metricKey: string; label: string; note: string | null
-    target: number; weight: number | null; milestones: unknown; sortOrder: number
+    target: number | null; weight: number | null; milestones: unknown; sortOrder: number
+    periodStart: string | null; periodEnd: string | null
 }
 
 /** milestones は JSON カラムなので、形が崩れていても落ちないように読む */
@@ -42,6 +43,8 @@ function toGoal(r: Row): ProductGoal {
         weight: r.weight,
         milestones: parseMilestones(r.milestones),
         sortOrder: r.sortOrder,
+        periodStart: r.periodStart,
+        periodEnd: r.periodEnd,
     }
 }
 
@@ -62,6 +65,7 @@ export async function listProductGoals(productId: number): Promise<{ goals: Prod
                 productId, metricKey: t.metricKey, label: t.label,
                 target: t.target, weight: t.weight, milestones: t.milestones,
                 note: t.note, sortOrder: i,
+                periodStart: INITIAL_GOAL_PERIOD.start, periodEnd: INITIAL_GOAL_PERIOD.end,
             })),
         })
         rows = (await prisma.productGoal.findMany({ where, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] })) as Row[]
@@ -73,7 +77,14 @@ export async function listProductGoals(productId: number): Promise<{ goals: Prod
 function validate(input: ProductGoalInput): void {
     if (!isGoalMetricKey(input.metricKey)) throw new HttpError(400, `指標 ${input.metricKey} は選べません`)
     if (!input.label?.trim()) throw new HttpError(400, '目標の名前を入れてください')
-    if (!Number.isFinite(input.target)) throw new HttpError(400, '目標値を数値で入れてください')
+    // 目標値は未設定でよい（実績だけ見たい指標がある）。入っているなら数値であること
+    if (input.target != null && !Number.isFinite(input.target)) throw new HttpError(400, '目標値を数値で入れてください')
+    for (const [name, v] of [['開始月', input.periodStart], ['終了月', input.periodEnd]] as const) {
+        if (v != null && v !== '' && !/^\d{4}-\d{2}$/.test(v)) throw new HttpError(400, `${name}は YYYY-MM で入れてください`)
+    }
+    if (input.periodStart && input.periodEnd && input.periodStart > input.periodEnd) {
+        throw new HttpError(400, '期の開始月が終了月より後になっています')
+    }
     for (const [k, v] of Object.entries(input.milestones ?? {})) {
         if (!/^\d{4}-\d{2}$/.test(k)) throw new HttpError(400, `月の指定 ${k} が YYYY-MM ではありません`)
         if (!Number.isFinite(v)) throw new HttpError(400, `${k} の目安を数値で入れてください`)
@@ -88,8 +99,10 @@ export async function saveProductGoals(productId: number, inputs: ProductGoalInp
             metricKey: input.metricKey,
             label: input.label.trim(),
             note: input.note?.trim() || null,
-            target: input.target,
+            target: input.target ?? null,
             weight: input.weight ?? null,
+            periodStart: input.periodStart || null,
+            periodEnd: input.periodEnd || null,
             milestones: input.milestones ?? {},
             sortOrder: input.sortOrder ?? i,
         }

@@ -14,7 +14,10 @@ import {
     BUSINESS_KPI_METRICS, JOB_AD_SOURCES, formatKpi, isPartial, metricValue, paceOf,
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
-import { GOAL_METRICS, GOAL_METRIC_KEYS, formatGoalValue, type GoalMetricKey } from '@/lib/constants/businessGoals'
+import {
+    GOAL_METRICS, GOAL_METRIC_KEYS, cumulative, formatGoalValue, halfPeriods, inPeriod,
+    type GoalMetricKey,
+} from '@/lib/constants/businessGoals'
 import { CHART_COLORS } from '@/lib/constants/chartColors'
 import type { ProductGoal, ProductGoalsResponse } from '@/lib/services/kpi/productGoalsTypes'
 import type { BusinessKpiMonth, BusinessKpiResponse } from '@/lib/services/kpi/businessKpiTypes'
@@ -48,7 +51,10 @@ function Delta({ cur, prev }: { cur: number | null; prev: number | null | undefi
 export default function BusinessKpiPage() {
     const [months, setMonths] = useState(12)
     const [metric, setMetric] = useState<BusinessKpiMetric>('appsTotal')
-    const report = useReport<BusinessKpiResponse>('/api/business-kpi', { body: { months }, keepPreviousData: true })
+    const { currentProduct } = useProduct()
+    const propertyId = currentProduct?.ga4PropertyId ?? ''
+    // propertyId を渡すとフォーム完了率（GA4）が付く。プロダクト未選択でも本体の数字は出る
+    const report = useReport<BusinessKpiResponse>('/api/business-kpi', { body: { months, propertyId }, keepPreviousData: true })
     const data = report.data
     const rows: BusinessKpiMonth[] = data?.months ?? []
     const latest = rows[rows.length - 1]
@@ -264,6 +270,14 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
         })
     }, [latest])
 
+    /** 期のプリセット。表示中の期間に重なる上半期・下半期を出す */
+    const periodPresets = useMemo(
+        () => (rows.length > 0 ? halfPeriods(rows[0].month, rows[rows.length - 1].month) : []),
+        [rows],
+    )
+    const applyPeriod = (start: string, end: string) =>
+        setDraft((d) => d.map((g) => ({ ...g, periodStart: start, periodEnd: end })))
+
     const startEdit = () => { setDraft(goals.map((g) => ({ ...g, milestones: { ...g.milestones } }))); setError(null); setEditing(true) }
     const patch = (i: number, p: Partial<ProductGoal>) => setDraft((d) => d.map((g, j) => (j === i ? { ...g, ...p } : g)))
     const patchMilestone = (i: number, month: string, raw: string) =>
@@ -277,7 +291,10 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
 
     const addGoal = () => setDraft((d) => [...d, {
         id: 0, productId: productId ?? 0, metricKey: 'apps_total',
-        label: '', note: null, target: 0, weight: null, milestones: {}, sortOrder: d.length,
+        label: '', note: null, target: null, weight: null, milestones: {}, sortOrder: d.length,
+        // 期は直前の目標に揃える（同じ期の目標をまとめて足すことが多い）
+        periodStart: d[d.length - 1]?.periodStart ?? null,
+        periodEnd: d[d.length - 1]?.periodEnd ?? null,
     }])
 
     const save = async () => {
@@ -291,8 +308,10 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                     productId,
                     goals: draft.map((g, i) => ({
                         id: g.id || undefined, metricKey: g.metricKey, label: g.label, note: g.note,
-                        target: Number(g.target), weight: g.weight == null ? null : Number(g.weight),
+                        target: g.target == null ? null : Number(g.target),
+                        weight: g.weight == null ? null : Number(g.weight),
                         milestones: g.milestones, sortOrder: i,
+                        periodStart: g.periodStart, periodEnd: g.periodEnd,
                     })),
                 }),
             })
@@ -341,12 +360,20 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
             {error && <Alert tone="error">{error}</Alert>}
 
             {editing ? (
+                <>
+                <div className={styles.presetRow}>
+                    <span className={styles.presetLabel}>期をまとめて設定:</span>
+                    {periodPresets.map((p) => (
+                        <button key={p.start} type="button" className={ui.btnGhost} onClick={() => applyPeriod(p.start, p.end)}>{p.label}</button>
+                    ))}
+                </div>
                 <div className={ui.tableWrap}>
                     <table className={ui.dataTable}>
                         <thead>
                             <tr>
                                 <th>目標の名前</th>
                                 <th>何を数えるか</th>
+                                <th>期（開始〜終了）</th>
                                 <th className={ui.num}>期末目標</th>
                                 <th className={ui.num}>比重%</th>
                                 {milestoneMonths.map((m) => <th key={m} className={ui.num}>{m.slice(2)}</th>)}
@@ -362,7 +389,12 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                             {GOAL_METRIC_KEYS.map((k) => <option key={k} value={k}>{GOAL_METRICS[k].label}</option>)}
                                         </select>
                                     </td>
-                                    <td className={ui.num}><input className={cx(ui.input, styles.numInput)} type="number" step="any" value={g.target} onChange={(e) => patch(i, { target: Number(e.target.value) })} /></td>
+                                    <td className={styles.periodCell}>
+                                        <input className={cx(ui.input, styles.monthInput)} value={g.periodStart ?? ''} placeholder="2026-07" onChange={(e) => patch(i, { periodStart: e.target.value || null })} aria-label="期の開始月" />
+                                        <span className={ui.note}>〜</span>
+                                        <input className={cx(ui.input, styles.monthInput)} value={g.periodEnd ?? ''} placeholder="2026-12" onChange={(e) => patch(i, { periodEnd: e.target.value || null })} aria-label="期の終了月" />
+                                    </td>
+                                    <td className={ui.num}><input className={cx(ui.input, styles.numInput)} type="number" step="any" value={g.target ?? ''} placeholder="未設定" onChange={(e) => patch(i, { target: e.target.value === '' ? null : Number(e.target.value) })} /></td>
                                     <td className={ui.num}><input className={cx(ui.input, styles.numInput)} type="number" value={g.weight ?? ''} onChange={(e) => patch(i, { weight: e.target.value === '' ? null : Number(e.target.value) })} /></td>
                                     {milestoneMonths.map((m) => (
                                         <td key={m} className={ui.num}>
@@ -378,8 +410,10 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                         「何を数えるか」で選んだ指標の実績が、毎回プロダクトDBから自動で集計されます。
                         率の指標（一斉送信の応募率・新規のLINE連携率）は <strong>0.15 のように小数</strong>で入れてください（0.15 = 15%）。
                         月別の目安は空欄にすると判定しません。
+                        <strong>期</strong>を入れると、その期間の累計（率は通算）が目標カードに出ます。
                     </p>
                 </div>
+                </>
             ) : !loaded ? (
                 <p className={ui.sectionNote}>目標を読み込んでいます...</p>
             ) : goals.length === 0 ? (
@@ -395,7 +429,11 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                             const pace = def.isRate ? actual : (paceOf(actual, latest) ?? actual)
                             const milestone = g.milestones[latest.month] ?? null
                             const basis = partial ? pace : actual
-                            const w = (v: number | null) => `${v == null || g.target <= 0 ? 0 : Math.min(100, (v / g.target) * 100)}%`
+                            // 期の累計。率は Σ分子 ÷ Σ分母 で出す（月をまたいで足せないため）
+                            const periodMonths = rows.filter((m) => inPeriod(m.month, g.periodStart, g.periodEnd))
+                            const total = cumulative(periodMonths, g.metricKey)
+                            const hasTarget = g.target != null && g.target > 0
+                            const w = (v: number | null) => `${v == null || !hasTarget ? 0 : Math.min(100, (v / (g.target as number)) * 100)}%`
                             const ok = milestone == null || basis == null ? null : basis >= milestone
                             return (
                                 <div key={g.id} className={styles.goalCard} style={{ '--goal-accent': color } as CSSProperties}>
@@ -403,30 +441,49 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                         <h3 className={styles.goalTitle}>{g.label}</h3>
                                         {g.weight != null && <span className={styles.goalWeight}>比重 {g.weight}%</span>}
                                     </div>
-                                    <p className={styles.goalDef}>{def.label}｜{def.definition}</p>
+                                    <p className={styles.goalDef}>
+                                        {def.label}｜{def.definition}
+                                        {def.fromGa4 && <span className={styles.ga4Tag}>GA4</span>}
+                                    </p>
                                     <div className={styles.goalNums}>
                                         <span className={styles.goalActual}>{formatGoalValue(actual, g.metricKey)}</span>
-                                        {partial && !def.isRate && <span className={styles.goalPace}>／ 月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></span>}
+                                        <span className={styles.goalPace}>
+                                            {latest.month}
+                                            {partial && !def.isRate && <> ／ 月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></>}
+                                        </span>
                                     </div>
-                                    <div className={styles.goalTrack}>
-                                        {partial && !def.isRate && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
-                                        <span className={styles.goalFillActual} style={{ width: w(actual) }} />
-                                        {milestone != null && milestone < g.target && (
-                                            <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} の目安 ${milestone}`} />
-                                        )}
-                                    </div>
-                                    <div className={styles.goalScale}>
-                                        <span>0</span>
-                                        <span>{latest.month} 目安 {milestone == null ? '—' : formatGoalValue(milestone, g.metricKey)}</span>
-                                        <span>期末 {formatGoalValue(g.target, g.metricKey)}</span>
-                                    </div>
-                                    <p className={styles.goalVerdict}>
-                                        {milestone == null
-                                            ? <>この月の目安は設定されていません。</>
-                                            : ok
-                                                ? <>今月の目安に <span className={styles.up}>{partial && !def.isRate ? '見込みで届いています' : '到達'}</span>（{formatGoalValue(basis, g.metricKey)}）。</>
-                                                : <>今月の目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>届いていません</span>（{partial && !def.isRate ? '見込み' : '実績'} {formatGoalValue(basis, g.metricKey)}）。</>}
+                                    {hasTarget ? (
+                                        <>
+                                            <div className={styles.goalTrack}>
+                                                {partial && !def.isRate && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
+                                                <span className={styles.goalFillActual} style={{ width: w(actual) }} />
+                                                {milestone != null && milestone < (g.target as number) && (
+                                                    <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} の目安 ${milestone}`} />
+                                                )}
+                                            </div>
+                                            <div className={styles.goalScale}>
+                                                <span>0</span>
+                                                <span>{latest.month} 目安 {milestone == null ? '—' : formatGoalValue(milestone, g.metricKey)}</span>
+                                                <span>期末 {formatGoalValue(g.target, g.metricKey)}</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className={styles.goalNoTarget}>目標値は未設定（実績だけ見ています）</p>
+                                    )}
+                                    <p className={styles.goalPeriod}>
+                                        {g.periodStart || g.periodEnd
+                                            ? <>期 {g.periodStart ?? '—'} 〜 {g.periodEnd ?? '—'} の{def.isRate ? '通算' : '累計'}: <strong>{formatGoalValue(total, g.metricKey)}</strong>（{periodMonths.length} ヶ月分）</>
+                                            : <>期が未設定です。表示中の {rows.length} ヶ月の{def.isRate ? '通算' : '累計'}: <strong>{formatGoalValue(total, g.metricKey)}</strong></>}
                                     </p>
+                                    {hasTarget && (
+                                        <p className={styles.goalVerdict}>
+                                            {milestone == null
+                                                ? <>この月の目安は設定されていません。</>
+                                                : ok
+                                                    ? <>今月の目安に <span className={styles.up}>{partial && !def.isRate ? '見込みで届いています' : '到達'}</span>（{formatGoalValue(basis, g.metricKey)}）。</>
+                                                    : <>今月の目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>届いていません</span>（{partial && !def.isRate ? '見込み' : '実績'} {formatGoalValue(basis, g.metricKey)}）。</>}
+                                        </p>
+                                    )}
                                     {g.note && <p className={styles.goalNote}>{g.note}</p>}
                                 </div>
                             )
@@ -464,6 +521,13 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                             </tbody>
                         </table>
                     </div>
+                    <p className={ui.tableNote}>
+                        <strong>GA4</strong> の印が付いた指標だけ出典が GA4 で、他はプロダクトDBです。
+                        <strong>応募フォーム完了率はサイト内の通常フォームだけ</strong>を数えており、featured 配信経由の応募（別フォーム・GTMラベル未実装）は入りません。
+                        2026-09 でラベル基準の完了は 94 件、プロダクトDB の求人広告の応募は 187 件で、この差が featured 経由などです。
+                        到達側のビューラベルは「50%表示×1秒」が条件でハイドレーション後に付くため、ファーストビューでは少なく出て完了率が高めに振れることがあります。
+                        <strong>水準ではなく種別間の差と時系列の変化で見てください。</strong>
+                    </p>
                     <p className={ui.tableNote}>
                         右の 4 列は「プロダクト経由＋LINE公式の応募」を、会員になってからの経過で分けたものです
                         （LINEプッシュ＋登録当日＋1〜30日の再訪＋既存会員＝その合計）。

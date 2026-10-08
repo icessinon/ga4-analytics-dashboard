@@ -22,7 +22,9 @@
  */
 
 import { runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
-import type { BusinessKpiMonth, BusinessKpiReport, JobAdSource } from './businessKpiTypes'
+import type { Ga4Reporter } from '@/lib/api/ga4/report'
+import { runMonthlyFormCounts } from './formCvrService'
+import type { BusinessKpiMonth, BusinessKpiReport, JobAdSource, MonthlyFormCounts } from './businessKpiTypes'
 
 const APPLICATIONS = '`xmile-drm.xwork.job_applications`'
 const JOB_DESCRIPTIONS = '`xmile-drm.xwork.job_descriptions`'
@@ -37,7 +39,11 @@ export function clampMonths(months: unknown): number {
     return Math.min(24, Math.max(1, Number(months) || 6))
 }
 
-/** 'YYYY-MM-01' 形式で nMonths 前の月初を返す */
+/** 'YYYY-MM-01' 形式で nMonths 前の月初を返す。route が GA4 の期間にも使う */
+export function startMonthOf(nMonths: number): string {
+    return startMonth(nMonths)
+}
+
 function startMonth(nMonths: number): string {
     const now = new Date(Date.now() + 9 * 3600_000)
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (nMonths - 1), 1))
@@ -138,9 +144,23 @@ function sql(from: string): string {
     ORDER BY month`
 }
 
-export async function runBusinessKpiReport(monthsInput: unknown): Promise<BusinessKpiReport> {
+/**
+ * 事業KPI の月次。
+ * reporter を渡すとフォームの到達・完了（GA4）も付く。プロダクトDBでは取れないので
+ * ここだけ出典が違う。GA4 が落ちても本体の数字は返す（forms が null になるだけ）。
+ */
+export async function runBusinessKpiReport(monthsInput: unknown, reporter?: Ga4Reporter | null): Promise<BusinessKpiReport> {
     const nMonths = clampMonths(monthsInput)
-    const { rows, scannedBytes } = await runGa4EventsQuery(sql(startMonth(nMonths)))
+    const [{ rows, scannedBytes }, forms] = await Promise.all([
+        runGa4EventsQuery(sql(startMonth(nMonths))),
+        reporter
+            ? runMonthlyFormCounts(reporter).catch((e) => {
+                  console.error('Business KPI: GA4 のフォーム集計に失敗しました', e)
+                  return null
+              })
+            : Promise.resolve(null),
+    ])
+    const formsByMonth: Map<string, MonthlyFormCounts> | null = forms
 
     const inventoryJobAd = rows.length > 0 ? num(rows[0].inventory_jobad) : 0
     const lineRateAll = rows.length > 0 && rows[0].line_rate_all != null ? Number(rows[0].line_rate_all) : null
@@ -161,8 +181,9 @@ export async function runBusinessKpiReport(monthsInput: unknown): Promise<Busine
             apply_signup: num(r.ad_apply_signup),
             others: num(r.ad_others),
         }
+        const month = String(r.month ?? '')
         return {
-            month: String(r.month ?? ''),
+            month,
             daysElapsed, daysInMonth,
             appsTotal: num(r.apps_total),
             appsJobAd,
@@ -186,8 +207,9 @@ export async function runBusinessKpiReport(monthsInput: unknown): Promise<Busine
             appsPerJob: inventoryJobAd > 0 ? appsJobAd / inventoryJobAd : null,
             appsJobAdPace: pace(appsJobAd),
             regPace: pace(reg),
+            forms: formsByMonth?.get(month) ?? null,
         }
     })
 
-    return { months, inventoryJobAd, lineRateAll, dataTo, scannedBytes, fetchedAt: new Date().toISOString() }
+    return { months, inventoryJobAd, lineRateAll, hasGa4: formsByMonth != null, dataTo, scannedBytes, fetchedAt: new Date().toISOString() }
 }

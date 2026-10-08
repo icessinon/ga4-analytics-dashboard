@@ -9,8 +9,11 @@ export interface ProductGoal {
     metricKey: GoalMetricKey
     label: string
     note: string | null
-    /** 期末の目標値 */
-    target: number
+    /** 期末の目標値。未設定なら null（実績だけ見る指標） */
+    target: number | null
+    /** 対象の期。'YYYY-MM'。未設定なら期で絞らない */
+    periodStart: string | null
+    periodEnd: string | null
     /** 比重（%）。使わないなら null */
     weight: number | null
     /** 月別の目安 { 'YYYY-MM': 値 } */
@@ -31,8 +34,10 @@ export interface ProductGoalInput {
     metricKey: string
     label: string
     note?: string | null
-    target: number
+    target?: number | null
     weight?: number | null
+    periodStart?: string | null
+    periodEnd?: string | null
     milestones?: Record<string, number>
     sortOrder?: number
 }

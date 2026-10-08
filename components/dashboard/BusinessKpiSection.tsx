@@ -29,6 +29,8 @@ import styles from './BusinessKpiSection.module.css'
 export interface BusinessKpiSectionProps {
     /** ダッシュボードの「表示月」。'YYYY-MM' */
     selectedMonth: string
+    /** 渡すとフォーム完了率（GA4）も集計される。ここでは使わないが API を揃えておく */
+    propertyId?: string
 }
 
 export default function BusinessKpiSection({ selectedMonth }: BusinessKpiSectionProps) {
