@@ -84,7 +84,7 @@ export default function BusinessKpiPage() {
                         </h2>
                         <p className={ui.sectionNote}>
                             {partial
-                                ? <>{latest.daysInMonth} 日のうち <strong>{latest.daysElapsed} 日</strong>までの実績を、同じペースで月末まで延ばした値です。日数で割り戻しているだけなので、<strong>月初・月末に偏る施策がある月は外れます</strong>。</>
+                                ? <>{latest.daysInMonth} 日のうち <strong>{(latest.elapsedRatio * latest.daysInMonth).toFixed(1)} 日</strong>ぶんの実績を、同じペースで月末まで延ばした値です（当日は時刻ぶんの端数で数えています）。日数で割り戻しているだけなので、<strong>月初・月末に偏る施策がある月は外れます</strong>。</>
                                 : <>この月は確定しています。</>}
                         </p>
                         <div className={styles.projection}>
@@ -99,7 +99,7 @@ export default function BusinessKpiPage() {
                                         <span className={styles.projPace}>{formatKpi(pace, def)}</span>
                                         <span className={styles.projFormula}>
                                             {partial
-                                                ? <>実績 {formatKpi(v, def)} ÷ {latest.daysElapsed}日 × {latest.daysInMonth}日<br /></>
+                                                ? <>実績 {formatKpi(v, def)} ÷ 経過 {(latest.elapsedRatio * latest.daysInMonth).toFixed(1)}日 × {latest.daysInMonth}日<br /></>
                                                 : null}
                                             前月（{prev?.month ?? '—'}）{formatKpi(p, def)} 比 <Delta cur={pace} prev={p} />
                                         </span>
@@ -198,7 +198,7 @@ export default function BusinessKpiPage() {
                                         <tr key={m.month}>
                                             <td>
                                                 {m.month}
-                                                {isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日経過</span>}
+                                                {isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日目</span>}
                                             </td>
                                             <td className={cx(ui.num, ui.strong)}>{n(m.appsTotal)}</td>
                                             <td className={ui.num}>{n(m.appsJobAd)}</td>
@@ -430,6 +430,9 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                             const milestone = g.milestones[latest.month] ?? null
                             const basis = partial ? pace : actual
                             const ok = milestone == null || basis == null ? null : basis >= milestone
+                            const latestIdx = rows.findIndex((m) => m.month === latest.month)
+                            const prevRow = latestIdx > 0 ? rows[latestIdx - 1] : undefined
+                            const prevValue = prevRow ? def.extract(prevRow) : null
 
                             // 期の累計。率は Σ分子 ÷ Σ分母 で通算する（月をまたいで足せないため）
                             const periodMonths = rows.filter((m) => inPeriod(m.month, g.periodStart, g.periodEnd))
@@ -492,6 +495,17 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                                         ? <>目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.up}>到達</span></>
                                                         : <>目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>未達</span></>}
                                             </span>
+                                            <span className={styles.goalColSub}>
+                                                {prevValue == null || prevValue === 0 || basis == null
+                                                    ? <>先月比 —</>
+                                                    : <>
+                                                        先月（{prevRow?.month.slice(5)}月 {formatGoalValue(prevValue, g.metricKey)}）比{' '}
+                                                        <span className={basis >= prevValue ? styles.up : styles.dn}>
+                                                            {basis >= prevValue ? '+' : ''}{Math.round(((basis - prevValue) / prevValue) * 100)}%
+                                                        </span>
+                                                        {partial && !def.isRate && <>（見込み）</>}
+                                                    </>}
+                                            </span>
                                         </div>
                                         <div className={styles.goalCol}>
                                             <span className={styles.goalColLabel}>
@@ -525,6 +539,10 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                                 <span>{planAll != null ? `期の目安 ${planAll.toLocaleString()}` : `月あたり ${formatGoalValue(g.target, g.metricKey)}`}</span>
                                             </div>
                                         </>
+                                    )}
+
+                                    {periodMonths.length > 1 && (
+                                        <GoalTrend months={periodMonths} metricKey={g.metricKey} milestones={g.milestones} color={color} />
                                     )}
 
                                     {planSoFar != null && paceSoFar != null && (
@@ -561,7 +579,7 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                     const b = m.breakdown
                                     return (
                                         <tr key={m.month}>
-                                            <td>{m.month}{isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日経過</span>}</td>
+                                            <td>{m.month}{isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日目</span>}</td>
                                             {goals.map((g) => (
                                                 <td key={g.id} className={cx(ui.num, ui.strong)}>{formatGoalValue(GOAL_METRICS[g.metricKey].extract(m), g.metricKey)}</td>
                                             ))}
@@ -589,6 +607,51 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                     </p>
                 </>
             )}
+        </div>
+    )
+}
+
+/**
+ * 目標カードの中に出す期の推移。今月だけの数字だと良し悪しが分からないので、
+ * 期の各月を並べて目安（点線）と重ねる。途中の月は実績の上に月末見込みを薄く積む。
+ * 18 枚のカードそれぞれに置くため、グラフライブラリは使わず CSS の棒で描く。
+ */
+function GoalTrend({ months, metricKey, milestones, color }: {
+    months: BusinessKpiMonth[]
+    metricKey: GoalMetricKey
+    milestones: Record<string, number>
+    color: string
+}) {
+    const def = GOAL_METRICS[metricKey]
+    const cols = months.map((m) => {
+        const actual = def.extract(m)
+        const pace = def.isRate ? actual : (paceOf(actual, m) ?? actual)
+        return { month: m.month, actual, pace, plan: milestones[m.month] ?? null, partial: isPartial(m) }
+    })
+    const max = Math.max(
+        ...cols.flatMap((c) => [c.actual ?? 0, c.pace ?? 0, c.plan ?? 0]),
+        Number.EPSILON,
+    )
+    const h = (v: number | null) => `${v == null ? 0 : Math.max(1, Math.min(100, (v / max) * 100))}%`
+
+    return (
+        <div className={styles.trend} style={{ '--trend-color': color } as CSSProperties}>
+            <div className={styles.trendHead}>期の推移（薄い部分＝月末見込み、点線＝その月の目安）</div>
+            <div className={styles.trendBars}>
+                {cols.map((c) => (
+                    <div key={c.month} className={styles.trendCol}>
+                        <span className={styles.trendValue}>{formatGoalValue(c.actual, metricKey)}</span>
+                        <div className={styles.trendBarWrap} title={`${c.month} 実績 ${formatGoalValue(c.actual, metricKey)}${c.plan != null ? ` / 目安 ${formatGoalValue(c.plan, metricKey)}` : ''}`}>
+                            {c.plan != null && <span className={styles.trendPlan} style={{ bottom: h(c.plan) }} />}
+                            {c.partial && !def.isRate && c.pace != null && c.actual != null && (
+                                <span className={styles.trendBarPace} style={{ height: h(c.pace - c.actual) }} />
+                            )}
+                            <span className={styles.trendBar} style={{ height: h(c.actual) }} />
+                        </div>
+                        <span className={styles.trendLabel}>{Number(c.month.slice(5))}月</span>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }

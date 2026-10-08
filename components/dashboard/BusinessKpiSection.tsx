@@ -91,7 +91,7 @@ export default function BusinessKpiSection({ selectedMonth }: BusinessKpiSection
 
                         {isPartial(cur) && (
                             <p className={styles.sourceNote}>
-                                {cur.month} は <strong>{cur.daysInMonth} 日のうち {cur.daysElapsed} 日</strong>までの途中集計です。
+                                {cur.month} は <strong>{cur.daysInMonth} 日のうち {cur.daysElapsed} 日目</strong>の途中です（当日分も入っています）。
                                 途中の月をそのまま前月の満額と比べると必ず大きなマイナスに見えるので、前月比ではなく<strong>月末見込み</strong>（今のペースで進んだ場合）を出しています。
                             </p>
                         )}

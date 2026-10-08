@@ -44,6 +44,17 @@ export function startMonthOf(nMonths: number): string {
     return startMonth(nMonths)
 }
 
+/**
+ * 当月がどれだけ進んだか（0〜1）。当日は時刻ぶんの端数で数える。
+ * 当日を丸ごと 1 日として数えると、朝に見たときだけ月末見込みが大きく下振れする。
+ */
+function currentMonthElapsedRatio(daysInMonth: number): number {
+    const jst = new Date(Date.now() + 9 * 3600_000)
+    const completed = jst.getUTCDate() - 1
+    const todayFraction = (jst.getUTCHours() * 3600 + jst.getUTCMinutes() * 60 + jst.getUTCSeconds()) / 86400
+    return Math.min(1, Math.max(1 / 86400, (completed + todayFraction) / daysInMonth))
+}
+
 function startMonth(nMonths: number): string {
     const now = new Date(Date.now() + 9 * 3600_000)
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (nMonths - 1), 1))
@@ -85,7 +96,7 @@ function sql(from: string): string {
       FROM ${APPLICATIONS} ja
       JOIN ${JOB_DESCRIPTIONS_ALL} jd ON jd.id = ja.media_id
       LEFT JOIN members mb ON mb.user_id = ja.user_id
-      WHERE DATE(ja.created_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY)
+      WHERE DATE(ja.created_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND CURRENT_DATE('Asia/Tokyo')
     ),
     agg AS (
       SELECT m,
@@ -117,21 +128,23 @@ function sql(from: string): string {
         COUNTIF(NOT IFNULL(is_apply_signup, FALSE)) AS reg_plain,
         COUNTIF(IFNULL(is_apply_signup, FALSE)) AS reg_apply_signup
       FROM members
-      WHERE DATE(user_created_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY)
+      WHERE DATE(user_created_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND CURRENT_DATE('Asia/Tokyo')
       GROUP BY m
     ),
     snd AS (
       SELECT DATE_TRUNC(DATE(sent_at,'Asia/Tokyo'), MONTH) AS m, COUNT(*) AS sends
       FROM ${SCOUT_ATTEMPTS}
       WHERE sent_at IS NOT NULL
-        AND DATE(sent_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY)
+        AND DATE(sent_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND CURRENT_DATE('Asia/Tokyo')
       GROUP BY m
     )
     SELECT
       FORMAT_DATE('%Y-%m', agg.m) AS month,
-      IF(agg.m = DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY), MONTH),
-         EXTRACT(DAY FROM DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY)),
+      -- 当日を含む「何日目か」。当月だけ途中になる
+      IF(agg.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH),
+         EXTRACT(DAY FROM CURRENT_DATE('Asia/Tokyo')),
          EXTRACT(DAY FROM LAST_DAY(agg.m))) AS days_elapsed,
+      agg.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH) AS is_current_month,
       EXTRACT(DAY FROM LAST_DAY(agg.m)) AS days_in_month,
       agg.* EXCEPT (m),
       IFNULL(reg.reg, 0) AS reg, IFNULL(reg.reg_line, 0) AS reg_line,
@@ -139,7 +152,7 @@ function sql(from: string): string {
       IFNULL(snd.sends, 0) AS sends,
       (SELECT COUNT(*) FROM ${JOB_DESCRIPTIONS} WHERE contract_type='求人広告' AND is_public) AS inventory_jobad,
       (SELECT COUNTIF(line_user_id IS NOT NULL) / COUNT(*) FROM ${MEMBER_USERS}) AS line_rate_all,
-      CAST(DATE_SUB(CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 DAY) AS STRING) AS data_to
+      CAST(CURRENT_DATE('Asia/Tokyo') AS STRING) AS data_to
     FROM agg LEFT JOIN reg USING (m) LEFT JOIN snd USING (m)
     ORDER BY month`
 }
@@ -169,10 +182,12 @@ export async function runBusinessKpiReport(monthsInput: unknown, reporter?: Ga4R
     const months: BusinessKpiMonth[] = rows.map((r) => {
         const daysElapsed = num(r.days_elapsed)
         const daysInMonth = num(r.days_in_month)
+        const isCurrent = r.is_current_month === 'true' || r.is_current_month === '1'
+        const elapsedRatio = isCurrent ? currentMonthElapsedRatio(daysInMonth) : 1
         const appsJobAd = num(r.apps_jobad)
         const reg = num(r.reg)
         // 当月は途中なので、同じペースで進んだ場合の月末着地も出す（確定月は実績のまま）
-        const pace = (v: number) => (daysElapsed > 0 && daysElapsed < daysInMonth ? Math.round((v / daysElapsed) * daysInMonth) : v)
+        const pace = (v: number) => (elapsedRatio < 1 ? Math.round(v / elapsedRatio) : v)
         const jobAdBySource: Record<JobAdSource, number> = {
             scout: num(r.ad_scout),
             product: num(r.ad_product),
@@ -184,7 +199,7 @@ export async function runBusinessKpiReport(monthsInput: unknown, reporter?: Ga4R
         const month = String(r.month ?? '')
         return {
             month,
-            daysElapsed, daysInMonth,
+            daysElapsed, daysInMonth, elapsedRatio,
             appsTotal: num(r.apps_total),
             appsJobAd,
             appsAgent: num(r.apps_agent),

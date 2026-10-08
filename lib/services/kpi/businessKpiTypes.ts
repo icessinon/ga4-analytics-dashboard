@@ -6,9 +6,15 @@ export type JobAdSource = 'scout' | 'product' | 'line' | 'hrs' | 'apply_signup' 
 export interface BusinessKpiMonth {
     /** 'YYYY-MM' */
     month: string
-    /** その月の経過日数。当月は昨日まで */
+    /** その月の「何日目か」。当月は今日を含む（当日分も集計に入っている） */
     daysElapsed: number
     daysInMonth: number
+    /**
+     * 月がどれだけ進んだか（0〜1）。確定月は 1。
+     * **当日は途中なので時刻ぶんの端数で持つ**。これで割らないと、朝に見たときだけ
+     * 「1 日分あるのに実績が少ない」扱いになって月末見込みが実態より低く出る。
+     */
+    elapsedRatio: number
 
     appsTotal: number
     appsJobAd: number
@@ -81,7 +87,7 @@ export interface BusinessKpiReport {
     lineRateAll: number | null
     /** GA4 を読めたか。false なら forms が全月 null */
     hasGa4: boolean
-    /** 集計に含めた最終日（JST の昨日） */
+    /** 集計に含めた最終日（JST の今日） */
     dataTo: string
     scannedBytes: number
     fetchedAt: string
