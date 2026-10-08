@@ -16,7 +16,8 @@ export async function POST(request: Request) {
             ? createGa4Reporter({
                   propertyId: pid,
                   accessToken: await getGA4AccessToken(),
-                  dateRanges: [{ startDate: `${startMonthOf(clampMonths(months))}`, endDate: 'yesterday' }],
+                  // プロダクトDB 側が当日まで数えるので GA4 も today で揃える
+                  dateRanges: [{ startDate: startMonthOf(clampMonths(months)), endDate: 'today' }],
               })
             : null
         const report = await runBusinessKpiReport(months, reporter)

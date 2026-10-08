@@ -9,7 +9,7 @@ import InfoTooltip from '@/components/InfoTooltip'
 import BusinessKpiTrendChart from './BusinessKpiTrendChart'
 import { useReport } from '@/hooks/useReport'
 import {
-    BUSINESS_KPI_METRICS, DASHBOARD_METRICS, formatKpi, isPartial, metricValue, paceOf,
+    BUSINESS_KPI_METRICS, DASHBOARD_METRICS, MIN_DAYS_FOR_PACE, canProject, formatKpi, isPartial, metricValue, paceOf,
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
 import type { BusinessKpiResponse } from '@/lib/services/kpi/businessKpiTypes'
@@ -80,9 +80,11 @@ export default function BusinessKpiSection({ selectedMonth }: BusinessKpiSection
                                         <span className={styles.tileLabel}>{def.label}</span>
                                         <span className={styles.tileValue}>{formatKpi(v, def)}</span>
                                         <span className={styles.tileSub}>
-                                            {isPartial(cur)
-                                                ? <>月末見込み <strong>{formatKpi(pace, def)}</strong></>
-                                                : <>前月比 {delta == null ? '—' : <span className={delta >= 0 ? styles.up : styles.dn}>{delta >= 0 ? '+' : ''}{delta.toFixed(0)}%</span>}</>}
+                                            {!isPartial(cur)
+                                                ? <>前月比 {delta == null ? '—' : <span className={delta >= 0 ? styles.up : styles.dn}>{delta >= 0 ? '+' : ''}{delta.toFixed(0)}%</span>}</>
+                                                : canProject(cur)
+                                                    ? <>月末見込み <strong>{formatKpi(pace, def)}</strong></>
+                                                    : <>月初のため見込みなし</>}
                                         </span>
                                     </div>
                                 )
@@ -92,7 +94,9 @@ export default function BusinessKpiSection({ selectedMonth }: BusinessKpiSection
                         {isPartial(cur) && (
                             <p className={styles.sourceNote}>
                                 {cur.month} は <strong>{cur.daysInMonth} 日のうち {cur.daysElapsed} 日目</strong>の途中です（当日分も入っています）。
-                                途中の月をそのまま前月の満額と比べると必ず大きなマイナスに見えるので、前月比ではなく<strong>月末見込み</strong>（今のペースで進んだ場合）を出しています。
+                                {canProject(cur)
+                                    ? <>途中の月をそのまま前月の満額と比べると必ず大きなマイナスに見えるので、前月比ではなく<strong>月末見込み</strong>（今のペースで進んだ場合）を出しています。</>
+                                    : <>まだ {MIN_DAYS_FOR_PACE} 日ぶん貯まっていないので、月末見込みは出していません（少ない日数で割り戻すと極端な値になるため）。</>}
                             </p>
                         )}
 

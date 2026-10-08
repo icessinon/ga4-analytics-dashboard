@@ -49,17 +49,34 @@ export const JOB_AD_SOURCES: ReadonlyArray<{ key: JobAdSource; label: string; co
 ]
 
 /**
+ * 見込みを出すのに必要な最低日数。
+ * 月初はこれを下回るので見込みを出さない。11/01 の 0 時台に 1 件入っただけで
+ * 「月末 8,600 件」のような値になってしまうため。
+ */
+export const MIN_DAYS_FOR_PACE = 3
+
+/** 月末見込みを出してよいか。確定月は常に true（実績をそのまま返すため） */
+export function canProject(m: Pick<BusinessKpiMonth, 'elapsedRatio' | 'daysInMonth'>): boolean {
+    if (m.elapsedRatio >= 1) return true
+    return m.elapsedRatio * m.daysInMonth >= MIN_DAYS_FOR_PACE
+}
+
+/**
  * 当月の実績を同じペースで進めたときの月末着地。
  * **途中の月をそのまま前月の満額と比べると必ず大きなマイナスに見える**ので、
  * 途中の月は実績ではなく着地見込みで前月比を出す。
+ *
+ * 割り戻しは日数ではなく elapsedRatio（当日は時刻ぶんの端数）で行う。
+ * 経過が MIN_DAYS_FOR_PACE 日に満たない月は null を返す（見込みを出さない）。
  */
-export function paceOf(v: number | null, m: Pick<BusinessKpiMonth, 'daysElapsed' | 'daysInMonth'>): number | null {
+export function paceOf(v: number | null, m: Pick<BusinessKpiMonth, 'elapsedRatio' | 'daysInMonth'>): number | null {
     if (v == null) return null
-    if (m.daysElapsed <= 0 || m.daysElapsed >= m.daysInMonth) return v
-    return (v / m.daysElapsed) * m.daysInMonth
+    if (m.elapsedRatio >= 1 || m.elapsedRatio <= 0) return v
+    if (!canProject(m)) return null
+    return v / m.elapsedRatio
 }
 
-export const isPartial = (m: Pick<BusinessKpiMonth, 'daysElapsed' | 'daysInMonth'>) => m.daysElapsed < m.daysInMonth
+export const isPartial = (m: Pick<BusinessKpiMonth, 'elapsedRatio'>) => m.elapsedRatio < 1
 
 export function formatKpi(v: number | null, def: BusinessKpiMetricDef): string {
     if (v == null) return '—'

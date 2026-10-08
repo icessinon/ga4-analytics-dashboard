@@ -11,7 +11,7 @@ import BusinessKpiTrendChart from '@/components/dashboard/BusinessKpiTrendChart'
 import { ui, cx } from '@/components/ui'
 import { useReport } from '@/hooks/useReport'
 import {
-    BUSINESS_KPI_METRICS, JOB_AD_SOURCES, formatKpi, isPartial, metricValue, paceOf,
+    BUSINESS_KPI_METRICS, JOB_AD_SOURCES, MIN_DAYS_FOR_PACE, canProject, formatKpi, isPartial, metricValue, paceOf,
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
 import {
@@ -83,15 +83,17 @@ export default function BusinessKpiPage() {
                             {partial ? `${latest.month} の着地見込み` : `${latest.month} の実績`}
                         </h2>
                         <p className={ui.sectionNote}>
-                            {partial
-                                ? <>{latest.daysInMonth} 日のうち <strong>{(latest.elapsedRatio * latest.daysInMonth).toFixed(1)} 日</strong>ぶんの実績を、同じペースで月末まで延ばした値です（当日は時刻ぶんの端数で数えています）。日数で割り戻しているだけなので、<strong>月初・月末に偏る施策がある月は外れます</strong>。</>
-                                : <>この月は確定しています。</>}
+                            {!partial
+                                ? <>この月は確定しています。</>
+                                : canProject(latest)
+                                    ? <>{latest.daysInMonth} 日のうち <strong>{(latest.elapsedRatio * latest.daysInMonth).toFixed(1)} 日</strong>ぶんの実績を、同じペースで月末まで延ばした値です（当日は時刻ぶんの端数で数えています）。日数で割り戻しているだけなので、<strong>月初・月末に偏る施策がある月は外れます</strong>。</>
+                                    : <>まだ <strong>{(latest.elapsedRatio * latest.daysInMonth).toFixed(1)} 日</strong>ぶんしか経っていないため、月末見込みは出していません（{MIN_DAYS_FOR_PACE} 日ぶん貯まってから出します）。下は実績です。</>}
                         </p>
                         <div className={styles.projection}>
                             {PROJECTED.map((key) => {
                                 const def = BUSINESS_KPI_METRICS[key]
                                 const v = metricValue(latest, key)
-                                const pace = paceOf(v, latest)
+                                const pace = paceOf(v, latest) ?? v
                                 const p = prev ? metricValue(prev, key) : null
                                 return (
                                     <div key={key} className={styles.projCard} style={{ '--proj-accent': def.color } as CSSProperties}>
@@ -270,6 +272,13 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
         })
     }, [latest])
 
+    /** 期の開始月が取得範囲より前にある目標。累計が過小になるので画面で警告する */
+    const outOfRange = useMemo(() => {
+        const first = rows[0]?.month
+        if (!first) return []
+        return goals.filter((g) => g.periodStart && g.periodStart < first).map((g) => g.label)
+    }, [goals, rows])
+
     /** 期のプリセット。表示中の期間に重なる上半期・下半期を出す */
     const periodPresets = useMemo(
         () => (rows.length > 0 ? halfPeriods(rows[0].month, rows[rows.length - 1].month) : []),
@@ -358,6 +367,12 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                 月別の目安を入れると、その月に届いているかを判定します。
             </p>
             {error && <Alert tone="error">{error}</Alert>}
+            {outOfRange.length > 0 && (
+                <Alert tone="warn">
+                    {outOfRange.join('・')} の期は {rows[0]?.month} より前から始まっていて、
+                    取得している {rows.length} ヶ月の外にある月が累計に入っていません。上の「期間」を広げてください。
+                </Alert>
+            )}
 
             {editing ? (
                 <>
@@ -426,9 +441,11 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                             const color = GOAL_COLORS[i % GOAL_COLORS.length]
                             const actual = def.extract(latest)
                             // 率は日数で割り戻しても意味が変わらないので、ペース換算は実数の指標だけ
-                            const pace = def.isRate ? actual : (paceOf(actual, latest) ?? actual)
+                            // 月初（経過 3 日未満）は見込みを出さない。割り戻しが暴れるため
+                            const projectable = canProject(latest)
+                            const pace = def.isRate ? actual : paceOf(actual, latest)
                             const milestone = g.milestones[latest.month] ?? null
-                            const basis = partial ? pace : actual
+                            const basis = partial ? (pace ?? actual) : actual
                             const ok = milestone == null || basis == null ? null : basis >= milestone
                             const latestIdx = rows.findIndex((m) => m.month === latest.month)
                             const prevRow = latestIdx > 0 ? rows[latestIdx - 1] : undefined
@@ -484,9 +501,13 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                             <span className={styles.goalColLabel}>今月（{latest.month}）</span>
                                             <span className={styles.goalActual}>{formatGoalValue(actual, g.metricKey)}</span>
                                             <span className={styles.goalColSub}>
-                                                {partial && !def.isRate
-                                                    ? <>月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></>
-                                                    : <>確定</>}
+                                                {!partial
+                                                    ? <>確定</>
+                                                    : def.isRate
+                                                        ? <>月の途中</>
+                                                        : projectable
+                                                            ? <>月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></>
+                                                            : <>月初のため見込みなし</>}
                                             </span>
                                             <span className={styles.goalColSub}>
                                                 {milestone == null
@@ -503,7 +524,7 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                                         <span className={basis >= prevValue ? styles.up : styles.dn}>
                                                             {basis >= prevValue ? '+' : ''}{Math.round(((basis - prevValue) / prevValue) * 100)}%
                                                         </span>
-                                                        {partial && !def.isRate && <>（見込み）</>}
+                                                        {partial && !def.isRate && projectable && <>（見込み）</>}
                                                     </>}
                                             </span>
                                         </div>

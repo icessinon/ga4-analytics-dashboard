@@ -137,23 +137,47 @@ function sql(from: string): string {
       WHERE sent_at IS NOT NULL
         AND DATE(sent_at,'Asia/Tokyo') BETWEEN DATE '${from}' AND CURRENT_DATE('Asia/Tokyo')
       GROUP BY m
+    ),
+    -- 月の骨格。応募を起点にすると、月初でまだ 1 件も応募が無い時間帯にその月の行が
+    -- 丸ごと消えて「今月」が先月のままになる。期間から月を作って左結合する。
+    month_spine AS (
+      SELECT m FROM UNNEST(GENERATE_DATE_ARRAY(DATE '${from}', CURRENT_DATE('Asia/Tokyo'), INTERVAL 1 MONTH)) AS m
     )
     SELECT
-      FORMAT_DATE('%Y-%m', agg.m) AS month,
+      FORMAT_DATE('%Y-%m', s.m) AS month,
       -- 当日を含む「何日目か」。当月だけ途中になる
-      IF(agg.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH),
+      IF(s.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH),
          EXTRACT(DAY FROM CURRENT_DATE('Asia/Tokyo')),
-         EXTRACT(DAY FROM LAST_DAY(agg.m))) AS days_elapsed,
-      agg.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH) AS is_current_month,
-      EXTRACT(DAY FROM LAST_DAY(agg.m)) AS days_in_month,
-      agg.* EXCEPT (m),
+         EXTRACT(DAY FROM LAST_DAY(s.m))) AS days_elapsed,
+      s.m = DATE_TRUNC(CURRENT_DATE('Asia/Tokyo'), MONTH) AS is_current_month,
+      EXTRACT(DAY FROM LAST_DAY(s.m)) AS days_in_month,
+      IFNULL(agg.apps_total, 0) AS apps_total,
+      IFNULL(agg.apps_jobad, 0) AS apps_jobad,
+      IFNULL(agg.apps_agent, 0) AS apps_agent,
+      IFNULL(agg.apps_hw, 0) AS apps_hw,
+      IFNULL(agg.ad_scout, 0) AS ad_scout,
+      IFNULL(agg.ad_product, 0) AS ad_product,
+      IFNULL(agg.ad_line, 0) AS ad_line,
+      IFNULL(agg.ad_hrs, 0) AS ad_hrs,
+      IFNULL(agg.ad_apply_signup, 0) AS ad_apply_signup,
+      IFNULL(agg.ad_others, 0) AS ad_others,
+      IFNULL(agg.prod_linepush, 0) AS prod_linepush,
+      IFNULL(agg.prod_day0, 0) AS prod_day0,
+      IFNULL(agg.prod_d1_30, 0) AS prod_d1_30,
+      IFNULL(agg.prod_d31, 0) AS prod_d31,
+      IFNULL(agg.line_day0, 0) AS line_day0,
+      IFNULL(agg.line_d1_30, 0) AS line_d1_30,
+      IFNULL(agg.line_d31, 0) AS line_d31,
       IFNULL(reg.reg, 0) AS reg, IFNULL(reg.reg_line, 0) AS reg_line,
       IFNULL(reg.reg_plain, 0) AS reg_plain, IFNULL(reg.reg_apply_signup, 0) AS reg_apply_signup,
       IFNULL(snd.sends, 0) AS sends,
       (SELECT COUNT(*) FROM ${JOB_DESCRIPTIONS} WHERE contract_type='求人広告' AND is_public) AS inventory_jobad,
       (SELECT COUNTIF(line_user_id IS NOT NULL) / COUNT(*) FROM ${MEMBER_USERS}) AS line_rate_all,
       CAST(CURRENT_DATE('Asia/Tokyo') AS STRING) AS data_to
-    FROM agg LEFT JOIN reg USING (m) LEFT JOIN snd USING (m)
+    FROM month_spine s
+    LEFT JOIN agg USING (m)
+    LEFT JOIN reg USING (m)
+    LEFT JOIN snd USING (m)
     ORDER BY month`
 }
 
@@ -186,8 +210,10 @@ export async function runBusinessKpiReport(monthsInput: unknown, reporter?: Ga4R
         const elapsedRatio = isCurrent ? currentMonthElapsedRatio(daysInMonth) : 1
         const appsJobAd = num(r.apps_jobad)
         const reg = num(r.reg)
-        // 当月は途中なので、同じペースで進んだ場合の月末着地も出す（確定月は実績のまま）
-        const pace = (v: number) => (elapsedRatio < 1 ? Math.round(v / elapsedRatio) : v)
+        // 当月は途中なので、同じペースで進んだ場合の月末着地も出す（確定月は実績のまま）。
+        // 経過 3 日未満は割り戻しが暴れるので実績をそのまま返す（画面側で見込みを出さない）
+        const canPace = elapsedRatio >= 1 || elapsedRatio * daysInMonth >= 3
+        const pace = (v: number) => (elapsedRatio < 1 && canPace ? Math.round(v / elapsedRatio) : v)
         const jobAdBySource: Record<JobAdSource, number> = {
             scout: num(r.ad_scout),
             product: num(r.ad_product),
