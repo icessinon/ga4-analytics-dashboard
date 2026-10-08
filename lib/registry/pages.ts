@@ -27,6 +27,7 @@ export const PAGE_IDS = [
     'seoReport',
     'utmReport',
     'lineReport',
+    'deliveryReport',
     'scout',
     // behavior
     'journey',
@@ -407,6 +408,34 @@ export const PAGES: Record<PageId, PageDef> = {
             ],
             metrics: ['sessions', 'activeUsers', 'sessionSource', 'sessionMedium'],
             apiRoute: 'POST /api/line-report, POST /api/line-report/associations',
+        },
+    },
+    deliveryReport: {
+        href: '/delivery-report',
+        title: '配信レポート（SMS・メール・LINE）',
+        subtitle: 'B-Dash 一斉配信と本体通知基盤を横断し、チャネル別・施策別・件名別に送信/開封/クリック/GA4着地を比べる',
+        category: 'channel',
+        tags: ['channel', 'scout', 'line', 'utm', 'bq'],
+        related: ['scout', 'signupStepMails', 'lineReport'],
+        doc: {
+            description: 'SMS・メール・LINE の配信実績を 1 枚で比較します。出典は B-Dash 一斉配信ログ（xmile-drm.bdash.action_log）、本体通知基盤の送達記録（xwork.delivery_records_history）、本体メールの SES イベント（xwork.ses_event_records）、LINEおすすめ求人配信の実績（xwork.line_job_recommendation_unit_stats）、および GA4 エクスポートの着地セッションです。スカウト LINE のように通知基盤へ topic が増えた配信は、コード変更なしで施策別タブに並びます。',
+            capabilities: [
+                'チャネル別（SMS / メール / LINE）の送信・送達・開封率・クリック率・GA4 着地セッション・1人あたり通数',
+                '施策別の送信/開封率/クリック率/配信停止。送信数・開封率・クリック率で並べ替え、開封率 5% 未満を警告表示',
+                '件名別（メールのみ）の開封率・クリック率・クリック/開封。企業名や都道府県を差し込む可変件名は 1 行に正規化',
+                'GA4 の utm_medium = email / sms / line 別の着地セッション（全チャネル共通の唯一の成果指標）',
+                'LINEおすすめ求人配信のユニット別 配信対象・成功・失敗・受け取り拒否',
+            ],
+            notes: [
+                '開封イベントがあるのはメールだけ。SMS・LINE には原理的に存在しないので、チャネル比較は必ずクリック率と GA4 着地で行う（開封率はメール内の施策比較専用）',
+                '送達の定義がチャネルで違う。メールは SES の Delivery（B-Dash 分は「送信 − 失敗」で代用）、SMS は事業者の受付（端末到達ではない）、LINE は配信成功',
+                'B-Dash の action_log は 2026-09-11 / 09-13 の partition に全量バックフィル（各 15〜17GB）があり、日次増分は 2026-09-14 以降。期間はそこで切り詰める',
+                'bdash.send_log は一部のキャンペーンしか入っていない（同一条件でメール 575,371 行 vs action_log 1,035,711 行）ため、送信数の分母には使わない',
+                'SMS の sms_redirect_clicked は短縮URL bd4.sh へのヒットで bot・プリフェッチを含み実クリックの 3 倍前後に出る。クリックには含めない',
+'画面の「B-Dash の絞り込み」は出典の切り替えではない。どちらを選んでも 4 出典すべてを読み、B-Dash の中をクロスワークの配信だけにするか、グループ各社（車両SaaS・運送SaaS・DRS/CRS/MRS 等）も混ぜるかが変わるだけ。絞り込みは campaign_name の命名（クロスワーク / 【SMS】agent）に依存する',
+                '1 回の集計で BigQuery を 1〜2GB スキャンするため自動取得にしていない。スキャン量と概算コストは画面下部に表示する',
+            ],
+            apiRoute: 'POST /api/delivery-report',
         },
     },
     scout: {

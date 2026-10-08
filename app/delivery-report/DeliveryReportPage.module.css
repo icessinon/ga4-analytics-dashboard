@@ -1,0 +1,105 @@
+.scopeNote {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    line-height: 1.7;
+}
+
+.channelGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.channelCard {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+}
+
+.channelName {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+}
+
+.channelTag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.metric {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.metricLabel {
+    color: var(--text-muted);
+}
+
+.metricValue {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.metricStrong {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.noMeasure {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable:hover {
+    text-decoration: underline;
+}
+
+.sortArrow {
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.sourceTag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.subjectCell {
+    /* ui.dataTable の td は white-space: nowrap なので、長い件名・施策名は明示的に折り返す */
+    display: inline-block;
+    min-width: 260px;
+    max-width: 420px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+/* ui.module.css の `.dataTable td { color: … }` と詳細度が並ぶので、クラスを重ねて勝たせる */
+.lowOpen.lowOpen {
+    color: #f87171;
+    font-weight: 700;
+}

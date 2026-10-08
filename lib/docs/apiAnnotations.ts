@@ -18,6 +18,16 @@ export interface ApiAnnotation {
 }
 
 export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
+    "POST /api/delivery-report": {
+        category: "集客・チャネル",
+        name: "配信レポート（SMS・メール・LINE）",
+        description: "B-Dash 一斉配信ログ・本体通知基盤の送達記録・SES のメールイベント・GA4 着地を横断し、チャネル別／施策別／件名別の送信・開封・クリックを返します。開封を計測できるのはメールだけなので、チャネル比較はクリック率と GA4 着地で行ってください。",
+        params: [
+            { name: "days", type: "number", required: false, description: "Body JSON。7〜180。既定 30。B-Dash の増分開始日 2026-09-14 より前には遡れず、切り詰めた場合は clamped: true を返す" },
+            { name: "scope", type: "string", required: false, description: "Body JSON。'xwork'（既定・クロスワーク分のみ）または 'all'（B-Dash 全社）" },
+        ],
+        responseNote: "{ channels, campaigns, subjects, ga4, lineUnits, scannedBytes, clamped }。scannedBytes は BigQuery のスキャン量（コスト表示用）",
+    },
     "GET /api/ab-test/[id]/current": {
         category: "ABテスト",
         name: "ABテスト途中経過",

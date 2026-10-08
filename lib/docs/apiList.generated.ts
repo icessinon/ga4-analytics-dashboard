@@ -47,6 +47,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     { path: "/api/dashboard/page-cv-config", method: "POST", doc: "パスごとのCVイベント名設定の取得・保存", file: "app/api/dashboard/page-cv-config/route.ts" },
     { path: "/api/dashboard/page-metrics", method: "POST", doc: "指定ページパスの GA4 指標（PV, CV, CVR, 離脱率, 新規訪問率, 直帰数, 平均滞在時間 など）。 month（YYYY-MM）があればその月、無ければ startDate / endDate（既定 28daysAgo〜yesterday）。 集計は lib/services/dashboard/pageMetricsService.ts /", file: "app/api/dashboard/page-metrics/route.ts" },
     { path: "/api/dashboard/page-metrics/series", method: "POST", doc: "ページパスの時系列（日別・週別・月別）。 startDate / endDate（YYYY-MM-DD）が揃っていればそれを、無ければ month から集計単位に応じた期間を作る。 集計は lib/services/dashboard/pageMetricsService.ts /", file: "app/api/dashboard/page-metrics/series/route.ts" },
+    { path: "/api/delivery-report", method: "POST", doc: "SMS・メール・LINE の配信実績を施策別／件名別に横断集計。集計は lib/services/delivery/deliveryReportService.ts */", file: "app/api/delivery-report/route.ts" },
     { path: "/api/docs/ask", method: "POST", doc: "", file: "app/api/docs/ask/route.ts" },
     { path: "/api/exit", method: "POST", doc: "ページカテゴリで組んだファネルの離脱状況。集計は lib/services/journey/exitService.ts */", file: "app/api/exit/route.ts" },
     { path: "/api/exit/gemini", method: "POST", doc: "", file: "app/api/exit/gemini/route.ts" },
