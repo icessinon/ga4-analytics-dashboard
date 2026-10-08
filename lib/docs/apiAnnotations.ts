@@ -18,6 +18,15 @@ export interface ApiAnnotation {
 }
 
 export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
+    "POST /api/business-kpi": {
+        category: "全体KPI",
+        name: "事業KPI（応募・会員登録）",
+        description: "応募数（契約種別別）と会員登録数の月次を返します。出典はプロダクトDB xmile-drm.xwork で GA4 ではありません。求人広告の応募は流入分類（スカウト / プロダクト経由 / LINE公式 / 人材紹介側の配信 / 応募同時登録 / その他）に割ります。分類の定義は goal-tracker の weekly_actuals.sql と同じです。",
+        params: [
+            { name: "months", type: "number", required: false, description: "Body JSON。さかのぼる月数。1〜24、既定 6" },
+        ],
+        responseNote: "{ months[], inventoryJobAd, dataTo, scannedBytes }。months[].appsJobAdPace は当月を同じペースで進んだ場合の月末着地",
+    },
     "POST /api/delivery-report": {
         category: "集客・チャネル",
         name: "配信レポート（SMS・メール・LINE）",

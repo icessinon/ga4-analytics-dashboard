@@ -9,6 +9,7 @@ import PageShell from '@/components/PageShell'
 import FilterBar, { FilterField } from '@/components/FilterBar'
 import LoadState from '@/components/LoadState'
 import AbTestDonutCharts from '@/components/dashboard/AbTestDonutCharts'
+import BusinessKpiSection from '@/components/dashboard/BusinessKpiSection'
 import PageMetricsChart from '@/components/dashboard/PageMetricsChart'
 import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/contexts/ProductContext'
@@ -167,6 +168,9 @@ export default function DashboardPage() {
                 </FilterBar>
             }
         >
+            {/* 事業の数字を最初に出す。出典はプロダクトDBで、下の GA4 由来の指標とは別系統 */}
+            <BusinessKpiSection />
+
             {stats.data && (
                 <div className={ui.summaryRow}>
                     <div className={ui.summaryCard} style={{ '--summary-accent': CHART_COLORS.green } as CSSProperties}>

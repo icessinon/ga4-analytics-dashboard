@@ -40,6 +40,7 @@ export const GENERATED_ENDPOINTS: GeneratedEndpoint[] = [
     { path: "/api/applications/actual", method: "POST", doc: "応募の全体像（DynamoDB 実数）。propertyId は任意で、あれば単独登録（GA4）も返す。 集計は lib/services/cv/applicationsActualService.ts /", file: "app/api/applications/actual/route.ts" },
     { path: "/api/auth/login", method: "POST", doc: "", file: "app/api/auth/login/route.ts" },
     { path: "/api/auth/logout", method: "POST", doc: "", file: "app/api/auth/logout/route.ts" },
+    { path: "/api/business-kpi", method: "POST", doc: "応募数・会員登録数の月次（プロダクトDBが正）。集計は lib/services/kpi/businessKpiService.ts */", file: "app/api/business-kpi/route.ts" },
     { path: "/api/cv-types", method: "POST", doc: "求人種別（人材紹介 / 求人広告 / ハローワーク）× ステージの CV 分解。集計は lib/services/cv/cvTypesService.ts */", file: "app/api/cv-types/route.ts" },
     { path: "/api/cv-types/route-funnel", method: "POST", doc: "一覧経由 vs 直接着地の経路別ファネル（GA4 v1alpha）。集計は lib/services/cv/routeFunnelService.ts */", file: "app/api/cv-types/route-funnel/route.ts" },
     { path: "/api/dashboard", method: "GET", doc: "", file: "app/api/dashboard/route.ts" },
