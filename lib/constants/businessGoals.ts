@@ -144,6 +144,18 @@ const GOAL_METRICS_DEF = {
         extract: (m) => m.breakdown.prodLinePush,
         unit: '件',
     },
+    jobad_return_1_30: {
+        label: '1〜30日の再訪からの応募（求人広告）',
+        definition: 'プロダクト経由＋LINE公式のうち、登録から 1〜30 日後の応募',
+        extract: (m) => m.breakdown.prodD1_30 + m.breakdown.lineD1_30,
+        unit: '件',
+    },
+    jobad_existing_member: {
+        label: '既存会員からの応募（求人広告）',
+        definition: 'プロダクト経由＋LINE公式のうち、登録から 31 日以上たった会員の応募',
+        extract: (m) => m.breakdown.prodD31 + m.breakdown.lineD31,
+        unit: '件',
+    },
     same_day_applies: {
         label: '登録当日の応募（求人広告）',
         definition: 'プロダクト経由＋LINE公式のうち、会員登録と同じ日の応募',
@@ -261,6 +273,18 @@ export function inPeriod(month: string, start?: string | null, end?: string | nu
     return true
 }
 
+/** 'YYYY-MM' の開始〜終了を 1 ヶ月ずつ並べる。どちらか欠けたら空 */
+export function monthsBetween(start?: string | null, end?: string | null): string[] {
+    if (!start || !end || start > end) return []
+    const out: string[] = []
+    const [sy, sm] = start.split('-').map(Number)
+    const [ey, em] = end.split('-').map(Number)
+    for (let y = sy, m = sm; y < ey || (y === ey && m <= em); m === 12 ? (m = 1, y += 1) : (m += 1)) {
+        out.push(`${y}-${String(m).padStart(2, '0')}`)
+    }
+    return out
+}
+
 /** 期のプリセット。年度ではなく暦年の上半期・下半期で切る */
 export function halfPeriods(from: string, to: string): { label: string; start: string; end: string }[] {
     const out: { label: string; start: string; end: string }[] = []
@@ -275,7 +299,9 @@ export function halfPeriods(from: string, to: string): { label: string; start: s
 
 /**
  * 目標が 1 件も無いプロダクトに最初だけ入れるテンプレート（2026 下半期）。
- * 数値は goal-tracker v4.2（2026-10-04 時点）から引いたもので、**作られたあとは画面の設定が正**。
+ * 数値は goal-tracker の GOAL_DATA v4.2 / GOAL_METRICS（2026-10-03 更新）の月次計画から引いた。
+ * 計画は「7〜9月は8月版、10〜12月は数値計画SS 9/28版」で、10・11月は直線補間の仮置きを含む。
+ * **作られたあとは画面の設定が正**。
  * ここを直しても既存の設定は変わらない。目標値が決まっていないものは target を null にしてある。
  */
 export const INITIAL_GOAL_TEMPLATE: ReadonlyArray<{
@@ -287,71 +313,105 @@ export const INITIAL_GOAL_TEMPLATE: ReadonlyArray<{
     note: string
 }> = [
     {
-        metricKey: 'jobad_product', label: 'プロダクト経由の応募',
-        target: 120, weight: 25,
-        milestones: { '2026-09': 97, '2026-12': 120 },
-        note: '登録〜応募導線の改善。LINE公式と合わせて 12月 160 件',
+        metricKey: 'apps_jobad', label: '応募数（求人広告）',
+        target: 300, weight: null,
+        milestones: { '2026-07': 124, '2026-08': 137, '2026-09': 158, '2026-10': 191, '2026-11': 231, '2026-12': 300 },
+        note: '12月300件の内訳は M1 160＋M2 30＋三木さん管轄 110',
     },
     {
-        metricKey: 'jobad_line', label: 'LINE公式経由の応募',
-        target: 40, weight: 10,
-        milestones: { '2026-09': 27, '2026-10': 31, '2026-11': 36, '2026-12': 40 },
-        note: 'プロダクト経由と合わせて 12月 160 件',
+        metricKey: 'jobad_product_line', label: 'プロダクト経由＋LINE公式の応募',
+        target: 160, weight: 35,
+        milestones: { '2026-10': 136, '2026-11': 148, '2026-12': 160 },
+        note: '9月実績 124 件。10・11月は直線補間の仮置き',
+    },
+    {
+        metricKey: 'jobad_product', label: '└ プロダクト経由の応募',
+        target: 120, weight: null,
+        milestones: { '2026-10': 105, '2026-11': 112, '2026-12': 120 },
+        note: '9月実績 97 件',
+    },
+    {
+        metricKey: 'jobad_line', label: '└ LINE公式経由の応募',
+        target: 40, weight: 15,
+        milestones: { '2026-10': 31, '2026-11': 36, '2026-12': 40 },
+        note: '9月実績 27 件。プロダクト経由＋LINE公式の内数',
     },
     {
         metricKey: 'jobad_scout', label: 'スカウト経由の応募',
         target: 30, weight: 25,
-        milestones: { '2026-09': 7, '2026-10': 16, '2026-11': 26, '2026-12': 30 },
-        note: '12月30件のうち28件を代行が担う想定',
+        milestones: { '2026-10': 16, '2026-11': 26, '2026-12': 30 },
+        note: '9月実績 7 件。企業一斉 6→6→2 ＋ 代行 10→20→28',
     },
     {
         metricKey: 'scout_apply_rate', label: 'スカウト一斉送信の応募率',
-        target: 0.0015, weight: null,
-        milestones: { '2026-09': 0.00057 },
-        note: '0.057%→0.15% が目標',
+        target: 0.0015, weight: null, milestones: {},
+        note: '9月実績 0.057%。月次の計画は未設定',
     },
     {
-        metricKey: 'reg_plain', label: '単独登録者数',
-        target: null, weight: null, milestones: {},
-        note: '応募と同時でない会員登録。当日応募率の分母',
+        metricKey: 'same_day_applies', label: '登録当日の応募',
+        target: 95, weight: null,
+        milestones: { '2026-12': 95 },
+        note: '9月実績 87 件。12月の内訳目標',
     },
     {
-        metricKey: 'same_day_apply_rate', label: '当日応募率（単独登録あたり）',
-        target: 0.09, weight: null,
-        milestones: { '2026-09': 0.079 },
-        note: '7.9%→9% で 12月の登録当日 95 件に届く',
+        metricKey: 'jobad_return_1_30', label: '1〜30日の再訪からの応募',
+        target: 30, weight: null,
+        milestones: { '2026-12': 30 },
+        note: '9月実績 15 件。12月の内訳目標。検索条件保存・新着通知・ステップメールで作る',
     },
     {
-        metricKey: 'reg_line_rate', label: '新規のLINE連携率',
-        target: 0.26, weight: null,
-        milestones: { '2026-09': 0.237 },
-        note: '全体の連携率は 21.3%→22% が目標',
+        metricKey: 'jobad_existing_member', label: '既存会員からの応募',
+        target: 18, weight: null,
+        milestones: { '2026-12': 18 },
+        note: '9月実績 11 件。12月の内訳目標。掘り起こしで作る',
     },
     {
         metricKey: 'jobad_product_linepush', label: 'LINEプッシュ経由の応募',
         target: 17, weight: null,
-        milestones: { '2026-09': 11, '2026-12': 17 },
-        note: 'プロダクト経由の内数',
+        milestones: { '2026-12': 17 },
+        note: '9月実績 11 件。12月の内訳目標。プロダクト経由の内数',
+    },
+    {
+        metricKey: 'reg_plain', label: '単独登録者数',
+        target: null, weight: null, milestones: {},
+        note: '参考値（目標なし）。当日応募率の分母',
+    },
+    {
+        metricKey: 'same_day_apply_rate', label: '当日応募率（単独登録あたり）',
+        target: 0.09, weight: null,
+        milestones: { '2026-10': 0.083, '2026-11': 0.087, '2026-12': 0.09 },
+        note: '9月実績 7.9%',
+    },
+    {
+        metricKey: 'reg_line_rate', label: '新規のLINE連携率',
+        target: 0.26, weight: null, milestones: {},
+        note: '9月実績 23.7%。全体の連携率は 21.3%→22% が目標（月次の計画は未設定）',
+    },
+    {
+        metricKey: 'apps_per_job', label: '求人あたり月間応募',
+        target: 0.128, weight: null,
+        milestones: { '2026-07': 0.057, '2026-08': 0.063, '2026-09': 0.071, '2026-10': 0.084, '2026-11': 0.1, '2026-12': 0.128 },
+        note: '分母は公開中の求人広告数',
     },
     {
         metricKey: 'signup_form_cvr', label: '登録フォーム完了率',
-        target: null, weight: null, milestones: {},
-        note: 'GA4 のユーザー基準',
+        target: 0.3, weight: null, milestones: {},
+        note: '目標 30%（月次の計画は未設定）',
     },
     {
         metricKey: 'entry_form_cvr_joba', label: '応募フォーム完了率（求人広告）',
         target: null, weight: null, milestones: {},
-        note: 'GA4 のラベル基準',
+        note: '目標は未設定。サイト内の通常フォームのみ',
     },
     {
         metricKey: 'entry_form_cvr_jobr', label: '応募フォーム完了率（人材紹介）',
         target: null, weight: null, milestones: {},
-        note: 'GA4 のラベル基準',
+        note: '目標は未設定。サイト内の通常フォームのみ',
     },
     {
         metricKey: 'entry_form_cvr_jobh', label: '応募フォーム完了率（ハローワーク）',
         target: null, weight: null, milestones: {},
-        note: 'GA4 のラベル基準',
+        note: '目標は未設定。サイト内の通常フォームのみ',
     },
 ]
 

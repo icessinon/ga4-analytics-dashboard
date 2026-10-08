@@ -15,7 +15,7 @@ import {
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
 import {
-    GOAL_METRICS, GOAL_METRIC_KEYS, cumulative, formatGoalValue, halfPeriods, inPeriod,
+    GOAL_METRICS, GOAL_METRIC_KEYS, cumulative, formatGoalValue, halfPeriods, inPeriod, monthsBetween,
     type GoalMetricKey,
 } from '@/lib/constants/businessGoals'
 import { CHART_COLORS } from '@/lib/constants/chartColors'
@@ -429,12 +429,42 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                             const pace = def.isRate ? actual : (paceOf(actual, latest) ?? actual)
                             const milestone = g.milestones[latest.month] ?? null
                             const basis = partial ? pace : actual
-                            // 期の累計。率は Σ分子 ÷ Σ分母 で出す（月をまたいで足せないため）
+                            const ok = milestone == null || basis == null ? null : basis >= milestone
+
+                            // 期の累計。率は Σ分子 ÷ Σ分母 で通算する（月をまたいで足せないため）
                             const periodMonths = rows.filter((m) => inPeriod(m.month, g.periodStart, g.periodEnd))
                             const total = cumulative(periodMonths, g.metricKey)
-                            const hasTarget = g.target != null && g.target > 0
-                            const w = (v: number | null) => `${v == null || !hasTarget ? 0 : Math.min(100, (v / (g.target as number)) * 100)}%`
-                            const ok = milestone == null || basis == null ? null : basis >= milestone
+                            // 目安の合計は実数の指標だけ（率の目安を足しても意味がない）。
+                            // さらに**期の全月に目安が入っているときだけ**「期の目安合計」として出す。
+                            // 12月だけ目安がある指標で期の累計と比べると、単月の目標に対して
+                            // 6 ヶ月分を当ててしまい 166% のような誤った達成率になるため。
+                            const periodMonthList = monthsBetween(g.periodStart, g.periodEnd)
+                            const coversAll = !def.isRate && periodMonthList.length > 0
+                                && periodMonthList.every((mm) => g.milestones[mm] != null)
+                            const planAll = coversAll ? periodMonthList.reduce((a, mm) => a + g.milestones[mm], 0) : null
+
+                            // 進捗の判定は「目安がある & 経過した月」だけで揃えて比べる。
+                            // 途中の月は実績ではなく月末見込みを使う（そのままだと必ず未達に見えるため）
+                            const plannedElapsed = def.isRate
+                                ? []
+                                : Object.keys(g.milestones)
+                                    .filter((mm) => inPeriod(mm, g.periodStart, g.periodEnd) && mm <= latest.month)
+                                    .sort()
+                            const planSoFar = plannedElapsed.length === 0
+                                ? null
+                                : plannedElapsed.reduce((a, mm) => a + g.milestones[mm], 0)
+                            const paceSoFar = plannedElapsed.length === 0 ? null : plannedElapsed.reduce((a, mm) => {
+                                const row = rows.find((r) => r.month === mm)
+                                const v = row ? def.extract(row) : null
+                                if (row == null || v == null) return a
+                                return a + (isPartial(row) ? (paceOf(v, row) ?? v) : v)
+                            }, 0)
+
+                            // バーは「期の目安合計に対する累計」。目安が揃っていなければ期末目標に対する今月
+                            const barMax = planAll ?? (g.target != null && g.target > 0 ? g.target : null)
+                            const barValue = planAll != null ? total : actual
+                            const w = (v: number | null) => `${v == null || barMax == null ? 0 : Math.min(100, (v / barMax) * 100)}%`
+
                             return (
                                 <div key={g.id} className={styles.goalCard} style={{ '--goal-accent': color } as CSSProperties}>
                                     <div className={styles.goalHead}>
@@ -445,43 +475,67 @@ function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
                                         {def.label}｜{def.definition}
                                         {def.fromGa4 && <span className={styles.ga4Tag}>GA4</span>}
                                     </p>
-                                    <div className={styles.goalNums}>
-                                        <span className={styles.goalActual}>{formatGoalValue(actual, g.metricKey)}</span>
-                                        <span className={styles.goalPace}>
-                                            {latest.month}
-                                            {partial && !def.isRate && <> ／ 月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></>}
-                                        </span>
+
+                                    <div className={styles.goalSplit}>
+                                        <div className={styles.goalCol}>
+                                            <span className={styles.goalColLabel}>今月（{latest.month}）</span>
+                                            <span className={styles.goalActual}>{formatGoalValue(actual, g.metricKey)}</span>
+                                            <span className={styles.goalColSub}>
+                                                {partial && !def.isRate
+                                                    ? <>月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></>
+                                                    : <>確定</>}
+                                            </span>
+                                            <span className={styles.goalColSub}>
+                                                {milestone == null
+                                                    ? <>目安なし</>
+                                                    : ok
+                                                        ? <>目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.up}>到達</span></>
+                                                        : <>目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>未達</span></>}
+                                            </span>
+                                        </div>
+                                        <div className={styles.goalCol}>
+                                            <span className={styles.goalColLabel}>
+                                                期の{def.isRate ? '通算' : '累計'}（{g.periodStart ?? '—'}〜{g.periodEnd ?? '—'}）
+                                            </span>
+                                            <span className={styles.goalActual}>{formatGoalValue(total, g.metricKey)}</span>
+                                            <span className={styles.goalColSub}>{periodMonths.length} ヶ月分</span>
+                                            <span className={styles.goalColSub}>
+                                                {planAll != null && total != null
+                                                    ? <>期の目安 {planAll.toLocaleString()} の <strong>{Math.round((total / planAll) * 100)}%</strong></>
+                                                    : g.target != null
+                                                        ? <>目標は月あたり {formatGoalValue(g.target, g.metricKey)}（期末）</>
+                                                        : <>目標値は未設定</>}
+                                            </span>
+                                        </div>
                                     </div>
-                                    {hasTarget ? (
+
+                                    {barMax != null && (
                                         <>
                                             <div className={styles.goalTrack}>
-                                                {partial && !def.isRate && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
-                                                <span className={styles.goalFillActual} style={{ width: w(actual) }} />
-                                                {milestone != null && milestone < (g.target as number) && (
-                                                    <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} の目安 ${milestone}`} />
+                                                <span className={styles.goalFillActual} style={{ width: w(barValue) }} />
+                                                {planSoFar != null && planSoFar < barMax && (
+                                                    <span className={styles.goalMark} style={{ left: w(planSoFar) }} title={`${latest.month} までの目安の合計 ${planSoFar}`} />
                                                 )}
                                             </div>
                                             <div className={styles.goalScale}>
                                                 <span>0</span>
-                                                <span>{latest.month} 目安 {milestone == null ? '—' : formatGoalValue(milestone, g.metricKey)}</span>
-                                                <span>期末 {formatGoalValue(g.target, g.metricKey)}</span>
+                                                {planAll != null && planSoFar != null
+                                                    ? <span>ここまでの目安 {planSoFar.toLocaleString()}</span>
+                                                    : <span>{latest.month} 目安 {milestone == null ? '—' : formatGoalValue(milestone, g.metricKey)}</span>}
+                                                <span>{planAll != null ? `期の目安 ${planAll.toLocaleString()}` : `月あたり ${formatGoalValue(g.target, g.metricKey)}`}</span>
                                             </div>
                                         </>
-                                    ) : (
-                                        <p className={styles.goalNoTarget}>目標値は未設定（実績だけ見ています）</p>
                                     )}
-                                    <p className={styles.goalPeriod}>
-                                        {g.periodStart || g.periodEnd
-                                            ? <>期 {g.periodStart ?? '—'} 〜 {g.periodEnd ?? '—'} の{def.isRate ? '通算' : '累計'}: <strong>{formatGoalValue(total, g.metricKey)}</strong>（{periodMonths.length} ヶ月分）</>
-                                            : <>期が未設定です。表示中の {rows.length} ヶ月の{def.isRate ? '通算' : '累計'}: <strong>{formatGoalValue(total, g.metricKey)}</strong></>}
-                                    </p>
-                                    {hasTarget && (
+
+                                    {planSoFar != null && paceSoFar != null && (
                                         <p className={styles.goalVerdict}>
-                                            {milestone == null
-                                                ? <>この月の目安は設定されていません。</>
-                                                : ok
-                                                    ? <>今月の目安に <span className={styles.up}>{partial && !def.isRate ? '見込みで届いています' : '到達'}</span>（{formatGoalValue(basis, g.metricKey)}）。</>
-                                                    : <>今月の目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>届いていません</span>（{partial && !def.isRate ? '見込み' : '実績'} {formatGoalValue(basis, g.metricKey)}）。</>}
+                                            目安のある {plannedElapsed.length} ヶ月（{plannedElapsed[0]}
+                                            {plannedElapsed.length > 1 && <>〜{plannedElapsed[plannedElapsed.length - 1]}</>}）の
+                                            {partial ? '見込み' : ''}合計 {Math.round(paceSoFar).toLocaleString()} ／ 目安 {planSoFar.toLocaleString()}
+                                            {' '}
+                                            {paceSoFar >= planSoFar
+                                                ? <span className={styles.up}>+{Math.round(paceSoFar - planSoFar).toLocaleString()}</span>
+                                                : <span className={styles.dn}>{Math.round(paceSoFar - planSoFar).toLocaleString()}</span>}
                                         </p>
                                     )}
                                     {g.note && <p className={styles.goalNote}>{g.note}</p>}

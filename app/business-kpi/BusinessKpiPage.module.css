@@ -349,3 +349,34 @@
     font-size: 0.8125rem;
     color: var(--text-muted);
 }
+
+.goalSplit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin: 0.625rem 0 0.75rem;
+}
+
+.goalCol {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.goalCol + .goalCol {
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--border-subtle);
+}
+
+.goalColLabel {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.goalColSub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
