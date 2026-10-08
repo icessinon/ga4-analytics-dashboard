@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import PageShell from '@/components/PageShell'
+import Alert from '@/components/Alert'
+import { useProduct } from '@/contexts/ProductContext'
+import { fetchJson } from '@/lib/utils/fetch'
 import FilterBar, { FilterField } from '@/components/FilterBar'
 import BusinessKpiTrendChart from '@/components/dashboard/BusinessKpiTrendChart'
 import { ui, cx } from '@/components/ui'
@@ -11,8 +14,9 @@ import {
     BUSINESS_KPI_METRICS, JOB_AD_SOURCES, formatKpi, isPartial, metricValue, paceOf,
     type BusinessKpiMetric,
 } from '@/lib/constants/businessKpi'
-import { BUSINESS_GOALS, BUSINESS_GOALS_SOURCE } from '@/lib/constants/businessGoals'
+import { GOAL_METRICS, GOAL_METRIC_KEYS, formatGoalValue, type GoalMetricKey } from '@/lib/constants/businessGoals'
 import { CHART_COLORS } from '@/lib/constants/chartColors'
+import type { ProductGoal, ProductGoalsResponse } from '@/lib/services/kpi/productGoalsTypes'
 import type { BusinessKpiMonth, BusinessKpiResponse } from '@/lib/services/kpi/businessKpiTypes'
 import styles from './BusinessKpiPage.module.css'
 
@@ -32,7 +36,6 @@ const CHART_METRICS: readonly BusinessKpiMetric[] = [
 const PROJECTED: readonly BusinessKpiMetric[] = ['appsTotal', 'appsJobAd', 'reg', 'appsPerJob']
 
 const n = (v: number | null | undefined) => (v == null ? '—' : v.toLocaleString())
-const pct1 = (v: number | null) => (v == null ? '—' : `${(v * 100).toFixed(1)}%`)
 
 const GOAL_COLORS = [CHART_COLORS.blue, CHART_COLORS.violet, CHART_COLORS.cyan]
 
@@ -100,109 +103,7 @@ export default function BusinessKpiPage() {
                         </div>
                     </div>
 
-                    <div className={ui.card}>
-                        <h2 className={ui.sectionTitle}>成果目標 M1〜M3（{BUSINESS_GOALS_SOURCE.period}）</h2>
-                        <p className={ui.sectionNote}>
-                            目標値は goal-tracker の {BUSINESS_GOALS_SOURCE.version}（{BUSINESS_GOALS_SOURCE.updatedAt} 確定）の写しです。
-                            <strong>ここを直すときは goal-tracker 側も直してください。</strong>
-                            対象は<strong>求人広告の応募だけ</strong>で、12 月の応募 300 件のうち M1 160 ＋ M2 30 ＝ 190 件がこの画面の範囲です
-                            （残り 110 件＝応募同時登録・人材紹介側の配信・広告は対象外）。
-                            10・11 月のマイルストーンは 9 月実績と 12 月目標を直線で結んだ仮値です。
-                        </p>
-                        <div className={styles.goalGrid}>
-                            {BUSINESS_GOALS.map((g, i) => {
-                                const color = GOAL_COLORS[i % GOAL_COLORS.length]
-                                const actual = g.actual(latest)
-                                const pace = paceOf(actual, latest) ?? actual
-                                const milestone = g.milestones[latest.month] ?? null
-                                // 進捗バーは期末目標を 100% とする。マイルストーンは目盛りとして線で出す
-                                const w = (v: number) => `${Math.min(100, (v / g.target) * 100)}%`
-                                const ok = milestone == null ? null : pace >= milestone
-                                return (
-                                    <div key={g.id} className={styles.goalCard} style={{ '--goal-accent': color } as CSSProperties}>
-                                        <div className={styles.goalHead}>
-                                            <span className={styles.goalNo}>{g.id}</span>
-                                            <h3 className={styles.goalTitle}>{g.title}</h3>
-                                            <span className={styles.goalWeight}>比重 {g.weight}%</span>
-                                        </div>
-                                        <p className={styles.goalDef}>{g.definition}</p>
-                                        <div className={styles.goalNums}>
-                                            <span className={styles.goalActual}>{n(actual)}</span>
-                                            <span className={styles.goalPace}>
-                                                件{partial && <> ／ 月末見込み <strong>{n(Math.round(pace))}</strong></>}
-                                            </span>
-                                        </div>
-                                        <div className={styles.goalTrack}>
-                                            {partial && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
-                                            <span className={styles.goalFillActual} style={{ width: w(actual) }} />
-                                            {milestone != null && milestone < g.target && (
-                                                <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} のマイルストーン ${milestone}`} />
-                                            )}
-                                        </div>
-                                        <div className={styles.goalScale}>
-                                            <span>0</span>
-                                            <span>{latest.month} 目安 {milestone ?? '—'}</span>
-                                            <span>12月 {g.target}</span>
-                                        </div>
-                                        <p className={styles.goalVerdict}>
-                                            {milestone == null
-                                                ? <>この月のマイルストーンは置かれていません。</>
-                                                : ok
-                                                    ? <>今月の目安 {milestone} 件に対し <span className={styles.up}>{partial ? '見込みで届いています' : '到達'}</span>（{partial ? Math.round(pace) : actual} 件）。</>
-                                                    : <>今月の目安 {milestone} 件に <span className={styles.dn}>{milestone - Math.round(partial ? pace : actual)} 件足りません</span>（{partial ? '見込み' : '実績'} {Math.round(partial ? pace : actual)} 件）。</>}
-                                        </p>
-                                        {g.note && <p className={styles.goalNote}>{g.note}</p>}
-                                    </div>
-                                )
-                            })}
-                        </div>
-
-                        <div className={cx(ui.tableWrap, styles.subTable)}>
-                            <table className={ui.dataTable}>
-                                <thead>
-                                    <tr>
-                                        <th>月</th>
-                                        <th className={ui.num}>M1 計</th>
-                                        <th className={ui.num}>…LINEプッシュ</th>
-                                        <th className={ui.num}>…登録当日</th>
-                                        <th className={ui.num}>…1〜30日の再訪</th>
-                                        <th className={ui.num}>…既存会員</th>
-                                        <th className={ui.num}>M3（LINE公式）</th>
-                                        <th className={ui.num}>M2（スカウト）</th>
-                                        <th className={ui.num}>一斉送信の応募率</th>
-                                        <th className={ui.num}>新規のLINE連携率</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {[...rows].reverse().map((m) => {
-                                        const b = m.breakdown
-                                        const m1 = m.jobAdBySource.product + m.jobAdBySource.line
-                                        return (
-                                            <tr key={m.month}>
-                                                <td>{m.month}{isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日経過</span>}</td>
-                                                <td className={cx(ui.num, ui.strong)}>{n(m1)}</td>
-                                                <td className={ui.num}>{n(b.prodLinePush)}</td>
-                                                <td className={ui.num}>{n(b.prodDay0 + b.lineDay0)}</td>
-                                                <td className={ui.num}>{n(b.prodD1_30 + b.lineD1_30)}</td>
-                                                <td className={ui.num}>{n(b.prodD31 + b.lineD31)}</td>
-                                                <td className={cx(ui.num, ui.strong)}>{n(m.jobAdBySource.line)}</td>
-                                                <td className={cx(ui.num, ui.strong)}>{n(m.jobAdBySource.scout)}</td>
-                                                <td className={ui.num}>{m.sends > 0 ? `${((m.jobAdBySource.scout / m.sends) * 100).toFixed(3)}%` : '—'}</td>
-                                                <td className={ui.num}>{m.reg > 0 ? pct1(m.regLine / m.reg) : '—'}</td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                        <p className={ui.tableNote}>
-                            M1 の内訳は <strong>M1 全体</strong>（プロダクト経由＋LINE公式）を会員になってからの経過で分けたものです
-                            （LINEプッシュ＋登録当日＋1〜30日の再訪＋既存会員＝M1 計）。<strong>M3（LINE公式）は M1 の内数</strong>です。
-                            9 月は 11／87／15／11 で、目標資料の内訳と一致します。
-                            「一斉送信の応募率」はスカウト経由の応募 ÷ スカウト SMS 送信数で、目標は 0.057%→0.15%。
-                            会員全体の LINE 連携率は現在 <strong>{pct1(data.lineRateAll)}</strong>（目標 22%）。月次ではなく現在値です。
-                        </p>
-                    </div>
+                    <ProductGoalsCard latest={latest} partial={partial} rows={rows} lineRateAll={data.lineRateAll} />
 
                     <div className={ui.card}>
                         <h2 className={ui.sectionTitle}>推移</h2>
@@ -317,5 +218,259 @@ export default function BusinessKpiPage() {
                 </>
             )}
         </PageShell>
+    )
+}
+
+/**
+ * プロダクト目標。**目標値は画面から設定して DB に持ち、実績はプロダクトDBから自動で数える。**
+ * 数え方は metricKey が決める（lib/constants/businessGoals.ts の GOAL_METRICS）ので、
+ * 目標を足すときに集計コードを書く必要はない。
+ */
+function ProductGoalsCard({ latest, partial, rows, lineRateAll }: {
+    latest: BusinessKpiMonth
+    partial: boolean
+    rows: BusinessKpiMonth[]
+    lineRateAll: number | null
+}) {
+    const { currentProduct } = useProduct()
+    const productId = currentProduct?.id
+    const [goals, setGoals] = useState<ProductGoal[]>([])
+    // 読み込み前に「目標を設定」を押すと空の編集画面が開いてしまうので、終わるまで押させない
+    const [loaded, setLoaded] = useState(false)
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState<ProductGoal[]>([])
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!productId) return
+        let cancelled = false
+        setLoaded(false)
+        fetchJson<ProductGoalsResponse>(`/api/product-goals?productId=${productId}`)
+            .then((r) => { if (!cancelled) setGoals(r.goals) })
+            .catch((e: Error) => { if (!cancelled) setError(e.message) })
+            .finally(() => { if (!cancelled) setLoaded(true) })
+        return () => { cancelled = true }
+    }, [productId])
+
+    /** 目安を入れる月。直近 3 ヶ月＋この先 3 ヶ月 */
+    const milestoneMonths = useMemo(() => {
+        const base = latest?.month ?? ''
+        if (!base) return []
+        const [y, m] = base.split('-').map(Number)
+        return Array.from({ length: 6 }, (_, i) => {
+            const d = new Date(Date.UTC(y, m - 1 - 2 + i, 1))
+            return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+        })
+    }, [latest])
+
+    const startEdit = () => { setDraft(goals.map((g) => ({ ...g, milestones: { ...g.milestones } }))); setError(null); setEditing(true) }
+    const patch = (i: number, p: Partial<ProductGoal>) => setDraft((d) => d.map((g, j) => (j === i ? { ...g, ...p } : g)))
+    const patchMilestone = (i: number, month: string, raw: string) =>
+        setDraft((d) => d.map((g, j) => {
+            if (j !== i) return g
+            const ms = { ...g.milestones }
+            if (raw.trim() === '') delete ms[month]
+            else ms[month] = Number(raw)
+            return { ...g, milestones: ms }
+        }))
+
+    const addGoal = () => setDraft((d) => [...d, {
+        id: 0, productId: productId ?? 0, metricKey: 'apps_total',
+        label: '', note: null, target: 0, weight: null, milestones: {}, sortOrder: d.length,
+    }])
+
+    const save = async () => {
+        if (!productId) return
+        setSaving(true); setError(null)
+        try {
+            const res = await fetchJson<{ goals: ProductGoal[] }>('/api/product-goals', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId,
+                    goals: draft.map((g, i) => ({
+                        id: g.id || undefined, metricKey: g.metricKey, label: g.label, note: g.note,
+                        target: Number(g.target), weight: g.weight == null ? null : Number(g.weight),
+                        milestones: g.milestones, sortOrder: i,
+                    })),
+                }),
+            })
+            setGoals(res.goals)
+            setEditing(false)
+        } catch (e) {
+            setError(e instanceof Error ? e.message : '保存に失敗しました')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const remove = async (g: ProductGoal, i: number) => {
+        if (!g.id) { setDraft((d) => d.filter((_, j) => j !== i)); return }
+        if (!productId) return
+        setSaving(true); setError(null)
+        try {
+            await fetchJson(`/api/product-goals?productId=${productId}&id=${g.id}`, { method: 'DELETE' })
+            setDraft((d) => d.filter((_, j) => j !== i))
+            setGoals((gs) => gs.filter((x) => x.id !== g.id))
+        } catch (e) {
+            setError(e instanceof Error ? e.message : '削除に失敗しました')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    return (
+        <div className={ui.card}>
+            <div className={styles.goalCardHead}>
+                <h2 className={ui.sectionTitle}>プロダクト目標</h2>
+                {!editing
+                    ? <button type="button" className={ui.btnGhost} onClick={startEdit} disabled={!productId || !loaded}>{loaded ? '目標を設定' : '読み込み中...'}</button>
+                    : (
+                        <span className={styles.goalActions}>
+                            <button type="button" className={ui.btnGhost} onClick={addGoal} disabled={saving}>＋ 目標を追加</button>
+                            <button type="button" className={ui.btnGhost} onClick={() => setEditing(false)} disabled={saving}>キャンセル</button>
+                            <button type="button" className={ui.btnPrimary} onClick={save} disabled={saving}>{saving ? '保存中...' : '保存'}</button>
+                        </span>
+                    )}
+            </div>
+            <p className={ui.sectionNote}>
+                目標値はこの画面で設定します。<strong>実績はプロダクトDBから自動で数える</strong>ので、設定したあとは手入力は要りません。
+                月別の目安を入れると、その月に届いているかを判定します。
+            </p>
+            {error && <Alert tone="error">{error}</Alert>}
+
+            {editing ? (
+                <div className={ui.tableWrap}>
+                    <table className={ui.dataTable}>
+                        <thead>
+                            <tr>
+                                <th>目標の名前</th>
+                                <th>何を数えるか</th>
+                                <th className={ui.num}>期末目標</th>
+                                <th className={ui.num}>比重%</th>
+                                {milestoneMonths.map((m) => <th key={m} className={ui.num}>{m.slice(2)}</th>)}
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {draft.map((g, i) => (
+                                <tr key={g.id || `new-${i}`}>
+                                    <td><input className={cx(ui.input, styles.nameInput)} value={g.label} placeholder="目標の名前" onChange={(e) => patch(i, { label: e.target.value })} /></td>
+                                    <td>
+                                        <select className={cx(ui.select, styles.metricSelect)} value={g.metricKey} onChange={(e) => patch(i, { metricKey: e.target.value as GoalMetricKey })} aria-label="数える指標">
+                                            {GOAL_METRIC_KEYS.map((k) => <option key={k} value={k}>{GOAL_METRICS[k].label}</option>)}
+                                        </select>
+                                    </td>
+                                    <td className={ui.num}><input className={cx(ui.input, styles.numInput)} type="number" step="any" value={g.target} onChange={(e) => patch(i, { target: Number(e.target.value) })} /></td>
+                                    <td className={ui.num}><input className={cx(ui.input, styles.numInput)} type="number" value={g.weight ?? ''} onChange={(e) => patch(i, { weight: e.target.value === '' ? null : Number(e.target.value) })} /></td>
+                                    {milestoneMonths.map((m) => (
+                                        <td key={m} className={ui.num}>
+                                            <input className={cx(ui.input, styles.numInput)} type="number" step="any" value={g.milestones[m] ?? ''} onChange={(e) => patchMilestone(i, m, e.target.value)} />
+                                        </td>
+                                    ))}
+                                    <td><button type="button" className={ui.btnGhost} onClick={() => remove(g, i)} disabled={saving}>削除</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <p className={ui.tableNote}>
+                        「何を数えるか」で選んだ指標の実績が、毎回プロダクトDBから自動で集計されます。
+                        率の指標（一斉送信の応募率・新規のLINE連携率）は <strong>0.15 のように小数</strong>で入れてください（0.15 = 15%）。
+                        月別の目安は空欄にすると判定しません。
+                    </p>
+                </div>
+            ) : !loaded ? (
+                <p className={ui.sectionNote}>目標を読み込んでいます...</p>
+            ) : goals.length === 0 ? (
+                <p className={ui.sectionNote}>目標がまだありません。「目標を設定」から追加してください。</p>
+            ) : (
+                <>
+                    <div className={styles.goalGrid}>
+                        {goals.map((g, i) => {
+                            const def = GOAL_METRICS[g.metricKey]
+                            const color = GOAL_COLORS[i % GOAL_COLORS.length]
+                            const actual = def.extract(latest)
+                            // 率は日数で割り戻しても意味が変わらないので、ペース換算は実数の指標だけ
+                            const pace = def.isRate ? actual : (paceOf(actual, latest) ?? actual)
+                            const milestone = g.milestones[latest.month] ?? null
+                            const basis = partial ? pace : actual
+                            const w = (v: number | null) => `${v == null || g.target <= 0 ? 0 : Math.min(100, (v / g.target) * 100)}%`
+                            const ok = milestone == null || basis == null ? null : basis >= milestone
+                            return (
+                                <div key={g.id} className={styles.goalCard} style={{ '--goal-accent': color } as CSSProperties}>
+                                    <div className={styles.goalHead}>
+                                        <h3 className={styles.goalTitle}>{g.label}</h3>
+                                        {g.weight != null && <span className={styles.goalWeight}>比重 {g.weight}%</span>}
+                                    </div>
+                                    <p className={styles.goalDef}>{def.label}｜{def.definition}</p>
+                                    <div className={styles.goalNums}>
+                                        <span className={styles.goalActual}>{formatGoalValue(actual, g.metricKey)}</span>
+                                        {partial && !def.isRate && <span className={styles.goalPace}>／ 月末見込み <strong>{formatGoalValue(pace, g.metricKey)}</strong></span>}
+                                    </div>
+                                    <div className={styles.goalTrack}>
+                                        {partial && !def.isRate && <span className={styles.goalFillPace} style={{ width: w(pace) }} />}
+                                        <span className={styles.goalFillActual} style={{ width: w(actual) }} />
+                                        {milestone != null && milestone < g.target && (
+                                            <span className={styles.goalMark} style={{ left: w(milestone) }} title={`${latest.month} の目安 ${milestone}`} />
+                                        )}
+                                    </div>
+                                    <div className={styles.goalScale}>
+                                        <span>0</span>
+                                        <span>{latest.month} 目安 {milestone == null ? '—' : formatGoalValue(milestone, g.metricKey)}</span>
+                                        <span>期末 {formatGoalValue(g.target, g.metricKey)}</span>
+                                    </div>
+                                    <p className={styles.goalVerdict}>
+                                        {milestone == null
+                                            ? <>この月の目安は設定されていません。</>
+                                            : ok
+                                                ? <>今月の目安に <span className={styles.up}>{partial && !def.isRate ? '見込みで届いています' : '到達'}</span>（{formatGoalValue(basis, g.metricKey)}）。</>
+                                                : <>今月の目安 {formatGoalValue(milestone, g.metricKey)} に <span className={styles.dn}>届いていません</span>（{partial && !def.isRate ? '見込み' : '実績'} {formatGoalValue(basis, g.metricKey)}）。</>}
+                                    </p>
+                                    {g.note && <p className={styles.goalNote}>{g.note}</p>}
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className={cx(ui.tableWrap, styles.subTable)}>
+                        <table className={ui.dataTable}>
+                            <thead>
+                                <tr>
+                                    <th>月</th>
+                                    {goals.map((g) => <th key={g.id} className={ui.num}>{g.label}</th>)}
+                                    <th className={ui.num}>…LINEプッシュ</th>
+                                    <th className={ui.num}>…登録当日</th>
+                                    <th className={ui.num}>…1〜30日の再訪</th>
+                                    <th className={ui.num}>…既存会員</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...rows].reverse().map((m) => {
+                                    const b = m.breakdown
+                                    return (
+                                        <tr key={m.month}>
+                                            <td>{m.month}{isPartial(m) && <span className={styles.partial}>{m.daysElapsed}日経過</span>}</td>
+                                            {goals.map((g) => (
+                                                <td key={g.id} className={cx(ui.num, ui.strong)}>{formatGoalValue(GOAL_METRICS[g.metricKey].extract(m), g.metricKey)}</td>
+                                            ))}
+                                            <td className={ui.num}>{n(b.prodLinePush)}</td>
+                                            <td className={ui.num}>{n(b.prodDay0 + b.lineDay0)}</td>
+                                            <td className={ui.num}>{n(b.prodD1_30 + b.lineD1_30)}</td>
+                                            <td className={ui.num}>{n(b.prodD31 + b.lineD31)}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className={ui.tableNote}>
+                        右の 4 列は「プロダクト経由＋LINE公式の応募」を、会員になってからの経過で分けたものです
+                        （LINEプッシュ＋登録当日＋1〜30日の再訪＋既存会員＝その合計）。
+                        会員全体の LINE 連携率は現在 <strong>{lineRateAll == null ? '—' : `${(lineRateAll * 100).toFixed(1)}%`}</strong>（月次ではなく現在値）。
+                    </p>
+                </>
+            )}
+        </div>
     )
 }

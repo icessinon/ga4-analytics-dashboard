@@ -18,6 +18,31 @@ export interface ApiAnnotation {
 }
 
 export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
+    "GET /api/product-goals": {
+        category: "全体KPI",
+        name: "プロダクト目標の取得",
+        description: "プロダクトに設定された目標（名前・数える指標・期末目標・比重・月別の目安）を返します。1 件も無いときは初期テンプレートを入れてから返します。実績は自動で数えるため、ここには目標値だけが入ります。",
+        params: [{ name: "productId", type: "number", required: true, description: "クエリ文字列" }],
+        responseNote: "{ goals: ProductGoal[], seeded }",
+    },
+    "PUT /api/product-goals": {
+        category: "全体KPI",
+        name: "プロダクト目標の保存",
+        description: "目標を作成・更新します。metricKey は lib/constants/businessGoals.ts の GOAL_METRICS にあるキーだけが通ります。",
+        params: [
+            { name: "productId", type: "number", required: true, description: "Body JSON" },
+            { name: "goals", type: "array", required: true, description: "Body JSON。{ id?, metricKey, label, target, weight?, milestones?, note? }[]。id があれば更新" },
+        ],
+    },
+    "DELETE /api/product-goals": {
+        category: "全体KPI",
+        name: "プロダクト目標の削除",
+        description: "目標を論理削除します（isActive を false にするだけで行は残ります）。",
+        params: [
+            { name: "productId", type: "number", required: true, description: "クエリ文字列" },
+            { name: "id", type: "number", required: true, description: "クエリ文字列" },
+        ],
+    },
     "POST /api/business-kpi": {
         category: "全体KPI",
         name: "事業KPI（応募・会員登録）",

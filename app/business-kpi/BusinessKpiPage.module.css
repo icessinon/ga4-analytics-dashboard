@@ -264,3 +264,40 @@
 .subTable {
     margin-top: 0.75rem;
 }
+
+.goalCardHead {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+
+.goalCardHead h2 {
+    margin-bottom: 0;
+}
+
+.goalActions {
+    display: inline-flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.goalCardHead > button {
+    margin-left: auto;
+}
+
+/* globals.css の input 幅ルール（詳細度が高い）には --input-width で効かせる */
+.numInput {
+    --input-width: 4.75rem;
+    text-align: right;
+}
+
+.nameInput {
+    --input-width: 10rem;
+}
+
+.metricSelect {
+    max-width: 15rem;
+}
