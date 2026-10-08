@@ -169,7 +169,7 @@ export default function DashboardPage() {
             }
         >
             {/* 事業の数字を最初に出す。出典はプロダクトDBで、下の GA4 由来の指標とは別系統 */}
-            <BusinessKpiSection />
+            <BusinessKpiSection selectedMonth={selectedMonth} />
 
             {stats.data && (
                 <div className={ui.summaryRow}>

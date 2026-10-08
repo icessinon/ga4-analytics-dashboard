@@ -12,6 +12,7 @@ import { CATEGORY_IDS, CATEGORIES, type CategoryId } from './categories'
 export const PAGE_IDS = [
     // kpi
     'trend',
+    'businessKpi',
     'insights',
     'cvValue',
     // apply
@@ -141,6 +142,32 @@ export const PAGES: Record<PageId, PageDef> = {
             metrics: ['sessions', 'eventCount', 'cvr'],
             ai: true,
             apiRoute: 'GET /api/trend/monthly',
+        },
+    },
+    businessKpi: {
+        href: '/business-kpi',
+        title: '事業KPI（応募・会員登録）',
+        subtitle: '応募数（求人広告 / 人材紹介 / ハローワーク）と会員登録数の月次推移・着地見込み・求人広告の流入分類',
+        category: 'kpi',
+        tags: ['cv', 'apply', 'signup', 'bq'],
+        related: ['cvTypes', 'scout', 'signupFunnel'],
+        doc: {
+            description: '応募数と会員登録数の月次を見ます。**出典はプロダクトDB（xmile-drm.xwork）で GA4 ではありません。**応募数・会員登録数の正はこちらで、GA4 のCV（ページ計測）と食い違ったらこの数字を採ります。分類は goal-tracker の weekly_actuals.sql v4.1（三木さんの分類・2026-10-02）と同じ定義に揃えてあり、移植時に 2026-07〜09 の全列が一致することを確認しています。',
+            capabilities: [
+                '当月の着地見込み（経過日数で割り戻したペース換算）と前月比。応募合計 / 求人広告 / 会員登録 / 求人あたり月間応募',
+                '10 指標の月次推移グラフ。途中の月は実績と月末見込みを積み上げて出すので、月初に「急減した」と誤読しない',
+                '求人広告の応募の流入分類（プロダクト経由 / 応募同時登録 / LINE公式 / 人材紹介側の配信 / スカウト / その他）の月次積み上げ',
+                '月次テーブル: 応募合計・契約種別別・会員登録（単独 / 応募同時 / LINE連携）・スカウト送信・求人あたり月間応募',
+            ],
+            notes: [
+                '出典はプロダクトDB。GA4 のCV（/entry/thanks などのページ計測）とは必ずズレる。応募数・会員登録数はプロダクトDBが正',
+                '分類の定義は goal-tracker の weekly_actuals.sql が original。片方を変えたらもう片方も直す',
+                '流入分類を出すのは求人広告だけ（人材紹介・ハローワークは配信の主対象ではない）。上から順に当てはめ、どれにも当たらない既存会員の応募はプロダクト経由に寄せる',
+                '「応募同時登録」は signup_kind が入る 2026-09-04 以降はその値、それ以前は「最初の応募が登録から 5 秒以内か」で代替している',
+                '着地見込みは経過日数で割り戻すだけなので、月初・月末に偏る施策がある月は外れる',
+                '求人あたり月間応募の分母は現在公開中の求人広告数。過去月にも同じ値を使うので推移としては粗い',
+            ],
+            apiRoute: 'POST /api/business-kpi',
         },
     },
     insights: {
