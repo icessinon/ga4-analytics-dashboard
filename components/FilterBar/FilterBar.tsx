@@ -32,10 +32,17 @@ export default function FilterBar({ onSubmit, submitLabel = '分析実行', subm
             }}
         >
             {children}
-            {/* 送信ボタンは他のボタンと同じ大きさ・質感（ui.btnPrimary）。以前の executionButton は 50px 高で他と釣り合わなかった */}
-            <button type="submit" className={cx(ui.btnPrimary, styles.submit)} disabled={disabled || submitting}>
-                {submitting ? '取得中...' : submitLabel}
-            </button>
+            {/*
+             * 送信ボタンは他のボタンと同じ大きさ・質感（ui.btnPrimary）。
+             * ラベル分の空きを持つ field で包むことで、ヒントの有無でフィールドごとに高さが
+             * 変わっても、他のコントロールと同じ行に揃う（以前は上下にずれていた）。
+             */}
+            <div className={cx(styles.field, styles.submitField)}>
+                <span className={styles.fieldLabel} aria-hidden="true">&nbsp;</span>
+                <button type="submit" className={ui.btnPrimary} disabled={disabled || submitting}>
+                    {submitting ? '取得中...' : submitLabel}
+                </button>
+            </div>
         </form>
     )
 }

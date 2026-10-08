@@ -95,6 +95,15 @@
 }
 
 /*
+ * globals.css の `select { padding-right: 1.75rem }`（矢印ぶんの逃げ）は、上の
+ * `.input, .select { padding: … }` ショートハンドに詳細度で負けて打ち消される。
+ * その結果、選択肢の文字が長いとテキストが矢印に重なっていた。右だけ戻す。
+ */
+select.select {
+    padding-right: 1.75rem;
+}
+
+/*
  * globals.css の input ルール（:not() 5 連で詳細度が高く width: 100%）に勝つため同じ連鎖で書く。
  * 幅は --input-width で各ページから指定する（.wide { --input-width: 24rem } のように、低い詳細度でよい）
  */
