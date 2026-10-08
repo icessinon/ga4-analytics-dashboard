@@ -299,7 +299,10 @@ export function halfPeriods(from: string, to: string): { label: string; start: s
 
 /**
  * 目標が 1 件も無いプロダクトに最初だけ入れるテンプレート（2026 下半期）。
- * 数値は goal-tracker の GOAL_DATA v4.2 / GOAL_METRICS（2026-10-03 更新）の月次計画から引いた。
+ * 数値は「下期目標 ファネル現実性チェック」v4.2（2026-10-04・三木さん確定）と
+ * goal-tracker の GOAL_METRICS（2026-10-03）の月次計画から引いた。
+ * v4.1 の「プロダクト経由＋LINE公式 124→190」は範囲が曖昧だったため、v4.2 で
+ * 「プロダクト経由＋LINE公式 160 ＋ スカウト 30 ＝ 190」に確定している。
  * 計画は「7〜9月は8月版、10〜12月は数値計画SS 9/28版」で、10・11月は直線補間の仮置きを含む。
  * **作られたあとは画面の設定が正**。
  * ここを直しても既存の設定は変わらない。目標値が決まっていないものは target を null にしてある。
@@ -316,13 +319,13 @@ export const INITIAL_GOAL_TEMPLATE: ReadonlyArray<{
         metricKey: 'apps_jobad', label: '応募数（求人広告）',
         target: 300, weight: null,
         milestones: { '2026-07': 124, '2026-08': 137, '2026-09': 158, '2026-10': 191, '2026-11': 231, '2026-12': 300 },
-        note: '12月300件の内訳は M1 160＋M2 30＋三木さん管轄 110',
+        note: '12月300件 ＝ プロダクトの持ち分 190（160＋30）＋ 三木さん管轄 110（その他 70〜75＋広告 35〜40）',
     },
     {
         metricKey: 'jobad_product_line', label: 'プロダクト経由＋LINE公式の応募',
         target: 160, weight: 35,
         milestones: { '2026-10': 136, '2026-11': 148, '2026-12': 160 },
-        note: '9月実績 124 件。10・11月は直線補間の仮置き',
+        note: '9月実績 124 件。プロダクトの持ち分は これ 160 ＋ スカウト 30 ＝ 190（v4.2・10/4 確定）',
     },
     {
         metricKey: 'jobad_product', label: '└ プロダクト経由の応募',
@@ -334,7 +337,7 @@ export const INITIAL_GOAL_TEMPLATE: ReadonlyArray<{
         metricKey: 'jobad_line', label: '└ LINE公式経由の応募',
         target: 40, weight: 15,
         milestones: { '2026-10': 31, '2026-11': 36, '2026-12': 40 },
-        note: '9月実績 27 件。プロダクト経由＋LINE公式の内数',
+        note: '9月実績 27 件。プロダクト経由の中ではなく並列の箱で、合わせて 160 件',
     },
     {
         metricKey: 'jobad_scout', label: 'スカウト経由の応募',
@@ -350,26 +353,26 @@ export const INITIAL_GOAL_TEMPLATE: ReadonlyArray<{
     {
         metricKey: 'same_day_applies', label: '登録当日の応募',
         target: 95, weight: null,
-        milestones: { '2026-12': 95 },
-        note: '9月実績 87 件。12月の内訳目標',
+        milestones: { '2026-10': 90, '2026-11': 93, '2026-12': 95 },
+        note: '9月実績 87 件（プロダクト経由 66＋LINE公式 21）。単独登録あたり 7.9%→9% で届く',
     },
     {
         metricKey: 'jobad_return_1_30', label: '1〜30日の再訪からの応募',
         target: 30, weight: null,
-        milestones: { '2026-12': 30 },
-        note: '9月実績 15 件。12月の内訳目標。検索条件保存・新着通知・ステップメールで作る',
+        milestones: { '2026-10': 19, '2026-11': 25, '2026-12': 30 },
+        note: '9月実績 15 件（プロダクト経由 12＋LINE公式 3）。3 か月横ばいで、仕組みをゼロから立ち上げる部分。検索条件保存→新着通知・ステップメール',
     },
     {
         metricKey: 'jobad_existing_member', label: '既存会員からの応募',
         target: 18, weight: null,
-        milestones: { '2026-12': 18 },
-        note: '9月実績 11 件。12月の内訳目標。掘り起こしで作る',
+        milestones: { '2026-10': 13, '2026-11': 16, '2026-12': 18 },
+        note: '9月実績 11 件（プロダクト経由 8＋LINE公式 3）。休眠掘り起こし・既存連携者約 7,000 人への配信',
     },
     {
         metricKey: 'jobad_product_linepush', label: 'LINEプッシュ経由の応募',
         target: 17, weight: null,
-        milestones: { '2026-12': 17 },
-        note: '9月実績 11 件。12月の内訳目標。プロダクト経由の内数',
+        milestones: { '2026-10': 14, '2026-11': 14, '2026-12': 17 },
+        note: '9月実績 11 件。配信頻度 0.75 通/会員月 → 頻度↑とセグメント配信。プロダクト経由の内数',
     },
     {
         metricKey: 'reg_plain', label: '単独登録者数',
