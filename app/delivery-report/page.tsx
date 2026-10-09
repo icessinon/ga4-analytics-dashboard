@@ -7,7 +7,8 @@ import Alert from '@/components/Alert'
 import { ui, cx } from '@/components/ui'
 import { useReport } from '@/hooks/useReport'
 import {
-    CHANNEL_HAS_OPEN, CHANNEL_LABEL, SCOPE_HINT, SCOPE_LABEL, SOURCE_FILTER_LABEL, SOURCE_LABEL,
+    CHANNEL_HAS_OPEN, CHANNEL_LABEL, INTERNAL_MAIL_DOMAIN, SCOPE_HINT, SCOPE_LABEL,
+    SOURCE_FILTER_LABEL, SOURCE_LABEL,
     type DeliveryScope, type SourceFilter,
 } from '@/lib/constants/delivery'
 import type { CampaignRow, DeliveryReportResponse, SubjectRow } from '@/lib/services/delivery/deliveryReportTypes'
@@ -44,10 +45,12 @@ export default function DeliveryReportPage() {
     // 本体通知基盤は 1 日十数通〜百数十通の規模なので、既定で足切りすると B-Dash しか出てこない
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
     const [minSent, setMinSent] = useState(0)
+    // 社内ドメイン宛だけの配信（動作確認・テスト）は既定で外す
+    const [excludeInternal, setExcludeInternal] = useState(true)
 
     // 1 回 1〜2GB スキャンするので自動取得にしない（FilterBar の実行ボタンで取りに行く）
     const report = useReport<DeliveryReportResponse>('/api/delivery-report', {
-        body: { days, scope },
+        body: { days, scope, excludeInternal },
         manual: true,
         keepPreviousData: true,
     })
@@ -92,6 +95,17 @@ export default function DeliveryReportPage() {
                             {(Object.keys(SCOPE_LABEL) as DeliveryScope[]).map((s) => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}
                         </select>
                     </FilterField>
+                    <FilterField label="テスト配信" hint={`宛先が ${INTERNAL_MAIL_DOMAIN} だけのもの`}>
+                        <select
+                            className={ui.select}
+                            value={excludeInternal ? 'exclude' : 'include'}
+                            onChange={(e) => setExcludeInternal(e.target.value === 'exclude')}
+                            aria-label="テスト配信"
+                        >
+                            <option value="exclude">除外する</option>
+                            <option value="include">含める</option>
+                        </select>
+                    </FilterField>
                     <FilterField label="出典" hint="施策別・件名別の表を絞る">
                         <select className={ui.select} value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value as SourceFilter)} aria-label="出典">
                             {(Object.keys(SOURCE_FILTER_LABEL) as SourceFilter[])
@@ -121,6 +135,17 @@ export default function DeliveryReportPage() {
                         <Alert tone="warn">
                             B-Dash の配信ログは <strong>2026-09-14 以降</strong>しか日次で入っていないため、期間を {data.startDate} から集計しました。
                             それ以前は全量バックフィルの partition（1 回 15〜17GB）にしか無く、安全に引けません。
+                        </Alert>
+                    )}
+
+                    {data.excludeInternal && (data.excludedInternal.sesMessages > 0 || data.excludedInternal.bdashMail > 0) && (
+                        <Alert tone="info">
+                            宛先が <strong>{INTERNAL_MAIL_DOMAIN}</strong> だけの配信を
+                            {data.excludedInternal.sesMessages > 0 && <>本体メール <strong>{n(data.excludedInternal.sesMessages)}</strong> 通</>}
+                            {data.excludedInternal.sesMessages > 0 && data.excludedInternal.bdashMail > 0 && <>・</>}
+                            {data.excludedInternal.bdashMail > 0 && <>B-Dash <strong>{n(data.excludedInternal.bdashMail)}</strong> 通</>}
+                            {' '}除外しました（法人アカウントの動作確認など）。
+                            <strong>CC に社員が入るだけの業務メールは残しています</strong>（「求職者のご紹介」など、外部宛を含むもの）。
                         </Alert>
                     )}
 
@@ -360,7 +385,8 @@ export default function DeliveryReportPage() {
                     )}
 
                     <p className={styles.scopeNote}>
-                        出典: B-Dash 一斉配信（{SCOPE_LABEL[data.scope]}）＋ 本体通知基盤 ＋ SES ＋ GA4 / 期間: {data.startDate} 〜 {data.endDate} /
+                        出典: B-Dash 一斉配信（{SCOPE_LABEL[data.scope]}）＋ 本体通知基盤 ＋ SES ＋ GA4 /
+                        テスト配信: {data.excludeInternal ? '除外' : '含む'} / 期間: {data.startDate} 〜 {data.endDate} /
                         BigQuery スキャン {gb(data.scannedBytes)}GB（約 {yen(data.scannedBytes)} 円） /
                         取得 {new Date(data.fetchedAt).toLocaleString('ja-JP')}
                     </p>

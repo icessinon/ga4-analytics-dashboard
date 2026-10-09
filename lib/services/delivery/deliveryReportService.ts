@@ -26,7 +26,7 @@
 
 import { runGa4EventsQuery } from '@/lib/bq/ga4EventsClient'
 import { clampToExportWindow, eventsFromWhere } from '@/lib/bq/ga4EventsSql'
-import { BDASH_INCREMENTAL_START, type DeliveryChannel, type DeliveryScope } from '@/lib/constants/delivery'
+import { BDASH_INCREMENTAL_START, INTERNAL_MAIL_DOMAIN, type DeliveryChannel, type DeliveryScope } from '@/lib/constants/delivery'
 import type {
     CampaignRow, ChannelSummaryRow, DeliveryReport, Ga4LandingRow, LineUnitRow, SubjectRow,
 } from './deliveryReportTypes'
@@ -57,6 +57,11 @@ export function resolveScope(scope: unknown): DeliveryScope {
     return scope === 'all' ? 'all' : 'xwork'
 }
 
+/** 社内宛の除外は既定で有効。明示的に false のときだけ含める */
+export function resolveExcludeInternal(v: unknown): boolean {
+    return v !== false
+}
+
 /** B-Dash の増分が始まる前には遡れない。切り詰めたかどうかは画面に出す */
 function resolveWindow(days: number): { startDate: string; endDate: string; clamped: boolean } {
     const endDate = toDate(addDays(jstToday(), -1))
@@ -71,7 +76,9 @@ function resolveWindow(days: number): { startDate: string; endDate: string; clam
  * チャネル / 施策 / 施策×件名 の 3 グレインを GROUPING SETS で一度に出す。1 スキャンで済む。
  * campaign_name と subject は base で NULL を潰してあるので、出力の NULL は「畳んだ」印になる。
  */
-function bdashSql(startDate: string, endExclusive: string, scope: DeliveryScope): string {
+function bdashSql(startDate: string, endExclusive: string, scope: DeliveryScope, excludeInternal: boolean): string {
+    // 社内宛を各指標から外す条件。除外しないときは空文字で素通りさせる
+    const notInternal = excludeInternal ? ' AND NOT is_internal' : ''
     return `
     WITH base AS (
       SELECT
@@ -85,6 +92,8 @@ function bdashSql(startDate: string, endExclusive: string, scope: DeliveryScope)
         IFNULL(NULLIF(mail_subject, ''), '(件名なし)') AS subject,
         action_type,
         customer_account_id AS acct,
+        -- 社内ドメイン宛＝検証・テスト。SMS は宛先が電話番号なので判定できない
+        ENDS_WITH(LOWER(IFNULL(mail_address, '')), '@${INTERNAL_MAIL_DOMAIN}') AS is_internal,
         CONCAT(IFNULL(campaign_id,''), '|', IFNULL(mail_address, IFNULL(sms_phone_number,'')), '|', IFNULL(delivery_date_time,'')) AS k
       FROM ${BDASH_ACTION_LOG}
       WHERE imported_at >= TIMESTAMP('${startDate}T00:00:00+09:00')
@@ -92,14 +101,15 @@ function bdashSql(startDate: string, endExclusive: string, scope: DeliveryScope)
         ${scope === 'xwork' ? XWORK_SCOPE_SQL : ''}
     )
     SELECT media, campaign_name, subject,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_tried'), k, NULL)) AS tried,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_tried'), acct, NULL)) AS people,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_succeeded'), k, NULL)) AS delivered,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_opened'), k, NULL)) AS opened,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_clicked') AND NOT CONTAINS_SUBSTR(action_type, 'redirect'), k, NULL)) AS clicked,
-      COUNT(DISTINCT IF(CONTAINS_SUBSTR(action_type, 'redirect'), k, NULL)) AS redirect_clicked,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_failed'), k, NULL)) AS failed,
-      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_unsubscribed'), k, NULL)) AS unsubscribed
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_tried')${notInternal}, k, NULL)) AS tried,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_tried')${notInternal}, acct, NULL)) AS people,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_succeeded')${notInternal}, k, NULL)) AS delivered,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_opened')${notInternal}, k, NULL)) AS opened,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_clicked') AND NOT CONTAINS_SUBSTR(action_type, 'redirect')${notInternal}, k, NULL)) AS clicked,
+      COUNT(DISTINCT IF(CONTAINS_SUBSTR(action_type, 'redirect')${notInternal}, k, NULL)) AS redirect_clicked,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_failed')${notInternal}, k, NULL)) AS failed,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_unsubscribed')${notInternal}, k, NULL)) AS unsubscribed,
+      COUNT(DISTINCT IF(ENDS_WITH(action_type, '_tried') AND is_internal, k, NULL)) AS internal_tried
     FROM base
     GROUP BY GROUPING SETS ((media), (media, campaign_name), (media, campaign_name, subject))`
 }
@@ -138,11 +148,14 @@ function messagingSql(startDate: string, endExclusive: string): string {
  * 拾えるよう SES を主にする。企業名・氏名・都道府県を差し込む件名は 1 つに畳まないと
  * 1 社 1 行になって読めないので、ここで正規化する。
  */
-function sesSubjectSql(startDate: string, endExclusive: string): string {
+function sesSubjectSql(startDate: string, endExclusive: string, excludeInternal: boolean): string {
+    // 除外した件数も同じクエリで数えたいので、WHERE で落とさず keep フラグで振り分ける
+    const keep = excludeInternal ? 'NOT internal_only' : 'TRUE'
     return `
-    WITH m AS (
+    WITH ev AS (
       SELECT message_id,
         ANY_VALUE(subject) AS subject,
+        ANY_VALUE(mail_to) AS mail_to,
         MAX(IF(event_type='Send',     1, 0)) AS sent,
         MAX(IF(event_type='Delivery', 1, 0)) AS delivered,
         MAX(IF(event_type='Open',     1, 0)) AS opened,
@@ -152,9 +165,16 @@ function sesSubjectSql(startDate: string, endExclusive: string): string {
       WHERE evented_at >= TIMESTAMP('${startDate}T00:00:00+09:00')
         AND evented_at < TIMESTAMP('${endExclusive}T00:00:00+09:00')
       GROUP BY message_id
+    ),
+    m AS (
+      SELECT * EXCEPT (mail_to),
+        -- 宛先が「すべて」社内ドメインなら検証・テスト。CC に社員が入るだけの
+        -- 業務メール（求職者のご紹介など）は外部宛を含むので残る
+        (SELECT COUNTIF(NOT ENDS_WITH(LOWER(a), '@${INTERNAL_MAIL_DOMAIN}')) FROM UNNEST(mail_to) a) = 0 AS internal_only
+      FROM ev
     )
     SELECT
-      COUNT(*) AS messages,
+      COUNTIF(${keep}) AS messages,
       CASE
         WHEN REGEXP_CONTAINS(subject, r'^【スカウト】.+からスカウトが届きました$') THEN '【スカウト】（企業名）からスカウトが届きました'
         WHEN REGEXP_CONTAINS(subject, r'からメッセージが届きました') AND NOT CONTAINS_SUBSTR(subject, '担当者から') THEN '（企業名）からメッセージが届きました'
@@ -162,10 +182,15 @@ function sesSubjectSql(startDate: string, endExclusive: string): string {
         WHEN REGEXP_CONTAINS(subject, r'で条件の近い求人を[0-9]+件そろえました$') THEN '（都道府県）で条件の近い求人をそろえました'
         ELSE subject
       END AS subject_group,
-      SUM(sent) AS sent, SUM(delivered) AS delivered, SUM(opened) AS opened,
-      SUM(clicked) AS clicked, SUM(bounced) AS bounced
+      SUM(IF(${keep}, sent, 0)) AS sent,
+      SUM(IF(${keep}, delivered, 0)) AS delivered,
+      SUM(IF(${keep}, opened, 0)) AS opened,
+      SUM(IF(${keep}, clicked, 0)) AS clicked,
+      SUM(IF(${keep}, bounced, 0)) AS bounced,
+      COUNTIF(NOT (${keep})) AS internal_messages
     FROM m
     GROUP BY 2
+    HAVING messages > 0
     ORDER BY messages DESC
     LIMIT 100`
 }
@@ -218,17 +243,18 @@ const asChannel = (media: string): DeliveryChannel =>
 const mediumToChannel = (medium: string): DeliveryChannel | null =>
     medium === 'email' ? 'mail' : medium === 'sms' ? 'sms' : medium === 'line' ? 'line' : null
 
-export async function runDeliveryReport(daysInput: unknown, scopeInput: unknown): Promise<DeliveryReport> {
+export async function runDeliveryReport(daysInput: unknown, scopeInput: unknown, excludeInternalInput?: unknown): Promise<DeliveryReport> {
     const days = clampDays(daysInput)
     const scope = resolveScope(scopeInput)
+    const excludeInternal = resolveExcludeInternal(excludeInternalInput)
     const { startDate, endDate, clamped } = resolveWindow(days)
     const endExclusive = toDate(addDays(endDate, 1))
     const ga4Window = clampToExportWindow(startDate, endDate)
 
     const [bdash, messaging, ses, ga4, lineUnits] = await Promise.all([
-        runGa4EventsQuery(bdashSql(startDate, endExclusive, scope)),
+        runGa4EventsQuery(bdashSql(startDate, endExclusive, scope, excludeInternal)),
         runGa4EventsQuery(messagingSql(startDate, endExclusive)),
-        runGa4EventsQuery(sesSubjectSql(startDate, endExclusive)),
+        runGa4EventsQuery(sesSubjectSql(startDate, endExclusive, excludeInternal)),
         runGa4EventsQuery(ga4Sql(ga4Window.start, ga4Window.end)),
         runGa4EventsQuery(lineUnitSql(startDate, endExclusive)),
     ])
@@ -403,8 +429,14 @@ export async function runDeliveryReport(daysInput: unknown, scopeInput: unknown)
         ctorRate: c.opened ? rate(c.clicked ?? 0, c.opened) : null,
     })).sort((a, b) => b.tried - a.tried)
 
+    const excludedInternal = {
+        // チャネルグレインの行（campaign_name が NULL）にだけ入っている
+        bdashMail: bdashChannelRows.reduce((a, r) => a + num(r.internal_tried), 0),
+        sesMessages: ses.rows.reduce((a, r) => a + num(r.internal_messages), 0),
+    }
+
     return {
-        scope, startDate, endDate, clamped,
+        scope, excludeInternal, excludedInternal, startDate, endDate, clamped,
         channels, campaigns, subjects, ga4: ga4Rows, lineUnits: lineUnitRows,
         scannedBytes,
         fetchedAt: new Date().toISOString(),

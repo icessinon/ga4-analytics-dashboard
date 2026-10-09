@@ -59,8 +59,9 @@ export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
         params: [
             { name: "days", type: "number", required: false, description: "Body JSON。7〜180。既定 30。B-Dash の増分開始日 2026-09-14 より前には遡れず、切り詰めた場合は clamped: true を返す" },
             { name: "scope", type: "string", required: false, description: "Body JSON。'xwork'（既定・クロスワーク分のみ）または 'all'（B-Dash 全社）" },
+            { name: "excludeInternal", type: "boolean", required: false, description: "Body JSON。既定 true。宛先が xmile.co.jp だけの配信（法人アカウントの動作確認などのテスト）を除外する。CC に社員が入るだけの業務メールは外部宛を含むので残る" },
         ],
-        responseNote: "{ channels, campaigns, subjects, ga4, lineUnits, scannedBytes, clamped }。scannedBytes は BigQuery のスキャン量（コスト表示用）",
+        responseNote: "{ channels, campaigns, subjects, ga4, lineUnits, scannedBytes, clamped, excludeInternal, excludedInternal }。excludedInternal は除外したテスト配信の通数",
     },
     "GET /api/ab-test/[id]/current": {
         category: "ABテスト",

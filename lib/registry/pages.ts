@@ -461,6 +461,7 @@ export const PAGES: Record<PageId, PageDef> = {
                 'SMS の sms_redirect_clicked は短縮URL bd4.sh へのヒットで bot・プリフェッチを含み実クリックの 3 倍前後に出る。クリックには含めない',
 '画面の「B-Dash の絞り込み」は出典の切り替えではない。どちらを選んでも 4 出典すべてを読み、B-Dash の中をクロスワークの配信だけにするか、グループ各社（車両SaaS・運送SaaS・DRS/CRS/MRS 等）も混ぜるかが変わるだけ。絞り込みは campaign_name の命名（クロスワーク / 【SMS】agent）に依存する',
                 '1 回の集計で BigQuery を 1〜2GB スキャンするため自動取得にしていない。スキャン量と概算コストは画面下部に表示する',
+                '宛先が xmile.co.jp だけの配信（法人アカウントの動作確認などのテスト）は既定で除外する。画面の「テスト配信」で含めることもできる。CC に社員が入るだけの業務メール（求職者のご紹介など）は外部宛を含むので残る。SMS は宛先が電話番号なので社内判定ができない',
             ],
             apiRoute: 'POST /api/delivery-report',
         },

@@ -76,6 +76,10 @@ export interface LineUnitRow {
 
 export interface DeliveryReport {
     scope: DeliveryScope
+    /** 社内ドメイン宛だけの配信（検証・テスト）を除外したか */
+    excludeInternal: boolean
+    /** 除外した件数。0 なら「テスト配信は無かった」と読める */
+    excludedInternal: { bdashMail: number; sesMessages: number }
     startDate: string
     endDate: string
     /** 要求期間が B-Dash の増分開始日より前だったので切り詰めた */

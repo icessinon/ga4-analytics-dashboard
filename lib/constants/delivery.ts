@@ -40,6 +40,20 @@ export const SOURCE_LABEL: Record<DeliverySource, string> = {
  * どちらを選んでも B-Dash 一斉配信・本体通知基盤・SES・GA4 の 4 つを読む。
  * 変わるのは B-Dash の中をクロスワークの配信だけに絞るかどうかだけ。
  */
+/**
+ * 社内ドメイン。ここ宛だけの配信は検証・テストとみなして既定で除外する。
+ *
+ * 実測（2026-09-14〜10-08）:
+ * - 本体メール（SES）6,181 通のうち 30 通が社内宛のみ。`nakamori.takuya+11@` のような
+ *   plus アドレスで法人アカウントの動作確認をしているもの、`ebina+verify3436@` の
+ *   アカウント発行確認など
+ * - B-Dash 一斉配信のクロスワーク分には社内宛は無い（運送/車両/荷主SaaS の配信にはある）
+ *
+ * **CC に社内アドレスが入っているだけの業務メールは除外しない。**「求職者のご紹介」は
+ * CA が企業へ送る正規のメールで、担当者が CC に入る。宛先が **すべて** 社内のときだけ落とす。
+ */
+export const INTERNAL_MAIL_DOMAIN = 'xmile.co.jp'
+
 export type DeliveryScope = 'xwork' | 'all'
 
 export const SCOPE_LABEL: Record<DeliveryScope, string> = {
