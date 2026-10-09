@@ -329,10 +329,14 @@ export default function DeliveryReportPage() {
                                                 <td className={cx(ui.num, ui.strong)}>{n(s.messages)}</td>
                                                 <td className={ui.num}>{n(s.sent)}</td>
                                                 <td className={ui.num}>{n(s.delivered)}</td>
-                                                <td className={ui.num}>{n(s.opened)}</td>
-                                                <td className={cx(ui.num, s.openRate != null && s.openRate < 0.05 && styles.lowOpen)}>{pct(s.openRate)}</td>
-                                                <td className={ui.num}>{n(s.clicked)}</td>
-                                                <td className={cx(ui.num, ui.strong)}>{pct(s.clickRate)}</td>
+                                                <td className={ui.num}>{s.openTracked ? n(s.opened) : '—'}</td>
+                                                <td className={cx(ui.num, s.openRate != null && s.openRate < 0.05 && styles.lowOpen)}>
+                                                    {s.openTracked ? pct(s.openRate) : <span className={styles.noMeasure}>計測なし</span>}
+                                                </td>
+                                                <td className={ui.num}>{s.clickTracked ? n(s.clicked) : '—'}</td>
+                                                <td className={cx(ui.num, ui.strong)}>
+                                                    {s.clickTracked ? pct(s.clickRate) : <span className={styles.noMeasure}>計測なし</span>}
+                                                </td>
                                                 <td className={ui.num}>{pct(s.ctorRate)}</td>
                                             </tr>
                                         ))}
@@ -343,6 +347,8 @@ export default function DeliveryReportPage() {
                                 件名は<strong>メールだけ</strong>の軸です（SMS・LINE に件名はありません）。企業名・氏名・都道府県を差し込む件名は 1 行にまとめています。
                                 率の分母は「メッセージ」（期間内に 1 つ以上イベントが観測された通数）です。本体メールは種別によって SES の Send イベントが飛んでおらず Delivery だけ届くものがあり、
                                 送信や送達を分母にすると開封率が 100% を超えてしまうためです。
+                                <strong>「計測なし」は 0% ではありません。</strong>SES の設定が件名の種類ごとに違い、開封・クリックのイベントを一度も出していないメールがあります
+                                （例: 「ご登録ありがとうございます！」は 2025-06 から 29,565 通送られている本番メールですが、イベントは送信・送達・バウンスだけです）。
                                 開封率は画像の読み込みに依存するため、画像ブロック環境では低く、Apple のメールプライバシー保護では高く出ます。
                                 <strong>件名の良し悪しは開封率、本文・オファーの良し悪しはクリック/開封</strong>で見てください。
                             </p>

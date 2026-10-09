@@ -42,6 +42,13 @@ export interface CampaignRow extends DeliveryCounts, DeliveryRates {
 }
 
 export interface SubjectRow extends DeliveryRates {
+    /**
+     * 開封・クリックを計測しているか。SES の設定が件名の種類ごとに違い、
+     * Open / Click を一度も publish していないメールがある。
+     * false のとき率は null で、画面は 0% ではなく「計測なし」と出す。
+     */
+    openTracked: boolean
+    clickTracked: boolean
     source: DeliverySource
     channel: DeliveryChannel
     subject: string

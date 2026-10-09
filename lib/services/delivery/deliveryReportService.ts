@@ -148,11 +148,36 @@ function messagingSql(startDate: string, endExclusive: string): string {
  * 拾えるよう SES を主にする。企業名・氏名・都道府県を差し込む件名は 1 つに畳まないと
  * 1 社 1 行になって読めないので、ここで正規化する。
  */
+/**
+ * 件名の正規化。企業名・氏名・都道府県を差し込む件名を 1 つに畳む。
+ * 集計とトラッキング判定の両方で同じ式を使うので 1 箇所に置く。
+ */
+const SES_SUBJECT_GROUP = `
+      CASE
+        WHEN REGEXP_CONTAINS(subject, r'^【スカウト】.+からスカウトが届きました$') THEN '【スカウト】（企業名）からスカウトが届きました'
+        WHEN REGEXP_CONTAINS(subject, r'からメッセージが届きました') AND NOT CONTAINS_SUBSTR(subject, '担当者から') THEN '（企業名）からメッセージが届きました'
+        WHEN REGEXP_CONTAINS(subject, r'様に関するメッセージが届きました') THEN '（CA担当者）から企業へのメッセージ'
+        WHEN REGEXP_CONTAINS(subject, r'で条件の近い求人を[0-9]+件そろえました$') THEN '（都道府県）で条件の近い求人をそろえました'
+        ELSE subject
+      END`
+
 function sesSubjectSql(startDate: string, endExclusive: string, excludeInternal: boolean): string {
     // 除外した件数も同じクエリで数えたいので、WHERE で落とさず keep フラグで振り分ける
     const keep = excludeInternal ? 'NOT internal_only' : 'TRUE'
     return `
-    WITH ev AS (
+    WITH tracked AS (
+      -- **開封 0 と「開封を計測していない」は別物**。SES の設定（configuration set）が
+      -- 件名の種類ごとに違い、Open / Click を一度も publish していないメールがある。
+      -- 例: 「【クロスワーク】ご登録ありがとうございます！」は 2025-06 から 29,565 通
+      -- 送られている本番メールだが、イベントは Send / Delivery / Bounce / Complaint だけ。
+      -- 期間を区切らず全履歴で判定しないと、たまたま開封ゼロの月を「計測なし」と誤判定する。
+      SELECT ${SES_SUBJECT_GROUP} AS subject_group,
+        LOGICAL_OR(event_type = 'Open')  AS has_open,
+        LOGICAL_OR(event_type = 'Click') AS has_click
+      FROM ${SES_EVENTS}
+      GROUP BY 1
+    ),
+    ev AS (
       SELECT message_id,
         ANY_VALUE(subject) AS subject,
         ANY_VALUE(mail_to) AS mail_to,
@@ -175,20 +200,17 @@ function sesSubjectSql(startDate: string, endExclusive: string, excludeInternal:
     )
     SELECT
       COUNTIF(${keep}) AS messages,
-      CASE
-        WHEN REGEXP_CONTAINS(subject, r'^【スカウト】.+からスカウトが届きました$') THEN '【スカウト】（企業名）からスカウトが届きました'
-        WHEN REGEXP_CONTAINS(subject, r'からメッセージが届きました') AND NOT CONTAINS_SUBSTR(subject, '担当者から') THEN '（企業名）からメッセージが届きました'
-        WHEN REGEXP_CONTAINS(subject, r'様に関するメッセージが届きました') THEN '（CA担当者）から企業へのメッセージ'
-        WHEN REGEXP_CONTAINS(subject, r'で条件の近い求人を[0-9]+件そろえました$') THEN '（都道府県）で条件の近い求人をそろえました'
-        ELSE subject
-      END AS subject_group,
+      ${SES_SUBJECT_GROUP} AS subject_group,
       SUM(IF(${keep}, sent, 0)) AS sent,
       SUM(IF(${keep}, delivered, 0)) AS delivered,
       SUM(IF(${keep}, opened, 0)) AS opened,
       SUM(IF(${keep}, clicked, 0)) AS clicked,
       SUM(IF(${keep}, bounced, 0)) AS bounced,
-      COUNTIF(NOT (${keep})) AS internal_messages
+      COUNTIF(NOT (${keep})) AS internal_messages,
+      ANY_VALUE(t.has_open)  AS has_open,
+      ANY_VALUE(t.has_click) AS has_click
     FROM m
+    LEFT JOIN tracked t ON ${SES_SUBJECT_GROUP} = t.subject_group
     GROUP BY 2
     HAVING messages > 0
     ORDER BY messages DESC
@@ -316,6 +338,8 @@ export async function runDeliveryReport(daysInput: unknown, scopeInput: unknown,
         if (subject === '(件名なし)') continue
         const cur = bdashSubjects.get(subject) ?? {
             source: 'bdash' as const, channel: 'mail' as DeliveryChannel, subject,
+            // B-Dash は send_log.tracked_urls が全件に付くので開封・クリックとも計測あり
+            openTracked: true, clickTracked: true,
             messages: 0, sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0,
             openRate: null, clickRate: null, ctorRate: null,
         }
@@ -340,13 +364,18 @@ export async function runDeliveryReport(daysInput: unknown, scopeInput: unknown,
         ...ses.rows.map((r): SubjectRow => {
             const messages = num(r.messages)
             const opened = num(r.opened)
+            const clicked = num(r.clicked)
+            // 計測していないメールの率を 0% と出すと「誰も開いていない」と読めてしまう
+            const openTracked = r.has_open === 'true'
+            const clickTracked = r.has_click === 'true'
             return {
                 source: 'messaging', channel: 'mail', subject: String(r.subject_group ?? ''),
+                openTracked, clickTracked,
                 messages, sent: num(r.sent), delivered: num(r.delivered), opened,
-                clicked: num(r.clicked), bounced: num(r.bounced),
-                openRate: rate(opened, messages),
-                clickRate: rate(num(r.clicked), messages),
-                ctorRate: opened > 0 ? rate(num(r.clicked), opened) : null,
+                clicked, bounced: num(r.bounced),
+                openRate: openTracked ? rate(opened, messages) : null,
+                clickRate: clickTracked ? rate(clicked, messages) : null,
+                ctorRate: openTracked && clickTracked && opened > 0 ? rate(clicked, opened) : null,
             }
         }),
     ].sort((a, b) => b.messages - a.messages)
