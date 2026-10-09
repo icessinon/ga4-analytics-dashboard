@@ -46,12 +46,27 @@ export interface ScoutCompanyDailyRow {
     applied: number[]
 }
 
+/** 本体の 1:1 スカウトか、B-Dash の一斉配信か */
+export type ScoutChannelSystem = 'direct' | 'bulk'
+
+export interface ScoutChannelRow {
+    system: ScoutChannelSystem
+    /** unknown は medium_last が sms / email のどちらでもなかったもの */
+    channel: 'sms' | 'mail' | 'unknown'
+    /** 送信数。一斉配信は B-Dash 側にしか無いので null */
+    sent: number | null
+    applied: number
+    applyRate: number | null
+}
+
 export interface ScoutFunnelReport {
     summary: ScoutFunnelSummary
     hourly: ScoutHourlyRow[]
     daily: ScoutDailyRow[]
     companies: ScoutCompanyRow[]
     companyDaily: ScoutCompanyDailyRow[]
+    /** 応募のチャネル内訳（プロダクトDB）。ファネル本体とは出典が違う */
+    channels: ScoutChannelRow[]
 }
 
 export interface ScoutFunnelResponse extends ScoutFunnelReport {

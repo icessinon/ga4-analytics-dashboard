@@ -6,6 +6,7 @@ import SignupTrendChart from '@/components/signup-funnel/SignupTrendChart'
 import ScoutAttributeSections from '@/components/scout/ScoutAttributeSections'
 import ScoutFunnelStages from '@/components/scout/ScoutFunnelStages'
 import ScoutHourlyClickRate from '@/components/scout/ScoutHourlyClickRate'
+import ScoutChannelBreakdown from '@/components/scout/ScoutChannelBreakdown'
 import PageShell from '@/components/PageShell'
 import PeriodSelect from '@/components/PeriodSelect'
 import { ui, cx } from '@/components/ui'
@@ -137,6 +138,9 @@ export default function ScoutFunnelPage() {
                         <ScoutFunnelStages summary={data.summary} />
                         <p className={ui.tableNote}>※ バー幅＝直前段からの通過率。崖①=送達→クリック（最大の漏れ）、崖②=クリック→フォーム到達。</p>
                     </div>
+
+                    {/* 応募がどのチャネル（SMS / メール）から来たかはファネル本体では分からない。出典が違うので別カードにする */}
+                    <ScoutChannelBreakdown channels={data.channels ?? []} />
 
                     {trendChart && (
                         <div className={ui.card}>

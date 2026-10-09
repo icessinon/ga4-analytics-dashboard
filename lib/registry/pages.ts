@@ -477,6 +477,7 @@ export const PAGES: Record<PageId, PageDef> = {
         doc: {
             description: 'スカウトの送信リクエスト（本体DB: ScoutHistories）→ スカウトページ閲覧（GA4 /scout/）→ 応募（scoutId付きURLでの送信ボタンクリック）を一本のファネルで確認します。企業別内訳と日別推移つき。',
             capabilities: [
+                '応募のチャネル内訳（SMS / メール）。本体の1:1スカウトと一斉配信を分けて、送信数・応募・応募率・構成比を出す。出典はプロダクトDB の utm.medium_last で、ファネル本体（GA4 のクリック基準）とは数え方が違う',
                 '送信リクエスト・送達・閲覧UU・応募のファネルサマリー（status = requested / sent / failed / skipped を集計）',
                 '推移チャート（送信・閲覧・応募の3系列ライン、35日超は週次集約）',
                 '企業別内訳（検索・ページネーションつき）。行クリックでその企業の送信・閲覧・応募の推移チャートを表示',

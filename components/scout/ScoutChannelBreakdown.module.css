@@ -1,0 +1,49 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.block {
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    padding: 0.875rem 1rem;
+    background-color: var(--bg-surface);
+}
+
+.blockHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.blockTitle {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+}
+
+.blockTotal {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.blockNote {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0.25rem 0 0.625rem;
+}
+
+.swatch {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 0.125rem;
+    margin-right: 0.375rem;
+    vertical-align: -1px;
+}

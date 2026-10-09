@@ -3,13 +3,18 @@ import { and, beginsWith, contains } from '@/lib/api/ga4/filters'
 import type { Ga4Reporter } from '@/lib/api/ga4/report'
 import { dim, metricInt, rowsOf } from '@/lib/api/ga4/rows'
 import { DDB_TABLES, scanAll } from '@/lib/aws/dynamoClient'
-import type { ScoutFunnelReport } from './scoutFunnelTypes'
+import { runScoutChannelBreakdown } from './scoutChannelService'
+import type { ScoutChannelRow, ScoutFunnelReport } from './scoutFunnelTypes'
 
 /**
  * スカウト効果ファネル（A-1 暫定版）
  *   送信リクエスト(DDB ScoutHistories) → 閲覧(GA4 /scout/ ページ) → 応募(GA4 送信ボタンクリック × scoutId付きURL)
  * 送達(sent)は drm-front 側の writeback (C-4) 実装後に requested と分離して表示できる。
  * 応募は C-3（scoutId永続化）完了後に DDB ベースへ切替可能。クリック=実応募一致はDB照合で実証済み。
+ *
+ * 応募の SMS / メール内訳だけは**出典が違う**。GA4 のラベルではチャネルが分からないので、
+ * プロダクトDB の utm.medium_last で判定する（scoutChannelService）。GA4 が落ちても
+ * ファネル本体は返したいので、内訳の取得に失敗しても空配列で続行する。
  */
 
 interface ScoutAttempt {
@@ -254,6 +259,12 @@ export async function runScoutFunnelReport(reporter: Ga4Reporter, startDate: str
         return { hour: h.hour, sent: h.sent, viewed: h.viewed, topCompanyName }
     })
 
+    // 応募のチャネル内訳はプロダクトDB。ここが落ちてもファネル本体は返す
+    const channels: ScoutChannelRow[] = await runScoutChannelBreakdown(startDate, endDate).catch((e) => {
+        console.error('Scout Funnel: 応募のチャネル内訳の取得に失敗しました', e)
+        return []
+    })
+
     return {
         summary: {
             requested: totalAttempts,
@@ -270,5 +281,6 @@ export async function runScoutFunnelReport(reporter: Ga4Reporter, startDate: str
         daily,
         companies,
         companyDaily,
+        channels,
     }
 }
