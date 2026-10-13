@@ -8,13 +8,14 @@ function parseImprovement(value: unknown): number | null {
 }
 
 /**
- * ABテスト一覧を取得（ページネーション対応: デフォルト5件/ページ）
+ * ABテスト一覧を取得（productId / status / q でのフィルタとページネーションに対応。デフォルト5件/ページ）
  */
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
         const productId = searchParams.get('productId')
         const status = searchParams.get('status')
+        const q = searchParams.get('q')?.trim()
         const pageParam = searchParams.get('page')
         const limitParam = searchParams.get('limit')
         const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
@@ -27,6 +28,13 @@ export async function GET(request: Request) {
         }
         if (status) {
             where.status = status
+        }
+        // テスト名・説明のキーワード検索（部分一致・大文字小文字を区別しない）
+        if (q) {
+            where.OR = [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+            ]
         }
 
         const [abTests, total] = await Promise.all([

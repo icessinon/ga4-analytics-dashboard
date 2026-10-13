@@ -16,6 +16,19 @@ import type { AbTest } from './types'
 import { resolveIssueLink } from '@/lib/utils/issueUrl'
 import styles from './AbTestPage.module.css'
 
+type AbTestStatusFilter = 'all' | 'running' | 'paused' | 'completed'
+
+const STATUS_FILTERS: { value: AbTestStatusFilter; label: string }[] = [
+    { value: 'all', label: 'すべて' },
+    { value: 'running', label: '実行中' },
+    { value: 'paused', label: '一時停止' },
+    { value: 'completed', label: '完了' },
+]
+
+function statusLabel(status: string): string {
+    return STATUS_FILTERS.find((f) => f.value === status)?.label ?? status
+}
+
 function AbTestPageContent() {
     const { currentProduct, products, setCurrentProduct } = useProduct()
     const searchParams = useSearchParams()
@@ -26,16 +39,25 @@ function AbTestPageContent() {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [selectedTests, setSelectedTests] = useState<AbTest[]>([])
     const [listPage, setListPage] = useState(1)
+    const [statusFilter, setStatusFilter] = useState<AbTestStatusFilter>('all')
+    const [keywordInput, setKeywordInput] = useState('')
+    const [keyword, setKeyword] = useState('')
     const LIST_PAGE_SIZE = 5
 
-    const listUrl = `/api/ab-test?${currentProduct ? `productId=${currentProduct.id}&` : ''}page=${listPage}&limit=${LIST_PAGE_SIZE}`
+    // 入力のたびに取得しないよう、キーワードは 300ms 待ってから反映する
+    useEffect(() => {
+        const timer = setTimeout(() => setKeyword(keywordInput.trim()), 300)
+        return () => clearTimeout(timer)
+    }, [keywordInput])
+
+    const listUrl = `/api/ab-test?${currentProduct ? `productId=${currentProduct.id}&` : ''}${statusFilter !== 'all' ? `status=${statusFilter}&` : ''}${keyword ? `q=${encodeURIComponent(keyword)}&` : ''}page=${listPage}&limit=${LIST_PAGE_SIZE}`
     const list = useReport<{ abTests?: AbTest[]; total?: number; totalPages?: number }>(listUrl)
     const abTests = list.data?.abTests ?? []
     const listTotal = list.data?.total ?? 0
     const listTotalPages = list.data?.totalPages ?? 1
 
-    // プロダクトを切り替えたら 1 ページ目に戻す
-    useEffect(() => { setListPage(1) }, [currentProduct?.id])
+    // プロダクト・絞り込みを変えたら 1 ページ目に戻す
+    useEffect(() => { setListPage(1) }, [currentProduct?.id, statusFilter, keyword])
 
     useEffect(() => {
         const editId = searchParams?.get('edit')
@@ -196,12 +218,7 @@ function AbTestPageContent() {
                                                     ? new Date(test.endDate).toLocaleDateString('ja-JP')
                                                     : '継続中'}
                                             </p>
-                                            <p>ステータス: {
-                                                test.status === 'running' ? '実行中' :
-                                                test.status === 'paused' ? '一時停止' :
-                                                test.status === 'completed' ? '完了' :
-                                                test.status
-                                            }</p>
+                                            <p>ステータス: {statusLabel(test.status)}</p>
                                         </div>
                                     </div>
                                     <div className={styles.testActions}>
@@ -237,30 +254,54 @@ function AbTestPageContent() {
             <div className={styles.tableContainer}>
                 <div className={styles.tableHeader}>
                     <h2 className={ui.sectionTitle} style={{ marginBottom: 0 }}>ABテスト一覧</h2>
+                    <div className={styles.filterBar}>
+                        <div className={styles.statusTabs} role="group" aria-label="ステータスで絞り込み">
+                            {STATUS_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    className={`${styles.statusTab} ${statusFilter === filter.value ? styles.statusTabActive : ''}`}
+                                    onClick={() => setStatusFilter(filter.value)}
+                                    aria-pressed={statusFilter === filter.value}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
+                        <input
+                            type="search"
+                            value={keywordInput}
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                            placeholder="テスト名・説明で検索"
+                            className={`${ui.input} ${styles.searchInput}`}
+                            aria-label="テスト名・説明で検索"
+                        />
+                    </div>
                 </div>
                 <div className={ui.tableWrap}>
                     <table className={ui.dataTable}>
                         <thead className={styles.tableHead}>
                             <tr>
                                 <th className={styles.tableHeaderCell}>テスト名</th>
-                                <th className={styles.tableHeaderCell}>プロダクト</th>
                                 <th className={styles.tableHeaderCell}>バリアント</th>
                                 <th className={styles.tableHeaderCell}>期間</th>
                                 <th className={styles.tableHeaderCell}>ステータス</th>
-                                <th className={styles.tableHeaderCell}>操作</th>
+                                <th className={`${styles.tableHeaderCell} ${styles.actionHeaderCell}`}>操作</th>
                             </tr>
                         </thead>
                         <tbody className={styles.tableBody}>
                             {abTests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className={`${styles.tableCell} ${styles.tableCellCenter}`}>
-                                        ABテストがありません
+                                    <td colSpan={5} className={`${styles.tableCell} ${styles.tableCellCenter}`}>
+                                        {statusFilter !== 'all' || keyword
+                                            ? '条件に一致するABテストがありません'
+                                            : 'ABテストがありません'}
                                     </td>
                                 </tr>
                             ) : (
                                 abTests.map((test) => (
                                     <tr key={test.id} className={styles.tableRow}>
-                                        <td className={styles.tableCell}>
+                                        <td className={`${styles.tableCell} ${styles.nameCell}`}>
                                             <div className={styles.tableCellName}>{test.name}</div>
                                             {(() => {
                                                 const issue = resolveIssueLink(test.issueUrl)
@@ -277,9 +318,6 @@ function AbTestPageContent() {
                                             )}
                                         </td>
                                         <td className={styles.tableCell}>
-                                            {test.product.name}
-                                        </td>
-                                        <td className={styles.tableCell}>
                                             {(() => {
                                                 const variants = ['A', 'B']
                                                 if (test.ga4Config?.cvrC?.denominatorDimension) variants.push('C')
@@ -287,11 +325,13 @@ function AbTestPageContent() {
                                                 return variants.join(' / ')
                                             })()}
                                         </td>
-                                        <td className={styles.tableCell}>
-                                            {new Date(test.startDate).toLocaleDateString('ja-JP')} -{' '}
-                                            {test.endDate
-                                                ? new Date(test.endDate).toLocaleDateString('ja-JP')
-                                                : '継続中'}
+                                        <td className={`${styles.tableCell} ${styles.periodCell}`}>
+                                            <div>{new Date(test.startDate).toLocaleDateString('ja-JP')} 〜</div>
+                                            <div>
+                                                {test.endDate
+                                                    ? new Date(test.endDate).toLocaleDateString('ja-JP')
+                                                    : '継続中'}
+                                            </div>
                                         </td>
                                         <td className={styles.tableCell}>
                                             <div className={styles.statusContainer}>
@@ -304,13 +344,7 @@ function AbTestPageContent() {
                                                             : styles.statusBadgeDefault
                                                     }`}
                                                 >
-                                                    {test.status === 'running'
-                                                        ? '実行中'
-                                                        : test.status === 'paused'
-                                                        ? '一時停止'
-                                                        : test.status === 'completed'
-                                                        ? '完了'
-                                                        : test.status}
+                                                    {statusLabel(test.status)}
                                                 </span>
                                                 {test._count && test._count.reportExecutions > 0 && (
                                                     <span className={styles.statusCount}>
