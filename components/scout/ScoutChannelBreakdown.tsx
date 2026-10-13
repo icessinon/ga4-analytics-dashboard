@@ -8,7 +8,7 @@ import type { ScoutChannelRow } from '@/lib/services/scout/scoutFunnelTypes'
 import styles from './ScoutChannelBreakdown.module.css'
 
 /**
- * スカウト経由の応募を SMS / メールに分けて出す。
+ * スカウト経由の応募を SMS / メール / LINE に分けて出す。
  *
  * **ファネル本体（送信→閲覧→応募）とは出典が違う。** こちらはプロダクトDB の
  * utm.medium_last で判定していて、GA4 のラベルでは分からない情報。
@@ -25,8 +25,20 @@ const SYSTEM_NOTE = {
     bulk: 'CRM の一斉配信。utm の source が scout / crm_scout',
 } as const
 
-const CHANNEL_LABEL = { sms: 'SMS', mail: 'メール', unknown: '判別できず' } as const
-const CHANNEL_COLOR = { sms: CHART_COLORS.violet, mail: CHART_COLORS.blue, unknown: CHART_COLORS.amber }
+type Channel = ScoutChannelRow['channel']
+
+const CHANNEL_LABEL: Record<Channel, string> = {
+    sms: 'SMS', mail: 'メール', line: 'LINE', unknown: '判別できず',
+}
+const CHANNEL_COLOR: Record<Channel, string> = {
+    sms: CHART_COLORS.violet, mail: CHART_COLORS.blue, line: CHART_COLORS.green, unknown: CHART_COLORS.amber,
+}
+/** 送信数の出典。チャネルごとに違うので画面にも出す */
+const SENT_SOURCE: Partial<Record<Channel, string>> = {
+    sms: 'ScoutAttempts',
+    mail: '通知基盤 scout_mail',
+    line: '通知基盤 scout',
+}
 
 const n = (v: number | null | undefined) => (v == null ? '—' : v.toLocaleString())
 const pct3 = (v: number | null) => (v == null ? '—' : `${(v * 100).toFixed(3)}%`)
@@ -39,7 +51,7 @@ export default function ScoutChannelBreakdown({ channels }: ScoutChannelBreakdow
     if (channels.length === 0) {
         return (
             <div className={ui.card}>
-                <h2 className={ui.sectionTitle}>応募のチャネル内訳（SMS / メール）</h2>
+                <h2 className={ui.sectionTitle}>応募のチャネル内訳（SMS / メール / LINE）</h2>
                 <p className={ui.sectionNote}>この期間にスカウト経由の応募はありません。</p>
             </div>
         )
@@ -50,7 +62,7 @@ export default function ScoutChannelBreakdown({ channels }: ScoutChannelBreakdow
 
     return (
         <div className={ui.card}>
-            <h2 className={ui.sectionTitle}>応募のチャネル内訳（SMS / メール）</h2>
+            <h2 className={ui.sectionTitle}>応募のチャネル内訳（SMS / メール / LINE）</h2>
             <p className={ui.sectionNote}>
                 出典は<strong>プロダクトDB</strong>（utm の medium_last）で、上のファネル（GA4 のクリック基準）とは数え方が違います。
                 スカウトは<strong>本体の 1:1 と一斉配信の 2 系統</strong>あり規模が 2 桁違うので分けています。
@@ -86,7 +98,12 @@ export default function ScoutChannelBreakdown({ channels }: ScoutChannelBreakdow
                                                     <i className={styles.swatch} style={{ backgroundColor: CHANNEL_COLOR[c.channel] } as CSSProperties} aria-hidden />
                                                     {CHANNEL_LABEL[c.channel]}
                                                 </td>
-                                                <td className={ui.num}>{n(c.sent)}</td>
+                                                <td className={ui.num}>
+                                                    {n(c.sent)}
+                                                    {c.sent != null && SENT_SOURCE[c.channel] && (
+                                                        <span className={styles.sentSource}>{SENT_SOURCE[c.channel]}</span>
+                                                    )}
+                                                </td>
                                                 <td className={cx(ui.num, ui.strong)}>{n(c.applied)}</td>
                                                 <td className={ui.num}>{pct3(c.applyRate)}</td>
                                                 <td className={ui.num}>{sysTotal > 0 ? `${Math.round((c.applied / sysTotal) * 100)}%` : '—'}</td>
@@ -103,7 +120,9 @@ export default function ScoutChannelBreakdown({ channels }: ScoutChannelBreakdow
             <p className={ui.tableNote}>
                 スカウト経由の応募は期間合計 <strong>{n(total)}</strong> 件。
                 チャネルは応募時の utm（medium_last）で判定しており、<strong>SMS とメールの両方を受け取った人は最後に踏んだ方に付きます</strong>。
-                本体のスカウトメール（scout_mail）は 2026-10-06 に始まったばかりなので、メール側の数字はまだ母数が小さい点に注意してください。
+                本体のスカウトは <strong>SMS が送信の本体</strong>（ScoutAttempts）で、メール（2026-10-06 開始）と LINE（2026-10-09 開始）は
+                <strong>同じスカウトに足して送る追加通知</strong>です。1 件のスカウトが複数チャネルで届くので、チャネルの送信数を足し上げてもスカウト件数にはなりません。
+                メール・LINE はまだ母数が小さい点にも注意してください。
             </p>
         </div>
     )

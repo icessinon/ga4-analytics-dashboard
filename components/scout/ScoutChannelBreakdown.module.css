@@ -47,3 +47,11 @@
     margin-right: 0.375rem;
     vertical-align: -1px;
 }
+
+.sentSource {
+    display: block;
+    font-size: 0.625rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    line-height: 1.4;
+}

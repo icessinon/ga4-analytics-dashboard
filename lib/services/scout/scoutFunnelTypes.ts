@@ -51,8 +51,8 @@ export type ScoutChannelSystem = 'direct' | 'bulk'
 
 export interface ScoutChannelRow {
     system: ScoutChannelSystem
-    /** unknown は medium_last が sms / email のどちらでもなかったもの */
-    channel: 'sms' | 'mail' | 'unknown'
+    /** unknown は medium_last が sms / email / line のどれでもなかったもの */
+    channel: 'sms' | 'mail' | 'line' | 'unknown'
     /** 送信数。一斉配信は B-Dash 側にしか無いので null */
     sent: number | null
     applied: number
