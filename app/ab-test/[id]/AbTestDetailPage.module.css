@@ -665,6 +665,20 @@
     margin-top: 0.125rem;
 }
 
+/* 面（ジャンル）のバッジ。タイトル横に出す */
+.genreBadge {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid var(--gray-600);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--gray-300);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 .issueLink {
     display: inline-flex;
     align-items: center;

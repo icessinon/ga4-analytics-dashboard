@@ -166,6 +166,7 @@ model AbTest {
   description           String?   @db.Text
   hypothesis            String?   @db.Text          // 事前仮説（Plan: 何をどう変えると何が改善するか）
   issueUrl              String?   @db.VarChar(500)  // Backlog Issue（URLまたは番号。番号のみならXWORK_PRODUCT-{n}のURLに展開して表示）
+  genre                 String?   @db.VarChar(50)   // 対象面（Notion 施策カードの「ジャンル」と同じ語彙。lib/constants/abTestGenres.ts が正）
   expectedImprovement   Decimal?  @db.Decimal(8, 2) // 期待改善率（%）
   variantAName          String    @db.VarChar(255)
   variantBName          String    @db.VarChar(255)

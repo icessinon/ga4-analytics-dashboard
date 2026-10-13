@@ -8,6 +8,7 @@ export interface AbTest {
     description: string | null
     hypothesis?: string | null
     issueUrl?: string | null
+    genre?: string | null
     expectedImprovement?: number | string | null
     startDate: string
     endDate: string | null

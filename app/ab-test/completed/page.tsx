@@ -8,6 +8,7 @@ import { ui, cx } from '@/components/ui'
 import { useProduct } from '@/contexts/ProductContext'
 import { useReport } from '@/hooks/useReport'
 import type { CompletedAbTest, FilterMode } from './types'
+import { AB_TEST_GENRES } from '@/lib/constants/abTestGenres'
 import styles from './CompletedPage.module.css'
 
 interface CompletedResponse {
@@ -29,10 +30,12 @@ const formatDate = (s: string | null) => (s ? new Date(s).toLocaleDateString('ja
 export default function AbTestCompletedPage() {
     const { currentProduct, products, setCurrentProduct } = useProduct()
     const [filter, setFilter] = useState<FilterMode>('all')
+    const [genre, setGenre] = useState('all')
     const [page, setPage] = useState(1)
 
     const base = currentProduct ? `/api/ab-test?productId=${currentProduct.id}&status=completed` : '/api/ab-test?status=completed'
-    const report = useReport<CompletedResponse>(`${base}&page=${page}&limit=${LIMIT}`, { keepPreviousData: true })
+    const genreQuery = genre !== 'all' ? `&genre=${encodeURIComponent(genre)}` : ''
+    const report = useReport<CompletedResponse>(`${base}${genreQuery}&page=${page}&limit=${LIMIT}`, { keepPreviousData: true })
     const tests = report.data?.abTests ?? []
     const total = report.data?.total ?? 0
     const totalPages = report.data?.totalPages ?? 1
@@ -60,6 +63,17 @@ export default function AbTestCompletedPage() {
                             </select>
                         </FilterField>
                     )}
+                    <FilterField label="ジャンル">
+                        <select
+                            className={ui.select}
+                            value={genre}
+                            onChange={(e) => { setGenre(e.target.value); setPage(1) }}
+                            aria-label="ジャンル"
+                        >
+                            <option value="all">すべて</option>
+                            {AB_TEST_GENRES.map((g) => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                    </FilterField>
                     <FilterField label="表示">
                         <div className={ui.tabs} role="tablist">
                             {FILTERS.map((f) => (
@@ -96,6 +110,7 @@ export default function AbTestCompletedPage() {
                                     <tr key={t.id}>
                                         <td>
                                             <span className={styles.name}>{t.name}</span>
+                                            {t.genre && <span className={styles.genre}>{t.genre}</span>}
                                             {t.description && <span className={styles.desc}>{t.description}</span>}
                                             {t.hypothesis && <span className={styles.desc}>仮説: {t.hypothesis}</span>}
                                         </td>

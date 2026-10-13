@@ -14,6 +14,7 @@ import { useProduct } from '@/contexts/ProductContext'
 import { fetchJson } from '@/lib/utils/fetch'
 import type { AbTest } from './types'
 import { resolveIssueLink } from '@/lib/utils/issueUrl'
+import { AB_TEST_GENRES } from '@/lib/constants/abTestGenres'
 import styles from './AbTestPage.module.css'
 
 type AbTestStatusFilter = 'all' | 'running' | 'paused' | 'completed'
@@ -40,6 +41,7 @@ function AbTestPageContent() {
     const [selectedTests, setSelectedTests] = useState<AbTest[]>([])
     const [listPage, setListPage] = useState(1)
     const [statusFilter, setStatusFilter] = useState<AbTestStatusFilter>('all')
+    const [genreFilter, setGenreFilter] = useState('all')
     const [keywordInput, setKeywordInput] = useState('')
     const [keyword, setKeyword] = useState('')
     const LIST_PAGE_SIZE = 5
@@ -50,14 +52,14 @@ function AbTestPageContent() {
         return () => clearTimeout(timer)
     }, [keywordInput])
 
-    const listUrl = `/api/ab-test?${currentProduct ? `productId=${currentProduct.id}&` : ''}${statusFilter !== 'all' ? `status=${statusFilter}&` : ''}${keyword ? `q=${encodeURIComponent(keyword)}&` : ''}page=${listPage}&limit=${LIST_PAGE_SIZE}`
+    const listUrl = `/api/ab-test?${currentProduct ? `productId=${currentProduct.id}&` : ''}${statusFilter !== 'all' ? `status=${statusFilter}&` : ''}${genreFilter !== 'all' ? `genre=${encodeURIComponent(genreFilter)}&` : ''}${keyword ? `q=${encodeURIComponent(keyword)}&` : ''}page=${listPage}&limit=${LIST_PAGE_SIZE}`
     const list = useReport<{ abTests?: AbTest[]; total?: number; totalPages?: number }>(listUrl)
     const abTests = list.data?.abTests ?? []
     const listTotal = list.data?.total ?? 0
     const listTotalPages = list.data?.totalPages ?? 1
 
     // プロダクト・絞り込みを変えたら 1 ページ目に戻す
-    useEffect(() => { setListPage(1) }, [currentProduct?.id, statusFilter, keyword])
+    useEffect(() => { setListPage(1) }, [currentProduct?.id, statusFilter, genreFilter, keyword])
 
     useEffect(() => {
         const editId = searchParams?.get('edit')
@@ -268,6 +270,18 @@ function AbTestPageContent() {
                                 </button>
                             ))}
                         </div>
+                        <div className={styles.genreSelectWrapper}>
+                            <CustomSelect
+                                value={genreFilter}
+                                onChange={setGenreFilter}
+                                options={[
+                                    { value: 'all', label: 'ジャンル: すべて' },
+                                    ...AB_TEST_GENRES.map((g) => ({ value: g, label: g })),
+                                ]}
+                                triggerClassName={styles.genreSelect}
+                                aria-label="ジャンルで絞り込み"
+                            />
+                        </div>
                         <input
                             type="search"
                             value={keywordInput}
@@ -293,7 +307,7 @@ function AbTestPageContent() {
                             {abTests.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className={`${styles.tableCell} ${styles.tableCellCenter}`}>
-                                        {statusFilter !== 'all' || keyword
+                                        {statusFilter !== 'all' || genreFilter !== 'all' || keyword
                                             ? '条件に一致するABテストがありません'
                                             : 'ABテストがありません'}
                                     </td>
@@ -303,6 +317,7 @@ function AbTestPageContent() {
                                     <tr key={test.id} className={styles.tableRow}>
                                         <td className={`${styles.tableCell} ${styles.nameCell}`}>
                                             <div className={styles.tableCellName}>{test.name}</div>
+                                            {test.genre && <span className={styles.genreBadge}>{test.genre}</span>}
                                             {(() => {
                                                 const issue = resolveIssueLink(test.issueUrl)
                                                 return issue && (

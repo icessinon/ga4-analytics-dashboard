@@ -9,6 +9,7 @@ import LabelInput from '@/components/LabelInput'
 import MultiLabelInput from '@/components/MultiLabelInput'
 import Switch from '@/components/Switch'
 import { extractIssueNumber } from '@/lib/utils/issueUrl'
+import { AB_TEST_GENRES } from '@/lib/constants/abTestGenres'
 import { GA4_CVR_DIMENSIONS, GA4_DIMENSIONS, GA4_FILTER_DIMENSIONS, GA4_METRICS, GA4_FILTER_OPERATORS } from '@/lib/constants/ga4Dimensions'
 import styles from './AbTestFormModal.module.css'
 import type { AbTestFormModalProps } from './types'
@@ -58,6 +59,7 @@ export default function AbTestFormModal({
         description: '',
         hypothesis: '',
         issueUrl: '',
+        genre: '',
         expectedImprovement: '',
         startDate: '',
         endDate: '',
@@ -148,6 +150,7 @@ export default function AbTestFormModal({
             description: '',
             hypothesis: '',
             issueUrl: '',
+            genre: '',
             expectedImprovement: '',
             startDate: '',
             endDate: '',
@@ -309,6 +312,7 @@ export default function AbTestFormModal({
                 description: editingTest.description || '',
                 hypothesis: editingTest.hypothesis || '',
                 issueUrl: editingTest.issueUrl || '',
+                genre: editingTest.genre || '',
                 expectedImprovement: editingTest.expectedImprovement != null ? String(editingTest.expectedImprovement) : '',
                 startDate: new Date(editingTest.startDate).toISOString().split('T')[0],
                 endDate: editingTest.endDate ? new Date(editingTest.endDate).toISOString().split('T')[0] : '',
@@ -663,6 +667,21 @@ export default function AbTestFormModal({
                                     placeholder="例: 1804 / XWORK_PRODUCT-1804 / https://xmile.backlog.com/view/..."
                                 />
                                 <p className={styles.helpText}>番号・課題キー・URLのいずれでもOK。一覧と詳細ページにリンクを表示します。</p>
+                            </div>
+                            <div>
+                                <label className={styles.label}>ジャンル（対象面）</label>
+                                <CustomSelect
+                                    value={formData.genre}
+                                    onChange={(v) => setFormData({ ...formData, genre: v })}
+                                    options={[
+                                        { value: '', label: '未設定' },
+                                        ...AB_TEST_GENRES.map((g) => ({ value: g, label: g })),
+                                    ]}
+                                    triggerClassName={styles.input}
+                                    placeholder="未設定"
+                                    aria-label="ジャンル（対象面）"
+                                />
+                                <p className={styles.helpText}>どの面の施策かを一覧・完了一覧で絞り込むのに使います。Notion 施策カードの「ジャンル」と同じ語彙。新規作成時に空なら、Backlog 番号から施策カードのジャンルを引いて自動で入ります。</p>
                             </div>
                             <div>
                                 <label className={styles.label}>仮説</label>

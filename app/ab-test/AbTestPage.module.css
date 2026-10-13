@@ -170,6 +170,30 @@
     color: white;
 }
 
+/* 面（ジャンル）のバッジ。テスト名の下に小さく出す */
+.genreBadge {
+    display: inline-block;
+    margin-top: 0.25rem;
+    margin-right: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--gray-600);
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--gray-300);
+    white-space: nowrap;
+}
+
+.genreSelectWrapper {
+    flex: none;
+    width: 11rem;
+}
+
+.genreSelect {
+    font-size: 0.8125rem;
+    padding: 0.35rem 1.75rem 0.35rem 0.625rem;
+}
+
 /* 幅は ui.module.css の input ルールに合わせて --input-width で指定する */
 .searchInput {
     --input-width: 16rem;
@@ -389,6 +413,11 @@ td.nameCell {
     .statusTab {
         flex: 1 1 auto;
         padding: 0.4rem 0.5rem;
+    }
+
+    .genreSelectWrapper {
+        flex: 1 1 auto;
+        width: auto;
     }
 
     /* 検索欄はタブの下に1行で置く（横に並べると placeholder が切れる） */

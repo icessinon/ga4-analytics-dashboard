@@ -3,6 +3,7 @@ export interface CompletedAbTest {
     name: string
     description: string | null
     hypothesis: string | null
+    genre: string | null
     expectedImprovement: number | string | null
     startDate: string
     endDate: string | null

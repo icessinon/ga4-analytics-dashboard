@@ -492,6 +492,7 @@ export default function AbTestDetailPage() {
             title={
                 <>
                     {abTest.name}
+                    {abTest.genre && <span className={styles.genreBadge}>{abTest.genre}</span>}
                     {issue && (
                         <a href={issue.href} target="_blank" rel="noopener noreferrer" className={styles.issueLink}>
                             🔗 {issue.text}

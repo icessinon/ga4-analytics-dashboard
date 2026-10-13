@@ -1,5 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
+import { fetchAbTestCardGenre } from '@/lib/services/ab-test/notionCardService'
+import { isAbTestGenre } from '@/lib/constants/abTestGenres'
+
+/** 候補にない文字列は捨てる（手打ちの表記ゆれを DB に入れない）。空は未設定 */
+function normalizeGenre(genre: unknown): string | null {
+    if (typeof genre !== 'string' || !genre.trim()) return null
+    return isAbTestGenre(genre.trim()) ? genre.trim() : null
+}
+
+/**
+ * 作成時のジャンル。未指定なら Notion 施策カード（関連Backlog = issueUrl の番号）から引く。
+ * 更新では引かない（画面で空にしたものが復活しないように）。
+ */
+async function resolveGenreOnCreate(genre: unknown, issueUrl: unknown): Promise<string | null> {
+    return normalizeGenre(genre) ?? await fetchAbTestCardGenre(typeof issueUrl === 'string' ? issueUrl : null)
+}
 
 function parseImprovement(value: unknown): number | null {
     if (value === undefined || value === null || value === '') return null
@@ -8,7 +24,7 @@ function parseImprovement(value: unknown): number | null {
 }
 
 /**
- * ABテスト一覧を取得（productId / status / q でのフィルタとページネーションに対応。デフォルト5件/ページ）
+ * ABテスト一覧を取得（productId / status / genre / q でのフィルタとページネーションに対応。デフォルト5件/ページ）
  */
 export async function GET(request: Request) {
     try {
@@ -16,6 +32,7 @@ export async function GET(request: Request) {
         const productId = searchParams.get('productId')
         const status = searchParams.get('status')
         const q = searchParams.get('q')?.trim()
+        const genre = searchParams.get('genre')?.trim()
         const pageParam = searchParams.get('page')
         const limitParam = searchParams.get('limit')
         const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
@@ -28,6 +45,9 @@ export async function GET(request: Request) {
         }
         if (status) {
             where.status = status
+        }
+        if (genre) {
+            where.genre = genre
         }
         // テスト名・説明のキーワード検索（部分一致・大文字小文字を区別しない）
         if (q) {
@@ -95,6 +115,7 @@ export async function POST(request: Request) {
             description,
             hypothesis,
             issueUrl,
+            genre,
             expectedImprovement,
             startDate,
             endDate,
@@ -119,6 +140,7 @@ export async function POST(request: Request) {
                 description,
                 hypothesis: hypothesis || null,
                 issueUrl: issueUrl || null,
+                genre: await resolveGenreOnCreate(genre, issueUrl),
                 expectedImprovement: parseImprovement(expectedImprovement),
                 variantAName: 'A', // 固定値
                 variantBName: 'B', // 固定値
@@ -169,6 +191,7 @@ export async function PUT(request: Request) {
             description,
             hypothesis,
             issueUrl,
+            genre,
             expectedImprovement,
             startDate,
             endDate,
@@ -191,6 +214,7 @@ export async function PUT(request: Request) {
         if (description !== undefined) updateData.description = description
         if (hypothesis !== undefined) updateData.hypothesis = hypothesis || null
         if (issueUrl !== undefined) updateData.issueUrl = issueUrl || null
+        if (genre !== undefined) updateData.genre = normalizeGenre(genre)
         if (expectedImprovement !== undefined) updateData.expectedImprovement = parseImprovement(expectedImprovement)
         if (startDate !== undefined) updateData.startDate = new Date(startDate)
         if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null

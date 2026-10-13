@@ -1,4 +1,5 @@
 import { queryDatabase, getPagePlainText, isNotionEnabled } from '@/lib/api/notion/client'
+import { isAbTestGenre, type AbTestGenre } from '@/lib/constants/abTestGenres'
 
 // 課題・施策アイディア DB（プロダクト計画ハブ配下）
 const ISSUE_IDEA_DB_ID = 'a8a18e3ea46543b9b5137cea3f5509bc'
@@ -81,6 +82,29 @@ export async function fetchAbTestCardContext(
         return { text: textParts.join('\n'), url, title }
     } catch (err) {
         console.warn(`[notionCard] abTest "${abTest.name}" のカード取得スキップ:`, err instanceof Error ? err.message : err)
+        return null
+    }
+}
+
+/**
+ * 施策カードの「ジャンル」（＝ABテストの対象面）を Backlog 番号で引く。
+ * 番号なし・カードなし・Notion 未設定・API 失敗のいずれでも null を返す（呼び出し側を止めない）。
+ * 1 番号に複数カードがぶら下がることがあるので、先頭カードのジャンルを採る。
+ */
+export async function fetchAbTestCardGenre(issueUrl: string | null | undefined): Promise<AbTestGenre | null> {
+    if (!isNotionEnabled()) return null
+    const issueNo = extractIssueNumber(issueUrl)
+    if (!issueNo) return null
+    try {
+        const results = await queryDatabase(ISSUE_IDEA_DB_ID, {
+            property: '関連Backlog',
+            url: { contains: `XWORK_PRODUCT-${issueNo}` },
+        }, 2)
+        if (!results || results.length === 0) return null
+        const genre = selectName(results[0].properties?.['ジャンル'])
+        return isAbTestGenre(genre) ? genre : null
+    } catch (err) {
+        console.warn(`[notionCard] issue ${issueNo} のジャンル取得スキップ:`, err instanceof Error ? err.message : err)
         return null
     }
 }
