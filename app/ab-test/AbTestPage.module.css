@@ -146,6 +146,7 @@
 
 .statusTab {
     padding: 0.35rem 0.75rem;
+    white-space: nowrap;
     font-size: 0.8125rem;
     background: none;
     border: none;
@@ -169,9 +170,10 @@
     color: white;
 }
 
+/* 幅は ui.module.css の input ルールに合わせて --input-width で指定する */
 .searchInput {
-    width: 14rem;
-    max-width: 100%;
+    --input-width: 16rem;
+    flex: none;
 }
 
 .tableHead {
@@ -212,10 +214,15 @@
 
 .tableCellName {
     font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
-/* テスト名列: 長い名前・説明で表が横に伸びて右側の列が隠れるのを防ぐ */
-.nameCell {
+/*
+ * テスト名列: 長い名前・説明で表が横に伸びて右側の列が隠れるのを防ぐ。
+ * ui.module.css の `.dataTable td { white-space: nowrap }` に詳細度で勝つため td 付きで書く。
+ */
+td.nameCell {
     white-space: normal;
     max-width: 20rem;
     overflow-wrap: anywhere;
@@ -232,6 +239,7 @@
     color: var(--gray-400);
     margin-top: 0.25rem;
     white-space: normal;
+    overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -241,6 +249,7 @@
 .statusContainer {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.25rem;
 }
 
@@ -361,5 +370,101 @@
 @media (min-width: 768px) {
     .productSelect {
         width: auto;
+    }
+}
+
+/*
+ * 狭い画面では表を1件=1カードに積み替える。
+ * 横スクロールに頼ると、ステータス・期間が画面外に隠れて気づけないため。
+ */
+@media (max-width: 768px) {
+    .filterBar {
+        width: 100%;
+    }
+
+    .statusTabs {
+        flex: 1 1 auto;
+    }
+
+    .statusTab {
+        flex: 1 1 auto;
+        padding: 0.4rem 0.5rem;
+    }
+
+    /* 検索欄はタブの下に1行で置く（横に並べると placeholder が切れる） */
+    .searchInput {
+        --input-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .table,
+    .table tbody,
+    .table tr,
+    .table td {
+        display: block;
+        width: 100%;
+    }
+
+    .table thead {
+        display: none;
+    }
+
+    .tableRow {
+        padding: 0.875rem 1rem;
+    }
+
+    .table td.tableCell {
+        padding: 0.125rem 0;
+        white-space: normal;
+        border-bottom: none;
+    }
+
+    /* 見出し行を隠すぶん、各値の前にラベルを出す */
+    .table td.tableCell[data-label] {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .table td.tableCell[data-label]::before {
+        content: attr(data-label);
+        flex: none;
+        font-size: 0.75rem;
+        color: var(--gray-400);
+    }
+
+    .table td.nameCell {
+        max-width: none;
+        padding-bottom: 0.375rem;
+    }
+
+    /* 2行に割っていた期間は、幅に余裕があるので1行に戻す */
+    .periodValue {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .statusContainer {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* カード表示では固定不要（横スクロールが無い） */
+    .table td.actionCell,
+    .actionHeaderCell {
+        position: static;
+        box-shadow: none;
+        background-color: transparent;
+        padding: 0.5rem 0 0;
+    }
+
+    .tableRow:hover .actionCell {
+        background-color: transparent;
+    }
+
+    .actionContainer {
+        gap: 1rem;
     }
 }

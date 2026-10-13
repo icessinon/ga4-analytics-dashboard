@@ -279,7 +279,7 @@ function AbTestPageContent() {
                     </div>
                 </div>
                 <div className={ui.tableWrap}>
-                    <table className={ui.dataTable}>
+                    <table className={`${ui.dataTable} ${styles.table}`}>
                         <thead className={styles.tableHead}>
                             <tr>
                                 <th className={styles.tableHeaderCell}>テスト名</th>
@@ -317,7 +317,7 @@ function AbTestPageContent() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className={styles.tableCell}>
+                                        <td className={styles.tableCell} data-label="バリアント">
                                             {(() => {
                                                 const variants = ['A', 'B']
                                                 if (test.ga4Config?.cvrC?.denominatorDimension) variants.push('C')
@@ -325,15 +325,17 @@ function AbTestPageContent() {
                                                 return variants.join(' / ')
                                             })()}
                                         </td>
-                                        <td className={`${styles.tableCell} ${styles.periodCell}`}>
-                                            <div>{new Date(test.startDate).toLocaleDateString('ja-JP')} 〜</div>
-                                            <div>
-                                                {test.endDate
-                                                    ? new Date(test.endDate).toLocaleDateString('ja-JP')
-                                                    : '継続中'}
+                                        <td className={`${styles.tableCell} ${styles.periodCell}`} data-label="期間">
+                                            <div className={styles.periodValue}>
+                                                <div>{new Date(test.startDate).toLocaleDateString('ja-JP')} 〜</div>
+                                                <div>
+                                                    {test.endDate
+                                                        ? new Date(test.endDate).toLocaleDateString('ja-JP')
+                                                        : '継続中'}
+                                                </div>
                                             </div>
                                         </td>
-                                        <td className={styles.tableCell}>
+                                        <td className={styles.tableCell} data-label="ステータス">
                                             <div className={styles.statusContainer}>
                                                 <span
                                                     className={`${styles.statusBadge} ${
