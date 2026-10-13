@@ -1,33 +1,179 @@
-/* タブ切替。/data の表示モード切替と同じ「沈んだトラックに浮いたボタン」 */
-.tabs {
-    display: inline-flex;
-    gap: 0.2rem;
-    padding: 0.25rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    background: var(--bg-sunken);
-    box-shadow: var(--shadow-sunken);
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 100%;
 }
 
-.tab {
-    padding: 0.45rem 1rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    background: transparent;
+/* 画面が狭いとタブが入りきらないので、タブ列だけ横スクロールさせる */
+.tabScroll {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.search {
+    --input-width: 16rem;
+    flex: none;
+}
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2.5rem 1rem;
+}
+
+.dateCell {
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+/* ui.dataTable の td は nowrap。名前だけ折り返させる（詳細度で勝つため td を付ける） */
+td.nameCell {
+    white-space: normal;
+    max-width: 38rem;
+    overflow-wrap: anywhere;
+}
+
+.name {
+    color: var(--text-strong);
+    font-weight: 600;
+}
+
+.note {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.kindBadge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+.abtest {
+    border-color: var(--blue-600);
+    color: var(--blue-300);
+}
+
+.funnel {
+    border-color: var(--border-strong);
+}
+
+.statusBadge {
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.6875rem;
+    background-color: var(--bg-raised);
+    color: var(--text-muted);
+}
+
+.statusFailed {
+    color: var(--red-400, #f87171);
+}
+
+.actionCell {
+    width: 1%;
+}
+
+.actions {
+    display: flex;
+    gap: 0.75rem;
+    white-space: nowrap;
+}
+
+.link {
+    background: none;
     border: none;
-    border-radius: calc(var(--radius-sm) - 2px);
+    padding: 0;
+    font-size: 0.8125rem;
+    color: var(--accent-text);
+    text-decoration: none;
     cursor: pointer;
 }
 
-.tab:hover {
-    color: var(--text-strong);
+.link:hover {
+    text-decoration: underline;
 }
 
-.tabActive {
-    color: var(--accent-text);
-    background: var(--bg-raised);
-    background-image: var(--control-gradient);
-    box-shadow: var(--shadow-card);
-    font-weight: 600;
+.link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.delete {
+    color: var(--text-muted);
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* 狭い画面では 1 行 = 1 カードに積む（横スクロールで操作列が隠れないように） */
+@media (max-width: 768px) {
+    .search {
+        --input-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .table,
+    .table tbody,
+    .table tr,
+    .table td {
+        display: block;
+        width: 100%;
+    }
+
+    .table thead {
+        display: none;
+    }
+
+    .table tr {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table td {
+        border-bottom: none;
+        padding: 0.125rem 0;
+        white-space: normal;
+    }
+
+    .table td[data-label]::before {
+        content: attr(data-label);
+        display: inline-block;
+        min-width: 5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    td.nameCell {
+        max-width: none;
+        padding-top: 0.25rem;
+    }
+
+    /* 名前は太字で自明なのでラベルを出さない（折り返しが読みにくくなるだけ） */
+    .table td.nameCell::before {
+        display: none;
+    }
+
+    .actionCell {
+        width: auto;
+        padding-top: 0.5rem;
+    }
 }

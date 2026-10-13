@@ -885,18 +885,19 @@ export const PAGES: Record<PageId, PageDef> = {
     history: {
         href: '/history',
         title: '履歴一覧',
-        subtitle: 'レポートとファネル分析の履歴を確認',
+        subtitle: 'レポート・ABテスト・ファネルの実行履歴',
         category: 'tools',
         productScoped: true,
         productIdInHref: true,
         tags: ['rawdata', 'abtest'],
         doc: {
-            description: 'GA4分析レポート・ファネル・ABテストの実行履歴をタブで切り替えて一覧する。過去の実行結果の詳細ページへの入口。',
+            description: 'レポート実行・ABテスト実行・ファネル実行を1本の時系列で一覧する。過去の実行結果ページへの入口。ABテスト実行はレポート実行としても記録されるため、種別を判定して重複なく並べる。',
             capabilities: [
-                'レポート実行履歴',
-                'ファネル実行履歴',
-                'ABテスト実行履歴',
+                '種別での絞り込み（すべて / ABテスト / レポート / ファネル）',
+                '名前のキーワード検索（ABテスト名・レポート名・ファネル名）',
+                '結果ページ・施策（ABテスト）ページへの導線と、実行履歴の削除',
             ],
+            apiRoute: 'GET /api/history',
         },
     },
 

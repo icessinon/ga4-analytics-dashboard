@@ -338,20 +338,6 @@ export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
         description: "Webhook の疎通・設定確認用です。",
         responseNote: "確認結果",
     },
-    "GET /api/ab-test/history": {
-        category: "ABテスト",
-        name: "ABテスト履歴",
-        description: "完了したABテストの履歴一覧を取得します。",
-        params: [
-            {
-                name: "productId",
-                type: "number",
-                required: false,
-                description: "プロダクトID",
-            },
-        ],
-        responseNote: "完了ABテスト一覧",
-    },
     "GET /api/ab-test/[id]/funnel": {
         category: "ABテスト",
         name: "ABテスト途中経過ファネル",
@@ -457,6 +443,32 @@ export const API_ANNOTATIONS: Record<string, ApiAnnotation> = {
             },
         ],
         responseNote: "レポート一覧",
+    },
+    "GET /api/history": {
+        category: "分析・レポート",
+        name: "実行履歴一覧",
+        description: "レポート実行・ABテスト実行・ファネル実行を1本の時系列にまとめて返します。ABテスト実行はレポート実行としても記録されるため、種別を判定して重複なく並べます。",
+        params: [
+            {
+                name: "productId",
+                type: "number",
+                required: false,
+                description: "プロダクトID",
+            },
+            {
+                name: "kind",
+                type: "string",
+                required: false,
+                description: "abtest / report / funnel。未指定は全種別",
+            },
+            {
+                name: "search",
+                type: "string",
+                required: false,
+                description: "名前の部分一致（ABテスト名・レポート名・ファネル名）",
+            },
+        ],
+        responseNote: "{ rows: [{ kind, title, note, status, createdAt, detailHref, abTestHref, deletePath }], total, page, limit, totalPages }",
     },
     "GET /api/reports/history": {
         category: "分析・レポート",
