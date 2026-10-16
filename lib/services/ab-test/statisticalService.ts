@@ -87,6 +87,11 @@ function normalCDF(z: number): number {
  * @param pv2 - バリアント2のページビュー数
  * @returns 必要な有意差の基準値（期間ベース、CVベース、PVベース、および最終的な必要値）
  */
+/**
+ * 必要な有意差の下限。期間・CV数・PV数のどの基準もこれを下回らない。
+ */
+const MIN_REQUIRED = 90;
+
 export function getRequiredSignificanceByHybrid(
     days: number,
     cv1: number,
@@ -130,13 +135,16 @@ export function getRequiredSignificanceByHybrid(
     else pvBased = 50;
 
     // 3つの基準の高い方を採用（より厳しい基準）
-    const required = Math.max(periodBased, cvBased, pvBased);
+    // ただしどの基準も MIN_REQUIRED を下回らせない。素の下限は 50 だが、50% は
+    // 「コイン投げより上」でしかなく有意と呼べる水準ではない。稼働初日の小さな母数で
+    // 偶然できた差に「有意差あり」が付いてしまうのを防ぐ。
+    const required = Math.max(MIN_REQUIRED, periodBased, cvBased, pvBased);
 
     return {
         required,
-        periodBased,
-        cvBased,
-        pvBased,
+        periodBased: Math.max(MIN_REQUIRED, periodBased),
+        cvBased: Math.max(MIN_REQUIRED, cvBased),
+        pvBased: Math.max(MIN_REQUIRED, pvBased),
     };
 }
 

@@ -57,6 +57,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         )
 
         // レポート（行集合）からバリアント別CVR・有意差・リードをまとめて計算する
+        // Z検定（正規近似）が成り立つのは、各群で CV と 非CV がともに 10 以上のとき。
+        // これを満たさない母数では 1〜2 件動いただけで有意性が 95% から 80% 台へ飛ぶので、
+        // 有意差の数値は出しつつ「有意差あり」の判定は出さない（UI は「判定中」になる）。
+        const hasEnoughSampleForZTest = (cv: number, pv: number) => cv >= 10 && pv - cv >= 10
+
         type GA4Report = Awaited<ReturnType<typeof fetchGA4Data>>
         const computeResults = (report: GA4Report) => {
             const variants = activeVariants.map((key) => {
@@ -84,7 +89,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                         significance: stat.significance,
                         zScore: stat.zScore,
                         requiredSignificance: required.required,
-                        isSufficient: stat.significance >= required.required,
+                        isSufficient:
+                            stat.significance >= required.required &&
+                            hasEnoughSampleForZTest(baseline.cv, baseline.pv) &&
+                            hasEnoughSampleForZTest(v.cv, v.pv),
                     }
                 })
                 .filter((c): c is NonNullable<typeof c> => c !== null)
