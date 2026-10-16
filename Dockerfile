@@ -1,7 +1,10 @@
 # ── Stage 1: builder ─────────────────────────────────────────────────────────
 FROM node:20-bookworm-slim AS builder
 
-ENV NODE_OPTIONS=--max-old-space-size=2048
+# ビルド（Next.js）のヒープ上限。ページが増えて 2048 では CI（ubuntu-24.04-arm・16GB）の
+# build worker が FatalProcessOutOfMemory で落ちるようになったため 4096 にする。
+# ビルダー段は CI でしか動かない（EC2 は GHCR のイメージを pull するだけ）。
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates && \
     echo "deb http://deb.debian.org/debian bullseye main" > /etc/apt/sources.list.d/bullseye.list && \
