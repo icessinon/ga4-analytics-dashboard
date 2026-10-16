@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties } from 'react'
+import { Fragment, useMemo, useState, type CSSProperties } from 'react'
 import { useProduct } from '@/contexts/ProductContext'
 import SignupTrendChart, { type TrendSeries } from '@/components/signup-funnel/SignupTrendChart'
 import PageShell from '@/components/PageShell'
@@ -135,6 +135,8 @@ export default function SignupFunnelPage() {
     // 完走率計算のベース: 起点（職種選択）があればそれ、なければ最初の質問のclick
     const base = data ? (data.origin ?? data.questions[0]?.click ?? 0) : 0
     const completed = data?.questions.length ? data.questions[data.questions.length - 1].click : 0
+    // プロダクトDBの実数（この職種の分）。職種が突合できない期間は全職種合計だけ出す
+    const dbForm = data?.db?.form ?? null
 
     // 推移チャート: 全体 + 上位4職種 + その他（6系列固定・色は職種に固定割当）
     const trendView = useMemo(() => {
@@ -215,12 +217,17 @@ export default function SignupFunnelPage() {
     const questionRows = useMemo(() => {
         if (!data) return []
         const maxVariants = Math.max(...data.questions.map((q) => q.variants), 1)
+        const hasPhase2 = data.questions.some((q) => q.phase === 2)
         let prevChain: number | null = data.origin
+        let prevPhase = 0
         return data.questions.map((q) => {
             const inChain = q.variants === maxVariants
             const drop = inChain && prevChain != null && prevChain > 0 ? 1 - q.click / prevChain : null
             if (inChain) prevChain = q.click
-            return { q, inChain, drop }
+            // フェーズが切り替わる最初の行にだけ見出しを出す（成立ラインが取れない期間は出さない）
+            const phaseStart = hasPhase2 && q.phase !== prevPhase ? q.phase : null
+            prevPhase = q.phase
+            return { q, inChain, drop, phaseStart }
         })
     }, [data])
 
@@ -250,8 +257,17 @@ export default function SignupFunnelPage() {
                                 <span className={ui.summaryHint}>フォーム選択クリック</span>
                             </div>
                         )}
+                        {data.memberCreated != null && (
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>会員成立（フェーズ1完了）</span>
+                                <span className={ui.summaryValue}>{data.memberCreated.toLocaleString()}</span>
+                                <span className={ui.summaryHint}>
+                                    パスワード設問の「登録する」クリック{dbForm && ` ／ プロダクトDB実数 ${dbForm.members.toLocaleString()}人`}
+                                </span>
+                            </div>
+                        )}
                         <div className={ui.summaryCard}>
-                            <span className={ui.summaryLabel}>登録完了</span>
+                            <span className={ui.summaryLabel}>登録完了（フェーズ2完了）</span>
                             <span className={ui.summaryValue}>{completed.toLocaleString()}</span>
                             <span className={styles.summaryYen}>{formatYenApprox(cvValueYen('signup', completed) ?? 0)}</span>
                             <span className={ui.summaryHint}>最終ステップの完了クリック／金額は期待売上換算（約1.8万円/登録、SF {CV_UNIT_VALUE_ASOF} 算出）</span>
@@ -261,6 +277,15 @@ export default function SignupFunnelPage() {
                             <span className={ui.summaryValue}>{pct(completed, base)}</span>
                             <span className={ui.summaryHint}>{data.origin != null ? '職種選択クリック起点' : '最初の質問起点'}</span>
                         </div>
+                        {dbForm && (
+                            <div className={ui.summaryCard}>
+                                <span className={ui.summaryLabel}>フェーズ1で止まっている</span>
+                                <span className={ui.summaryValue}>{dbForm.phase2Unsaved.toLocaleString()}</span>
+                                <span className={ui.summaryHint}>
+                                    会員になったがプロフィール未保存（{pct1(dbForm.phase2Unsaved, dbForm.members)}）／プロダクトDB実数・全職種では {data.db?.overall.phase2Unsaved.toLocaleString()}人
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className={ui.card}>
@@ -288,9 +313,25 @@ export default function SignupFunnelPage() {
                                             <td className={ui.num}>－</td>
                                         </tr>
                                     )}
-                                    {questionRows.map(({ q, inChain, drop }) => (
-                                        <tr key={q.name}>
-                                            <td>{q.name}{!inChain && <span className={styles.partialTag}>一部変種のみ</span>}</td>
+                                    {questionRows.map(({ q, inChain, drop, phaseStart }) => (
+                                        <Fragment key={q.name}>
+                                            {phaseStart && (
+                                                <tr className={styles.phaseRow}>
+                                                    <td colSpan={6}>
+                                                        {phaseStart === 1
+                                                            ? 'フェーズ1（会員成立まで・全職種共通）'
+                                                            : 'フェーズ2（会員成立後の職種別設問）'}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        <tr className={cx(q.isCutoff && styles.cutoffRow)}>
+                                            <td>
+                                                {q.name}
+                                                {q.isCutoff && <span className={styles.cutoffTag}>ここで会員成立</span>}
+                                                {q.nameInferred && <span className={styles.partialTag} title="view ラベルが無いため、2段階フローの固定順から当てた質問名">推定</span>}
+                                                {q.hint && <span className={styles.hintText}>例: {q.hint}</span>}
+                                                {!inChain && <span className={styles.partialTag}>一部変種のみ</span>}
+                                            </td>
                                             <td className={ui.num}>{q.view.toLocaleString()}</td>
                                             <td className={cx(ui.num, ui.strong)}>{q.click.toLocaleString()}</td>
                                             <td className={ui.num}>{pct(q.click, base)}</td>
@@ -303,6 +344,7 @@ export default function SignupFunnelPage() {
                                                 {!inChain ? '－' : drop == null ? '－' : drop <= 0 ? '（逆転）' : `▼${(drop * 100).toFixed(1)}%`}
                                             </td>
                                         </tr>
+                                        </Fragment>
                                     ))}
                                 </tbody>
                             </table>
@@ -313,6 +355,14 @@ export default function SignupFunnelPage() {
                             「逆転」は期間境界をまたいで途中再開したユーザーの影響です。
                             質問はABテスト変種（__B-xxxx）を質問文ベースで統合しており、変種間でステップ番号がズレていても正しく合算されます。
                             「一部変種のみ」の質問（短縮版で削られた質問など）は母集団が異なるため離脱率チェーンから除外し、参考値として表示しています。
+                        </p>
+                        <p className={ui.tableNote}>
+                            段の骨格は click ラベルから組み立てています。ステップ見出しの view ラベルは GTM の要素可視性トリガーが
+                            ページ読み込み時点の DOM しか見ないため<strong>1問目しか発火しない</strong>ので、view が 0 の質問でも
+                            click があれば通過者はいます。質問名が view から取れない段は「推定」を付け、2段階フォームの固定順
+                            （資格 → 郵便番号 → お名前 → 携帯/メール → パスワード）から当てています。
+                            <code>?occupation=</code> の職種確定流入はステップ番号が1つ前倒しになるため、少数ながら隣の設問に混ざります。
+                            フォームの構造が変わった日をまたぐ期間（2段階化の恒久化は 2026-10-06）は旧フローの段が混ざるので、変更日で期間を切って見てください。
                         </p>
                     </div>
                 </>

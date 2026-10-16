@@ -105,3 +105,35 @@
     color: var(--text-muted);
     line-height: 1.6;
 }
+
+/* ── フェーズ（会員成立ラインの前後）── */
+.phaseRow td {
+    padding-top: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background-color: var(--bg-raised);
+}
+
+.cutoffRow td {
+    border-bottom: 2px solid var(--green-400);
+}
+
+.cutoffTag {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.0625rem 0.4375rem;
+    border-radius: 9999px;
+    background-color: rgba(52, 211, 153, 0.14);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: var(--green-400);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.hintText {
+    margin-left: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}

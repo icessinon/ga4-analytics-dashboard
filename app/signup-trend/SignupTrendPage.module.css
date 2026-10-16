@@ -1,0 +1,125 @@
+.cardHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tab {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background-color: transparent;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+.tabActive {
+    border-color: var(--green-400);
+    color: var(--green-400);
+    font-weight: 600;
+}
+
+/* できごと一覧 */
+.whenCell {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    background-color: #ea580c;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.until {
+    margin-left: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.kind {
+    display: inline-block;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+}
+
+.ab {
+    background-color: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: var(--text-on-tint-blue, #3b82f6);
+}
+
+.release {
+    background-color: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    color: var(--green-400);
+}
+
+.measurement {
+    background-color: rgba(130, 148, 166, 0.12);
+    border: 1px solid rgba(130, 148, 166, 0.35);
+    color: var(--text-muted);
+}
+
+.detail {
+    white-space: normal;
+    min-width: 18rem;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+}
+
+.partialTag {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.0625rem 0.4375rem;
+    border-radius: 9999px;
+    background-color: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    color: var(--text-on-tint-amber);
+    font-size: 0.6875rem;
+}
+
+.deltaUp {
+    color: var(--status-good);
+    font-weight: 600;
+}
+
+.deltaDown {
+    color: var(--status-bad);
+    font-weight: 600;
+}
+
+.deltaFlat {
+    color: var(--text-muted);
+}
+
+.auto {
+    margin-left: 0.25rem;
+    background-color: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    color: var(--violet-400, #8b5cf6);
+}
+
+.eventLink {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+}
+
+.eventLink:hover {
+    text-decoration-color: currentColor;
+}

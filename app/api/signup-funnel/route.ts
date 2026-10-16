@@ -4,7 +4,7 @@ import { errorResponse } from '@/lib/http/errorResponse'
 import { runSignupFunnelReport } from '@/lib/services/signupFunnel/signupFunnelService'
 import { parseDateString } from '@/lib/utils/date'
 
-/** 会員登録フォームの質問別ファネル（ラベル自動復元）。集計は lib/services/signupFunnel */
+/** 会員登録フォームの質問別ファネル（click ラベルから構造を復元し、会員成立ラインでフェーズ1/2に分ける）。集計は lib/services/signupFunnel */
 export async function POST(request: Request) {
     try {
         const { reporter, raw, startDate, endDate } = await readGa4Body(request, {
